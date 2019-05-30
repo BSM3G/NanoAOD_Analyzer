@@ -500,7 +500,7 @@ void Analyzer::preprocess(int event,std::multimap<int,int> json_line_dict) { //N
 
   //need to check runs and lumis 05.27.19
   if(isData){
-    std::cout << "made it in" << std::endl;
+    //std::cout << "made it in" << std::endl;
     BOOM->GetEntry(event);  //NEW:  get event.
     UInt_t run_num;  //NEW:  create run_num to store the run number.
     UInt_t luminosityBlock_num;  //NEW:  create luminosityBlock_num to store the number of the luminosity block.
