@@ -52,7 +52,8 @@ public:
   ~Analyzer();
   void add_metadata(std::vector<std::string> infiles);
   void clear_values();
-  void preprocess(int);
+  void preprocess(int,std::multimap<int,int>); //05.28.19
+  //void preprocess(int); //05.28.19
   bool fillCuts(bool);
   void printCuts();
   void writeout();
@@ -62,6 +63,7 @@ public:
   void fill_Tree();
   void setControlRegions() { histo.setControlRegions();}
   void checkParticleDecayList(); //01.16.19
+  std::multimap<int,int> readinJSON(); //05.28.19
   void writeParticleDecayList(int); //01.16.19
   void getGoodGenBJet(); //01.16.19
   std::vector<int>* getList(CUTS ePos) {return goodParts[ePos];}
