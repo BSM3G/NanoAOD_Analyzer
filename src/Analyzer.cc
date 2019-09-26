@@ -497,6 +497,17 @@ void Analyzer::preprocess(int event,std::multimap<int,int> json_line_dict) { //N
     clear_values();
     return;
   }
+  //--- filtering inclusive HT-binned samples ---
+  if(!isData){
+  bool checkgenht = distats["Run"].bfind("DiscrByGenHT");
+  float_t HT;
+  SetBranch("LHE_HT", HT);
+  float_t gen_ht = HT;
+  if(checkgenht == 0 || checkgenht == false){}
+  if(checkgenht == 1 || checkgenht == true){
+    if(gen_ht >= distats["Run"].dmap.at("LowerGenHtCut") && gen_ht <= distats["Run"].dmap.at("UpperGenHtCut")){}
+    else{clear_values();
+      return;}}}
 
   //need to check runs and lumis 05.27.19
   if(isData){
