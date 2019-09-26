@@ -1,8 +1,9 @@
 #include "Analyzer.h"
 #include "Compression.h"
 #include <regex>
-
-
+#include <sstream>
+#include <cmath>
+#include <map>
 //// Used to convert Enums to integers
 #define ival(x) static_cast<int>(x)
 //// BIG_NUM = sqrt(sizeof(int)) so can use diparticle convention of
@@ -267,7 +268,21 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 }
 
 void Analyzer::add_metadata(std::vector<std::string> infiles){
-  
+  // std::fstream fs("json2016.txt", std::fstream::in);
+  // std::string line;
+  // int runs[393];
+  // while(!fs.eof()){
+  //   for(int i=0; i<393; i++){
+  //     getline(fs, line);
+  //     if(line.size() == 0) continue;
+  //     std::vector<std::string> vals = string_split(line, {","});
+  //     double run=stringtotype<double>(vals[0]);
+  //     runs[i]=run;}
+  //   fs.close();
+  // }
+  //for(int i=0; i<393; i++){
+  //std::cout<<runs[i]<<std::endl;
+  //}
   std::cout<<"Start copying the essentials."<<std::endl;
   for( std::string infile: infiles){
     std::cout<<infile<<std::endl;
@@ -281,18 +296,12 @@ void Analyzer::add_metadata(std::vector<std::string> infiles){
         TTree* t= ((TTree*) rfile->Get(kn.c_str()));
         t->SetBranchStatus("*",0);
         t->SetBranchStatus("run",1);
+	//t->SetBranchStatus("luminosityBlock",1); //05.27.19
         otherTrees[kn] = t->CopyTree("1","",1);
       }else if(kn == "MetaData" or kn== "ParameterSets"){
         otherTrees[kn] = ((TTree*) rfile->Get(kn.c_str()))->CopyTree("1");
       }else if(kn == "LuminosityBlocks" or kn == "Runs"){
-        otherTrees[kn] = ((TTree*) rfile->Get(kn.c_str()))->CopyTree("1");
-        //else:
-            //_isRun = (kn=="Runs")
-            //_it = inputFile.Get(kn)
-            //_ot = _it.CloneTree(0)
-            //for ev in _it:
-                //if (jsonFilter.filterRunOnly(ev.run) if _isRun else jsonFilter.filterRunLumi(ev.run,ev.luminosityBlock)): _ot.Fill()
-            //self._otherTrees[kn] = _ot
+        otherTrees[kn] = ((TTree*) rfile->Get(kn.c_str()))->CopyTree("1");  //05.24.19
       }else if( std::string(k->ClassName()) == "TTree"){
         std::cout<<"Not copying unknown tree kn"<<std::endl;
       }else{
@@ -470,11 +479,13 @@ void Analyzer::clear_values() {
 }
 
 ///Function that does most of the work.  Calculates the number of each particle
-void Analyzer::preprocess(int event) {
+void Analyzer::preprocess(int event,std::multimap<int,int> json_line_dict) { //NEW:  accepts the json dictory as an input.
+
   int test= BOOM->GetEntry(event);
   if(test<0){
     std::cout << "Could not read the event from the following file: "<<BOOM->GetFile()->GetNewUrl().Data() << std::endl;
   }
+
   for(Particle* ipart: allParticles){
     ipart->init();
   }
@@ -485,6 +496,65 @@ void Analyzer::preprocess(int event) {
     //we will put nothing in good particles
     clear_values();
     return;
+  }
+
+  //need to check runs and lumis 05.27.19
+  if(isData){
+    //std::cout << "made it in" << std::endl;
+    BOOM->GetEntry(event);  //NEW:  get event.
+    UInt_t run_num;  //NEW:  create run_num to store the run number.
+    UInt_t luminosityBlock_num;  //NEW:  create luminosityBlock_num to store the number of the luminosity block.
+    SetBranch("run",run_num);  //NEW:  define the branch for the run number.
+  //std::cout << "run_num: " << run_num << std::endl;
+    SetBranch("luminosityBlock",luminosityBlock_num);  //NEW:  define the branch for the luminosity block.
+    int key = run_num;
+    int element = luminosityBlock_num;
+    int good_run = 0;  //NEW:  this will be the checker for the good runs.
+    int good_runandlumi = 0; //NEW:  this will be the checker to see that good runs have good lumisection.
+    auto search = json_line_dict.find(key);  //NEW:  see if the run number is in the json dictionary.
+    if(search != json_line_dict.end())  //NEW:  this means that the run is in there.
+      {good_run = good_run + 1;} //NEW:  increment the checker.
+    else 
+      {good_run = good_run + 0;} //NEW:  don't increment the checker.
+  
+    if(good_run != 1){  //NEW:  if not a good run, don't fill.
+    //std::cout << "--------------------" << std::endl;
+    //std::cout << "run: " << run_num << std::endl;
+    //std::cout << "lumiblock: " << luminosityBlock_num << std::endl;
+    //std::cout << "BAD event" << std::endl;
+    //std::cout << "--------------------" << std::endl;
+      clear_values();
+    //std::cout<<"ditching bad run"<<std::endl;
+      return;
+    }
+
+    else{ //NEW:  Check to see that a good run also has a good lumi.
+      std::vector<int> lumivector;  //NEW:  going to make a container to store the lumis for the run.
+      for (auto itr = json_line_dict.begin(); itr != json_line_dict.end(); itr++){ //NEW:  go through all the pairs of run, lumibound in the dictionary.    
+	if (itr -> first == key){ //NEW:  look for the run number.
+	  lumivector.push_back(itr -> second);  //NEW:  grab all of the lumibounds corresponding to the run number.
+	}
+      }
+      for(size_t p = 0; p < lumivector.size(); p=p+2){  //NEW:  going to go through pairs.  good lumi sections defined by [lumibound1, lumibound2], [lumibound3, lumibound4], etc.  This is why we have to step through the check in twos.
+	int q = p+1; //NEW:  checking bounds that are side-by-side in the vector.
+	if(element >= lumivector[p] && element <= lumivector[q]){  //NEW:  does the lumisection fall in the bounds (check all)?
+	  good_runandlumi = 1;
+	}
+	else{
+	  good_runandlumi = good_runandlumi + 0;
+	}
+      }
+    }
+
+    if(good_runandlumi != 1){ //NEW:  Ditch good runs that have a bad lumi.
+      //std::cout << "--------------------" << std::endl;
+      //std::cout << "run: " << key << std::endl;
+      //std::cout << "lumiblock: " << element << std::endl;
+      //std::cout << "BAD event" << std::endl;
+      //std::cout << "--------------------" << std::endl;
+      clear_values();
+      return;
+    }
   }
 
   pu_weight = (!isData && CalculatePUSystematics) ? hPU[(int)(nTruePU+1)] : 1.0;
@@ -527,11 +597,11 @@ void Analyzer::preprocess(int event) {
   active_part = &goodParts;
   
   if( event < 10 || ( event < 100 && event % 10 == 0 ) ||
-    ( event < 1000 && event % 100 == 0 ) ||
-    ( event < 10000 && event % 1000 == 0 ) ||
-    ( event >= 10000 && event % 10000 == 0 ) ) {
-       std::cout << std::setprecision(2)<<event << " Events analyzed "<< static_cast<double>(event)/nentries*100. <<"% done"<<std::endl;
-       std::cout << std::setprecision(5);
+  ( event < 1000 && event % 100 == 0 ) ||
+  ( event < 10000 && event % 1000 == 0 ) ||
+  ( event >= 10000 && event % 10000 == 0 ) ) {
+    std::cout << std::setprecision(2)<<event << " Events analyzed "<< static_cast<double>(event)/nentries*100. <<"% done"<<std::endl;
+    std::cout << std::setprecision(5);
   }
 }
 
@@ -954,6 +1024,11 @@ void Analyzer::setupGeneral() {
   if(BOOM->FindBranch("Pileup_nTrueInt")!=0){
     isData=false;
   }
+  //UInt_t run_num;
+  //int luminosityBlock;
+  //SetBranch("run",run_num);
+  //std::cout << "run: " << run_num << std::endl;
+  //delete run_num;}
   if(!isData){
     SetBranch("Pileup_nTrueInt", nTruePU);
     SetBranch("genWeight", gen_weight);
@@ -1508,17 +1583,17 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
           }
         }
         if(cut == "DoDiscrByCBID"){
-	  std::cout << "cutBased[i]: " << (_Electron->cutBased[i]) << std::endl;
+	  //std::cout << "cutBased[i]: " << (_Electron->cutBased[i]) << std::endl;
           std::bitset<8> idvariable(_Electron->cutBased[i]);
 	  //std::cout << "ival(ePos): " << ival(ePos) << std::endl;
 	  //std::cout << "ival(CUTS::eRElec2): " << ival(CUTS::eRElec2) << std::endl;
           if(ival(ePos) - ival(CUTS::eRElec2)){ //test if it is electron1
-	    std::cout << "cbIDele1: " << (_Electron->cbIDele1) << std::endl;
-	    std::cout << "idvariable: " << (idvariable) << std::endl;
-	    std::cout << "the AND: " << (_Electron->cbIDele1&idvariable) << std::endl;
+	    //std::cout << "cbIDele1: " << (_Electron->cbIDele1) << std::endl;
+	    //std::cout << "idvariable: " << (idvariable) << std::endl;
+	    //std::cout << "the AND: " << (_Electron->cbIDele1&idvariable) << std::endl;
             passCuts = passCuts && (_Electron->cbIDele1&idvariable).count();
-	    std::cout << "it's an elec1..." << std::endl;
-	    std::cout << "passCuts value2: " << passCuts << std::endl;
+	    //std::cout << "it's an elec1..." << std::endl;
+	    //std::cout << "passCuts value2: " << passCuts << std::endl;
           }else{
             passCuts = passCuts && (_Electron->cbIDele2&idvariable).count();
           }
@@ -2277,6 +2352,25 @@ void Analyzer::writeParticleDecayList(int event){  //01.16.19
   file.close();}
   else std::cout << "Unable to open file." << std::endl;
   return;
+}
+
+std::multimap<int,int> Analyzer::readinJSON(){ //NEW:  function for reading in the JSON file in the format that I established.  This happens once before events start entering preprocess.
+  std::fstream fs(PUSPACE+"json2016.txt", std::fstream::in); //NEW:  takes the json file from where I have it (in the Pileup folder) and establishes that we'll take its input.
+  std::string line; //NEW:  need this since we'll be analyzing line by line.
+  std::multimap<int,int> json_line_dict; //NEW:  we'll work with the information as a multimap (C++ equivalent of a python dictionary).
+  while(!fs.eof()){ //NEW:  while the file is open...
+    for(int i=0; i<393; i++){  //NEW:  go line-by-line through the json file, which has 393 lines.
+      getline(fs, line); //NEW:  grab each line.
+      if(line.size() == 0) continue;  //NEW:  if there's nothing in the line, skip it.
+      std::vector<std::string> vals = string_split(line, {","});  //NEW:  put the contents of the line into a vector.
+      int run_num_line = (stringtotype<int>(vals[0])); //NEW:  the first element of the line is the run_number.
+      for(size_t p=1; p < vals.size(); p=p+1){  //NEW:  step through the remaining elements of the line.
+	json_line_dict.insert (std::make_pair(run_num_line,stringtotype<int>(vals[p]))); //NEW:  push the remaining lumisection bounds as each an element corresponding to the run_number key.
+      }
+    }
+    fs.close();
+  }
+  return json_line_dict;  //NEW:  returns the multimap that you need for proper filtering.
 }
 
 double Analyzer::getZBoostWeight(){

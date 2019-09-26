@@ -110,8 +110,8 @@ int main (int argc, char* argv[]) {
 
   //setup the analyser
   Analyzer testing(inputnames, outputname, setCR, configFolder);
-  SpechialAnalysis spechialAna = SpechialAnalysis(&testing);
-  spechialAna.init();
+  //SpechialAnalysis spechialAna = SpechialAnalysis(&testing);
+  //spechialAna.init();
 
   //catch ctrl+c and just exit the loop
   //this way we still have the output
@@ -122,6 +122,7 @@ int main (int argc, char* argv[]) {
     Nentries=100;
     testing.nentries=100;
   }
+  std::multimap<int,int> json_line_dict = testing.readinJSON(); //05.28.19
   //testing.checkParticleDecayList(); 01.16.19
   //main event loop
   for(size_t i=0; i < Nentries; i++) {
@@ -129,7 +130,9 @@ int main (int argc, char* argv[]) {
     //spechialAna.begin_run();
     //}
     testing.clear_values();
-    testing.preprocess(i);
+    //std::cout<<"before preprocess"<<std::endl;
+    testing.preprocess(i,json_line_dict);
+    //std::cout<<"after preprocess"<<std::endl;
     testing.fill_efficiency();
     //if (i < 25)
     //{testing.writeParticleDecayList(i);}  //01.16.19:  This will write the particle decay list for the first 25 events.
