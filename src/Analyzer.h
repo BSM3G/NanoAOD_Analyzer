@@ -52,8 +52,7 @@ public:
   ~Analyzer();
   void add_metadata(std::vector<std::string> infiles);
   void clear_values();
-  void preprocess(int,std::multimap<int,int>); //05.28.19
-  //void preprocess(int); //05.28.19
+  void preprocess(int); //05.28.19
   bool fillCuts(bool);
   void printCuts();
   void writeout();
