@@ -2,6 +2,8 @@
                 Run
 ####################################
 
+JSONFileName json2016.txt
+
 CalculatePUSystematics true
 DataHistos data_pileup_2016_69p2.root  
 MCHistos mc_pileup_Summer16.root
