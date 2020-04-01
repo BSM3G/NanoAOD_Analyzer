@@ -122,16 +122,16 @@ int main (int argc, char* argv[]) {
     Nentries=100;
     testing.nentries=100;
   }
-  std::multimap<int,int> json_line_dict = testing.readinJSON(); //05.28.19
+    
+  // std::multimap<int,int> json_line_dict = testing.readinJSON(); //05.28.19
   //testing.checkParticleDecayList(); 01.16.19
+  
   //main event loop
   for(size_t i=0; i < Nentries; i++) {
-    //if(i==0){
-    //spechialAna.begin_run();
-    //}
+
     testing.clear_values();
     //std::cout<<"before preprocess"<<std::endl;
-    testing.preprocess(i,json_line_dict);
+    testing.preprocess(i);
     //std::cout<<"after preprocess"<<std::endl;
     testing.fill_efficiency();
     //if (i < 25)
