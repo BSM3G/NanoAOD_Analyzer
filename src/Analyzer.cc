@@ -2365,12 +2365,21 @@ void Analyzer::writeParticleDecayList(int event){  //01.16.19
   return;
 }
 
-std::multimap<int,int> Analyzer::readinJSON(){ //NEW:  function for reading in the JSON file in the format that I established.  This happens once before events start entering preprocess.
-  std::fstream fs(PUSPACE+"json2016.txt", std::fstream::in); //NEW:  takes the json file from where I have it (in the Pileup folder) and establishes that we'll take its input.
+std::multimap<int,int> Analyzer::readinJSON(std::string jsonfile){ //NEW:  function for reading in the JSON file in the format that I established.  This happens once before events start entering preprocess.
+  // Newer: this function will take the name of the JSON file stored in the Pileup directory as an input.
+	
+  /* ----- Block that counts the number of lines in the JSON file ------- */
+  std::fstream fsread((PUSPACE+jsonfile).c_str(), std::fstream::in); // Take the info of the JSON file as input.
+  std::string readline; // This will be the line we are reading.
+  for(jsonfilelines = 0; getline(fsread, readline); jsonfilelines++); // Loop over all lines and add them to the counter.
+  /*----------------------------------------------------------------------*/	
+  
+  /*------------ Block that creates the dictionary from the JSON file ------------*/
+  std::fstream fs((PUSPACE+jsonfile).c_str(), std::fstream::in); // Take the info of the JSON file as input.	
   std::string line; //NEW:  need this since we'll be analyzing line by line.
   std::multimap<int,int> json_line_dict; //NEW:  we'll work with the information as a multimap (C++ equivalent of a python dictionary).
   while(!fs.eof()){ //NEW:  while the file is open...
-    for(int i=0; i<393; i++){  //NEW:  go line-by-line through the json file, which has 393 lines.
+    for(int i=0; i<jsonfilelines; i++){  //NEW:  go line-by-line through the json file, which has "jsonfilelines" lines.
       getline(fs, line); //NEW:  grab each line.
       if(line.size() == 0) continue;  //NEW:  if there's nothing in the line, skip it.
       std::vector<std::string> vals = string_split(line, {","});  //NEW:  put the contents of the line into a vector.
@@ -2381,6 +2390,7 @@ std::multimap<int,int> Analyzer::readinJSON(){ //NEW:  function for reading in t
     }
     fs.close();
   }
+  /*------------------------------------------------------------------------------*/
   return json_line_dict;  //NEW:  returns the multimap that you need for proper filtering.
 }
 
