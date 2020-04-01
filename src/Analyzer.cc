@@ -479,7 +479,7 @@ void Analyzer::clear_values() {
 }
 
 ///Function that does most of the work.  Calculates the number of each particle
-void Analyzer::preprocess(int event,std::multimap<int,int> json_line_dict) { //NEW:  accepts the json dictory as an input.
+void Analyzer::preprocess(int event){ // This function no longer needs to get the JSON dictionary as input.
 
   int test= BOOM->GetEntry(event);
   if(test<0){
@@ -522,20 +522,14 @@ void Analyzer::preprocess(int event,std::multimap<int,int> json_line_dict) { //N
     int element = luminosityBlock_num;
     int good_run = 0;  //NEW:  this will be the checker for the good runs.
     int good_runandlumi = 0; //NEW:  this will be the checker to see that good runs have good lumisection.
-    auto search = json_line_dict.find(key);  //NEW:  see if the run number is in the json dictionary.
-    if(search != json_line_dict.end())  //NEW:  this means that the run is in there.
+    auto search = jsonlinedict.find(key);  //NEW:  see if the run number is in the json dictionary.
+    if(search != jsonlinedict.end())  //NEW:  this means that the run is in there.
       {good_run = good_run + 1;} //NEW:  increment the checker.
     else 
       {good_run = good_run + 0;} //NEW:  don't increment the checker.
   
     if(good_run != 1){  //NEW:  if not a good run, don't fill.
-    //std::cout << "--------------------" << std::endl;
-    //std::cout << "run: " << run_num << std::endl;
-    //std::cout << "lumiblock: " << luminosityBlock_num << std::endl;
-    //std::cout << "BAD event" << std::endl;
-    //std::cout << "--------------------" << std::endl;
       clear_values();
-    //std::cout<<"ditching bad run"<<std::endl;
       return;
     }
 
