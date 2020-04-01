@@ -1074,6 +1074,17 @@ void Analyzer::setupGeneral() {
   read_info(filespace + "VBFCuts_info.in");
   read_info(filespace + "Run_info.in");
   read_info(filespace + "Systematics_info.in");
+	
+  // Read the information related to the JSON file from the config file Run_info.in:
+  json_file = distats["Run"].smap.at("JSONFileName");
+  // Call readinJSON and save this in the jsonlinedict we declared in Analyzer.h
+  jsonlinedict = readinJSON(json_file);
+  // Print out the information each time the analyzer is run.
+	
+  std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+  std::cout << "Analyzer::setupGeneral: JSON filename to analyze = " << json_file << std::endl;
+  std::cout << "Analyzer::setupGeneral::readinJSON: Number of lines in this JSON file = " << jsonfilelines << std::endl;
+  std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
   
   for(std::string trigger : trigNames){
     bool decison=false;
