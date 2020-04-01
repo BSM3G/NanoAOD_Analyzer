@@ -63,7 +63,12 @@ public:
   void fill_Tree();
   void setControlRegions() { histo.setControlRegions();}
   void checkParticleDecayList(); //01.16.19
-  std::multimap<int,int> readinJSON(); //05.28.19
+  /*----------- ReadinJSON class variables -------------*/
+  std::multimap<int,int> readinJSON(std::string);
+  std::string json_file;
+  int jsonfilelines = 0;
+  std::multimap<int,int> jsonlinedict;
+  /*----------------------------------------------------*/
   void writeParticleDecayList(int); //01.16.19
   void getGoodGenBJet(); //01.16.19
   std::vector<int>* getList(CUTS ePos) {return goodParts[ePos];}
