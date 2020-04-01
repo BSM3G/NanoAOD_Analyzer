@@ -535,7 +535,7 @@ void Analyzer::preprocess(int event){ // This function no longer needs to get th
 
     else{ //NEW:  Check to see that a good run also has a good lumi.
       std::vector<int> lumivector;  //NEW:  going to make a container to store the lumis for the run.
-      for (auto itr = json_line_dict.begin(); itr != json_line_dict.end(); itr++){ //NEW:  go through all the pairs of run, lumibound in the dictionary.    
+      for (auto itr = jsonlinedict.begin(); itr != jsonlinedict.end(); itr++){ //NEW:  go through all the pairs of run, lumibound in the dictionary.    
 	if (itr -> first == key){ //NEW:  look for the run number.
 	  lumivector.push_back(itr -> second);  //NEW:  grab all of the lumibounds corresponding to the run number.
 	}
