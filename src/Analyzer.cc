@@ -1058,25 +1058,13 @@ void Analyzer::setupGeneral() {
     {5, new GenFill(2, CUTS::eGJet)},     {6,  new GenFill(2, CUTS::eGTop)},
     {11, new GenFill(1, CUTS::eGElec)},   {13, new GenFill(1, CUTS::eGMuon)},
     {15, new GenFill(2, CUTS::eGTau)},    {23, new GenFill(62, CUTS::eGZ)},
-    {24, new GenFill(62, CUTS::eGW)},      {25, new GenFill(2, CUTS::eGHiggs)}, {5, new GenFill(52, CUTS::eGBJet)}
+    {24, new GenFill(62, CUTS::eGW)},      {25, new GenFill(2, CUTS::eGHiggs)}, 
+    {5, new GenFill(52, CUTS::eGBJet)}
   };
   
   isData=true;
   if(BOOM->FindBranch("Pileup_nTrueInt")!=0){
     isData=false;
-  }
-  //UInt_t run_num;
-  //int luminosityBlock;
-  //SetBranch("run",run_num);
-  //std::cout << "run: " << run_num << std::endl;
-  //delete run_num;}
-  if(!isData){
-    SetBranch("Pileup_nTrueInt", nTruePU);
-    SetBranch("genWeight", gen_weight);
-    //SetBranch("rho", rho);
-  }else{
-    nTruePU=0;
-    gen_weight=0;
   }
 
   if(BOOM->FindBranch("Electron_mvaFall17Iso")!=0){
@@ -1093,8 +1081,6 @@ void Analyzer::setupGeneral() {
       //std::cout<< branch_name << std::endl;
     //}
   }
-  
-  SetBranch("PV_npvs", bestVertices);
 
   read_info(filespace + "ElectronTau_info.in");
   read_info(filespace + "MuonTau_info.in");
