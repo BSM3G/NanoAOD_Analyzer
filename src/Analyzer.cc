@@ -478,6 +478,42 @@ void Analyzer::clear_values() {
   maxCut = 0;
 }
 
+// New function: this sets up parameters that only need to be called once per event.
+void Analyzer::setupEventGeneral(int nevent){
+
+  // This class is an intermediate step called from preprocess that will set up all the variables that are common to the event and not particle specific.
+  // We want to set those branches first here and then call BOOM->GetEntry(nevent) so that the variables change properly for each event.
+
+  // For MC samples, set number of true pileup interactions, gen-HT and gen-weights.
+  if(!isData){ 
+    //SetBranch("Pileup_nTrueInt", pileupntrueint);
+    SetBranch("Pileup_nTrueInt",nTruePU);
+    SetBranch("genWeight",gen_weight);
+    if (BOOM->FindBranch("LHE_HT") != 0){
+    	SetBranch("LHE_HT",generatorht);
+    }
+  }
+
+  // Get the number of primary vertices, applies to both data and MC
+  SetBranch("PV_npvs", bestVertices);
+
+  // Finally, call get entry so all the branches assigned here are filled with the proper values for each event.
+  BOOM->GetEntry(nevent);
+
+  // Check that the sample does not have crazy values of nTruePU
+  if(nTruePU < 100.0){
+       // std::cout << "pileupntrueint = " << pileupntrueint << std::endl;
+  }
+  else{
+    // std::cout << "event with abnormal pileup = " << pileupntrueint << std::endl;
+    clear_values();
+    return;
+  }
+
+  // Calculate the pu_weight for this event.
+  pu_weight = (!isData && CalculatePUSystematics) ? hPU[(int)(nTruePU+1)] : 1.0;
+}
+
 ///Function that does most of the work.  Calculates the number of each particle
 void Analyzer::preprocess(int event){ // This function no longer needs to get the JSON dictionary as input.
 
