@@ -3125,18 +3125,18 @@ void Analyzer::initializePileupInfo(std::string MCHisto, std::string DataHisto, 
 
   //double factor = histmc->Integral() / histdata->Integral();
   double value,valueUp,valueDown;
-  int ibin=0;
-  for(int bin=0; bin < histmc->GetNbinsX(); bin++) {
-    ibin=histdata->FindBin(bin);
-    if(histmc->GetBinContent(ibin) == 0){
+  // The bin corresponding to nTruePU = 0 will be bin = 1 and, the calculated weight will be stored 
+  // in hPU[bin]. That's why when we calculate the pu_weight in setupEventGeneral, we require hPU[(int)nTruePU+1].
+  for(int bin=0; bin <= histmc->GetNbinsX(); bin++) {
+    if(histmc->GetBinContent(bin) == 0){
       value = 1;
       valueUp = 1;
       valueDown = 1;
     }else{
-      value = histdata->GetBinContent(ibin) / histmc->GetBinContent(ibin);
+      value = histdata->GetBinContent(bin) / histmc->GetBinContent(bin);
       if(histdata_up){
-        valueUp = histdata->GetBinContent(ibin) / histmc->GetBinContent(ibin);
-        valueDown = histdata->GetBinContent(ibin) / histmc->GetBinContent(ibin);
+        valueUp = histdata->GetBinContent(bin) / histmc->GetBinContent(bin);
+        valueDown = histdata->GetBinContent(bin) / histmc->GetBinContent(bin);
       }
     }
     hPU[bin]      = value;
@@ -3147,7 +3147,6 @@ void Analyzer::initializePileupInfo(std::string MCHisto, std::string DataHisto, 
       hPU_up[bin]   = value;
       hPU_down[bin] = value;
     }
-
   }
 
   file1->Close();
