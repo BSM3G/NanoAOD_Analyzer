@@ -167,9 +167,9 @@ public:
   TFile* infoFile;
   TFile* routfile;
   std::string filespace = "";
-  double hPU[200];
-  double hPU_up[200];
-  double hPU_down[200];
+  double hPU[200] = { };        // initialize this array to zero.
+  double hPU_up[200] = { };     // initialize this array to zero.
+  double hPU_down[200] = { };   // initialize this array to zero.
   int version=0;
   std::map<std::string,TTree* > otherTrees;
   //std::map<std::string,*TObject> otherObjects;
