@@ -231,6 +231,7 @@ public:
   float nTruePU = 0;
   int bestVertices = 0;
   float gen_weight = 0;
+  float generatorht = 0;
 
   BTagCalibration calib = BTagCalibration("csvv1", "Pileup/btagging.csv");
   BTagCalibrationReader reader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
