@@ -95,6 +95,7 @@ public:
 
   void read_info(std::string);
   void setupGeneral();
+  void setupEventGeneral(int);
   void branchException(std::string);
   void initializeTrigger();
   void setCutNeeds();
