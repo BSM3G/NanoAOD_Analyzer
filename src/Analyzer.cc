@@ -486,14 +486,12 @@ void Analyzer::setupEventGeneral(int nevent){
 
   // For MC samples, set number of true pileup interactions, gen-HT and gen-weights.
   if(!isData){ 
-    //SetBranch("Pileup_nTrueInt", pileupntrueint);
     SetBranch("Pileup_nTrueInt",nTruePU);
     SetBranch("genWeight",gen_weight);
     if (BOOM->FindBranch("LHE_HT") != 0){
     	SetBranch("LHE_HT",generatorht);
     }
   }
-
   // Get the number of primary vertices, applies to both data and MC
   SetBranch("PV_npvs", bestVertices);
 
@@ -598,7 +596,8 @@ void Analyzer::preprocess(int event){ // This function no longer needs to get th
     }
   }
 
-  pu_weight = (!isData && CalculatePUSystematics) ? hPU[(int)(nTruePU+1)] : 1.0;
+  // Call the new function setupEventGeneral:
+  setupEventGeneral(event);
 
 
   // SET NUMBER OF GEN PARTICLES
