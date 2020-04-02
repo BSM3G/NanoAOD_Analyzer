@@ -152,6 +152,7 @@ public:
   std::vector<CUTS> findExtraCuts();
   std::vector<CUTS> overlapCuts(CUTS);
   bool passedLooseJetID(int);
+  bool passedTightJetID(int);
    
   float area[MAXINDEX];
   float bDiscriminator[MAXINDEX];
