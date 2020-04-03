@@ -258,7 +258,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     }
   }
 
-  initializeMCSelection(infiles);
+  // initializeMCSelection(infiles);
   initializeWkfactor(infiles);
   setCutNeeds();
   
