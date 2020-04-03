@@ -251,8 +251,15 @@ std::vector<CUTS> Jet::overlapCuts(CUTS ePos) {
 }
 
 bool Jet::passedLooseJetID(int nobj) {
+// bit1 = Loose ID, bit2 = Tight ID, bit3 =  TightLepVeto
   std::bitset<8> bit_jet(jetId[nobj]);
-  return bit_jet[0];
+  return bit_jet[0]; // This will return the Tight ID bit
+}
+
+bool Jet::passedTightJetID(int nobj) {
+  // bit1 = Loose ID, bit2 = Tight ID, bit3 =  TightLepVeto
+  std::bitset<8> bit_jet(jetId[nobj]);
+  return bit_jet[1]; // This will return the Tight ID bit
 }
 
 
