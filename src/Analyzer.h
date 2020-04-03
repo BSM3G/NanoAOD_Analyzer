@@ -153,6 +153,7 @@ public:
   bool findCut(const std::vector<std::string>&, std::string);
 
   void updateMet(int syst=0);
+  bool passMetFilters(std::string, int);
   //  void treatMuons_Met(std::string syst="orig");
   double getPileupWeight(float);
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> getArray();
@@ -232,6 +233,18 @@ public:
   int bestVertices = 0;
   float gen_weight = 0;
   float generatorht = 0;
+  
+  // Met filters' variables
+  bool applymetfilters = false;
+  bool primaryvertexfilter = false;
+  bool beamhalofilter = false;
+  bool hbhenoisefilter = false;
+  bool ecaltpfilter = false;
+  bool badpfmuonfilter = false;
+  bool badchargedhadronfilter = false;
+  bool ecalbadcalibrationfilter = false;
+  bool allmetfilters = false;
+  bool passedmetfilters = false;
 
   BTagCalibration calib = BTagCalibration("csvv1", "Pileup/btagging.csv");
   BTagCalibrationReader reader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
