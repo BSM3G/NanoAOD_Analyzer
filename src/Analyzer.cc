@@ -599,7 +599,17 @@ void Analyzer::preprocess(int event){ // This function no longer needs to get th
 
   // Call the new function setupEventGeneral:
   setupEventGeneral(event);
-
+	
+  // Call the new function passMetFilters
+  // Apply here the MET filters, in case the option is turned on.
+  applymetfilters = distats["Run"].bfind("ApplyMetFilters");
+  if(applymetfilters){
+  	passedmetfilters = passMetFilters(json_file, event);	
+  	if(!passedmetfilters){
+  		clear_values();
+  		return;
+  	}
+  }
 
   // SET NUMBER OF GEN PARTICLES
   if(!isData){
