@@ -155,7 +155,11 @@ public:
   bool passedTightJetID(int);
    
   float area[MAXINDEX];
-  float bDiscriminator[MAXINDEX];
+  // float bDiscriminator[MAXINDEX];
+  float bDiscriminatorCSVv2[MAXINDEX];
+  float bDiscriminatorDeepCSV[MAXINDEX];
+  float bDiscriminatorDeepFlav[MAXINDEX];
+	
   float chargedEmEnergyFraction[MAXINDEX];
   float chargedHadronEnergyFraction[MAXINDEX];
   float neutralEmEmEnergyFraction[MAXINDEX];
