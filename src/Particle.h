@@ -224,7 +224,7 @@ public:
   float pfRelIso03_all[MAXINDEX];
   float pfRelIso03_chg[MAXINDEX];
   int cutBased[MAXINDEX];
-  // bool cutBased_HLTPreSel[MAXINDEX];
+  bool cutBased_HLTPreSel[MAXINDEX];
   bool mvaIso_90[MAXINDEX];
   bool mvanoIso_WP90[MAXINDEX];
   bool mvaIso_80[MAXINDEX];
