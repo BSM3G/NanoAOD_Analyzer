@@ -84,7 +84,8 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   std::cout << "setup start" << std::endl;
   
   routfile = new TFile(outfile.c_str(), "RECREATE", outfile.c_str(), ROOT::CompressionSettings(ROOT::kLZMA, 9));
-  add_metadata(infiles);
+  //Copy the original trees (optional)
+  //add_metadata(infiles);
 
   BOOM= new TChain("Events");
   infoFile=0;
