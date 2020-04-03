@@ -219,7 +219,12 @@ Jet::Jet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names
   SetBranch("Jet_nMuons", nMuons);
   SetBranch("Jet_chHEF", chargedHadronEnergyFraction);
   SetBranch("Jet_chEmEF", chargedEmEnergyFraction);
-  SetBranch("Jet_btagCSVV2", bDiscriminator);
+  // SetBranch("Jet_btagCSVV2", bDiscriminator);
+  
+  SetBranch("Jet_btagCSVV2", bDiscriminatorCSVv2);
+  SetBranch("Jet_btagDeepB", bDiscriminatorDeepCSV);
+  SetBranch("Jet_btagDeepFlavB", bDiscriminatorDeepFlav);
+  
   SetBranch("Jet_puId", puID);
   SetBranch("Jet_area", area);
   if(_BOOM->FindBranch("Jet_partonFlavour")!=0){
