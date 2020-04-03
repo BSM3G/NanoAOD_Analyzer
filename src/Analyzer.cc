@@ -1702,6 +1702,7 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       else if(cut == "ApplyJetBTagging") passCuts = passCuts && (_Jet->bDiscriminator[i] > stats.dmap.at("JetBTaggingCut"));
       //else if(cut == "MatchBToGen") passCuts = passCuts && (isData ||  abs(_Jet->partonFlavour->at(i)) == 5);
       else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
+      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
       else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(lvec, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
     // ----anti-overlap requirements
       else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
@@ -1768,6 +1769,7 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
       else if(cut == "ApplyJetBTagging") passCuts = passCuts && (_Jet->bDiscriminator[i] > stats.dmap.at("JetBTaggingCut"));
       //else if(cut == "MatchBToGen") passCuts = passCuts && (isData ||  abs(_Jet->partonFlavour->at(i)) == 5);
       else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
+      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
 
     // ----anti-overlap requirements
       else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
