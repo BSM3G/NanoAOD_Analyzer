@@ -1129,11 +1129,11 @@ void Analyzer::setupGeneral() {
 
     catch (const char* msg){
       std::cout << "ERROR! Trigger " << trigger << ": "  << msg << std::endl;
-      std::cout<< "options are:" << std::endl;
-      for( int i=0; i<BOOM->GetListOfBranches()->GetSize(); i++){
-        std::string branch_name(BOOM->GetListOfBranches()->At(i)->GetName());
-        if (branch_name.find("HLT_")!=std::string::npos){
-          std::cout<< branch_name << std::endl;
+//      std::cout<< "options are:" << std::endl;
+//      for( int i=0; i<BOOM->GetListOfBranches()->GetSize(); i++){
+//        std::string branch_name(BOOM->GetListOfBranches()->At(i)->GetName());
+//        if (branch_name.find("HLT_")!=std::string::npos){
+//          std::cout<< branch_name << std::endl;
         }
       }
       continue;
