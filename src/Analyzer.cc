@@ -984,10 +984,11 @@ bool Analyzer::passMetFilters(std::string jsonname, int ievent){
   SetBranch("Flag_EcalDeadCellTriggerPrimitiveFilter", ecaltpfilter);
   // Bad PF muon filter
   SetBranch("Flag_BadPFMuonFilter", badpfmuonfilter);
-  // Bad charged hadron filter
-  SetBranch("Flag_BadChargedCandidateFilter", badchargedhadronfilter);
-  // ECAL bad calibration filter
-  SetBranch("Flag_ecalBadCalibFilter", ecalbadcalibrationfilter);
+  // Bad charged hadron filter - not recommended.
+  // SetBranch("Flag_BadChargedCandidateFilter", badchargedhadronfilter);
+  // ECAL bad calibration filter (2017 + 2018).
+  // SetBranch("Flag_ecalBadCalibFilter", ecalbadcalibrationfilter);
+  SetBranch("Flag_ecalBadCalibFilterV2", ecalbadcalibrationfilter);
 
   // Call get entry so all the branches assigned here are filled with the proper values for each event.
   BOOM->GetEntry(ievent);
@@ -995,12 +996,10 @@ bool Analyzer::passMetFilters(std::string jsonname, int ievent){
   // Check if the current event passed all the flags, depending on the year (only 2016 is different)
   if(jsonname.find("2016") != std::string::npos){
   	// only for 2016 the ecalbadcalibrationfilter is not applied.
-  	allmetfilters = primaryvertexfilter && beamhalofilter && hbhenoisefilter && ecaltpfilter && badpfmuonfilter && badchargedhadronfilter;
-  	//std::cout << "Filters: pv = " << primaryvertexfilter << ", beamhalo = " << beamhalofilter << ", hbhe = " << hbhenoisefilter << ", ecaltp = " << ecaltpfilter << ", badpfmu = " << badpfmuonfilter << ", badchhad = " << badchargedhadronfilter << std::endl;
+  	allmetfilters = primaryvertexfilter && beamhalofilter && hbhenoisefilter && ecaltpfilter && badpfmuonfilter;
   }
   else{
-  	allmetfilters = primaryvertexfilter && beamhalofilter && hbhenoisefilter && ecaltpfilter && badpfmuonfilter && badchargedhadronfilter && ecalbadcalibrationfilter;
-  	//if(!allmetfilters) std::cout << "Filters: pv = " << primaryvertexfilter << ", beamhalo = " << beamhalofilter << ", hbhe = " << hbhenoisefilter << ", ecaltp = " << ecaltpfilter << ", badpfmu = " << badpfmuonfilter << ", badchhad = " << badchargedhadronfilter << ", ecalbadcalib = " << ecalbadcalibrationfilter << std::endl;
+  	allmetfilters = primaryvertexfilter && beamhalofilter && hbhenoisefilter && ecaltpfilter && badpfmuonfilter && ecalbadcalibrationfilter;
   }
 
   return allmetfilters;
