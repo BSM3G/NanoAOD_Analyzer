@@ -386,6 +386,10 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
     // SetBranch("Electron_cutBased_HLTPreSel", cutBased_HLTPreSel);
   }
   
+  if(elec1.bfind("DoDiscrByHLTID") || elec2.bfind("DoDiscrByHLTID")){
+    SetBranch("Electron_cutBased_HLTPreSel", cutBased_HLTPreSel);
+  }
+  
   if((elec1.bfind("DoDiscrBymvaID") || elec2.bfind("DoDiscrByLooseID")) && _BOOM->FindBranch("Electron_mvaFall17Iso")!=0){
     SetBranch("Electron_mvaFall17Iso_WP90", mvaIso_90);
     SetBranch("Electron_mvaFall17noIso_WP90", mvanoIso_WP90);
