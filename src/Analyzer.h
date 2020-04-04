@@ -210,6 +210,7 @@ public:
   bool isVSample;
   bool isWSample;
 
+  std::string btagalgoname;
 
   std::vector<Particle*> allParticles;
   std::vector<std::string> syst_names;
