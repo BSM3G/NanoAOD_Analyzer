@@ -247,8 +247,14 @@ public:
   bool allmetfilters = false;
   bool passedmetfilters = false;
 
-  BTagCalibration calib = BTagCalibration("csvv1", "Pileup/btagging.csv");
-  BTagCalibrationReader reader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
+  //BTagCalibration calib = BTagCalibration("csvv1", "Pileup/btagging.csv");
+  //BTagCalibrationReader reader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
+  
+  // B-tagging scale factors - calibration + readers
+  BTagCalibration calib;
+  BTagCalibrationReader btagsfreader;
+  BTagCalibrationReader btagsfreaderup;
+  BTagCalibrationReader btagsfreaderdown;
 
   double rho =20.;
 
