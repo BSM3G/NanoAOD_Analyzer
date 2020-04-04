@@ -1842,6 +1842,61 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
   }
 }
 
+// The function below sets up the information from the right CSV file in the Pileup folder
+// to obtain the functions needed to apply b-tagging SF in an automatic way.
+void Analyzer::setupBJetSFInfo(const PartStats& stats){
+
+  std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+  std::cout << "Setting up the b-jet scale factors... " << std::endl;
+  // Get the b-tagging algorithm to use to initialize the appropriate csv file:
+  
+  for( auto cut: stats.bset) {
+
+    if(cut == "ApplyJetBTaggingCSVv2"){
+      btagalgoname = "CSVv2";
+      break;
+    }
+    else if(cut == "ApplyJetBTaggingDeepCSV"){
+      btagalgoname = "DeepCSV";
+      break;
+    }
+    else if(cut == "ApplyJetBTaggingDeepFlav"){
+      btagalgoname = "DeepFlav";
+      break;
+    }
+  }
+  
+  std::cout << "B-jet ID algorithm selected: " << btagalgoname << std::endl;
+  std::cout<< "Working point selected is: " << stats.smap.at("JetBTaggingWP") << std::endl;
+  
+  calib = BTagCalibration(btagalgoname, (PUSPACE+stats.smap.at("BtagSFCSVfile")).c_str());
+
+  // Read the working point we are using:
+  if(stats.smap.at("JetBTaggingWP").compare("loose") == 0){ 
+    //std::cout << "working point is loose" << std::endl;
+    btagsfreader = BTagCalibrationReader(BTagEntry::OP_LOOSE, "central");
+    btagsfreaderup = BTagCalibrationReader(BTagEntry::OP_LOOSE, "up");
+    btagsfreaderdown = BTagCalibrationReader(BTagEntry::OP_LOOSE, "down");
+
+  }
+  else if(stats.smap.at("JetBTaggingWP").compare("medium") == 0){
+    //std::cout << "working point is medium" << std::endl;
+    btagsfreader = BTagCalibrationReader(BTagEntry::OP_MEDIUM, "central");
+    btagsfreaderup = BTagCalibrationReader(BTagEntry::OP_MEDIUM, "up");
+    btagsfreaderdown = BTagCalibrationReader(BTagEntry::OP_MEDIUM, "down");
+  } 
+  else if(stats.smap.at("JetBTaggingWP").compare("tight") == 0){
+    //std::cout << "working point is tight" << std::endl;
+    btagsfreader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
+    btagsfreaderup = BTagCalibrationReader(BTagEntry::OP_TIGHT, "up");
+    btagsfreaderdown = BTagCalibrationReader(BTagEntry::OP_TIGHT, "down");
+  }
+
+  std::cout << "Done. " << std::endl;
+  std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+
+}
+
 //01.16.19
 double Analyzer::getBJetSF(CUTS ePos, const PartStats& stats) {
   double bjetSFall = 1.00;
