@@ -988,7 +988,6 @@ bool Analyzer::passMetFilters(std::string jsonname, int ievent){
   // SetBranch("Flag_BadChargedCandidateFilter", badchargedhadronfilter);
   // ECAL bad calibration filter (2017 + 2018).
   // SetBranch("Flag_ecalBadCalibFilter", ecalbadcalibrationfilter);
-  SetBranch("Flag_ecalBadCalibFilterV2", ecalbadcalibrationfilter);
 
   // Call get entry so all the branches assigned here are filled with the proper values for each event.
   BOOM->GetEntry(ievent);
@@ -999,6 +998,8 @@ bool Analyzer::passMetFilters(std::string jsonname, int ievent){
   	allmetfilters = primaryvertexfilter && beamhalofilter && hbhenoisefilter && ecaltpfilter && badpfmuonfilter;
   }
   else{
+	// SetBranch("Flag_ecalBadCalibFilter", ecalbadcalibrationfilter);
+	SetBranch("Flag_ecalBadCalibFilterV2", ecalbadcalibrationfilter);
   	allmetfilters = primaryvertexfilter && beamhalofilter && hbhenoisefilter && ecaltpfilter && badpfmuonfilter && ecalbadcalibrationfilter;
   }
 
