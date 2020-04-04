@@ -157,6 +157,14 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 
   //std::cout<<"---------------------------------------------------"<<std::endl;
   //std::cout<< "files after" <<std::endl;
+	
+  // B-tagging scale factor stuff
+  setupBJetSFInfo(_Jet->pstats["BJet"]); 	
+  // Here the calibration module will be defined, which is then needed to define the readers below.
+  btagsfreader.load(calib, BTagEntry::FLAV_B, "comb");
+  btagsfreaderup.load(calib, BTagEntry::FLAV_B, "comb");
+  btagsfreaderdown.load(calib, BTagEntry::FLAV_B, "comb");
+	
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
     _Gen = new Generated(BOOM, filespace + "Gen_info.in", syst_names);
