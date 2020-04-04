@@ -111,10 +111,10 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   //std::cout << "pre-setupGeneral()" << std::endl;
   //std::cout<<"setupGeneral();"<< std::endl;
   setupGeneral();
-  //std::cout << "post-setupGeneral()" << std::endl;
-  //isData = distats["Run"].bfind("isData");
-  //std::cout<<"reader.load(calib, BTagEntry::FLAV_B, comb);"<<std::endl;
-  reader.load(calib, BTagEntry::FLAV_B, "comb");
+  // std::cout << "post-setupGeneral()" << std::endl;
+  // isData = distats["Run"].bfind("isData");
+  // std::cout<<"reader.load(calib, BTagEntry::FLAV_B, comb);"<<std::endl;
+  // reader.load(calib, BTagEntry::FLAV_B, "comb");
 
   
   //std::cout<<"CalculatePUSystematics..."<<std::endl;
