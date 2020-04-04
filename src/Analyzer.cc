@@ -1905,30 +1905,22 @@ void Analyzer::setupBJetSFInfo(const PartStats& stats){
 
 }
 
-//01.16.19
 double Analyzer::getBJetSF(CUTS ePos, const PartStats& stats) {
   double bjetSFall = 1.00;
-  TLorentzVector ljet1;
-  TLorentzVector ljet2;
-  bool zerob = false;
   bool oneb = false;
   bool twob = false;
 
   if(! neededCuts.isPresent(ePos)) return bjetSFall;
     
   if(active_part->at(CUTS::eRBJet)->size() == 0){
-    zerob = true;
     return bjetSFall;
   }
 
   if(active_part->at(CUTS::eRBJet)->size() == 1){
-    TLorentzVector ljet1 = _Jet->p4(active_part->at(CUTS::eRBJet)->at(0));
     oneb = true;
   }
 
   if(active_part->at(CUTS::eRBJet)->size() == 2){
-    TLorentzVector ljet1 = _Jet->p4(active_part->at(CUTS::eRBJet)->at(0));
-    TLorentzVector ljet2 = _Jet->p4(active_part->at(CUTS::eRBJet)->at(1));
     twob = true;
   }
 
@@ -1937,46 +1929,41 @@ double Analyzer::getBJetSF(CUTS ePos, const PartStats& stats) {
   for( auto cut: stats.bset) {
       if(cut == "UseBtagSF") {
 	if(oneb){
-	  double pt1 = (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt();
-	  bjetSF1 = 0.887973 * ( (1. + (0.0523821 * pt1) ) / (1. + (0.0460876 * pt1) ) );
-	  }
+	   // _Jet->p4(active_part->at(CUTS::eRBJet)->at(i))) returns the TLorentzVector (P4) of the i-th b-jet stored in the b-jet vector (i-th element).
+	   // The formula we access here corresponds to "central" or the nominal formula of the scale factor, BTagEntry::FLAV_B is for b-tagged jets and
+	   // btagsfreader.eval_auto_bounds takes the eta & pt of this jet to properly find the SF formula corresponding to those bounds in an automatic way.
+	   // You can have a look to the CSV file with this information to get a better picture of this function after reading the description above.
+	   bjetSF1 = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+	}
 	if(twob){
-	  double pt1 = (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt();
-	  double pt2 = (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt();
-	  bjetSF1 = 0.887973 * ( (1. + (0.0523821 * pt1) ) / (1. + (0.0460876 * pt1) ) );
-	  bjetSF2 = 0.887973 * ( (1. + (0.0523821 * pt2) ) / (1. + (0.0460876 * pt2) ) );
+       	   bjetSF1 = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+       	   bjetSF2 = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
 	}
       }
   }
+	
   bjetSFall = bjetSFall * bjetSF1 * bjetSF2;
+	
   return bjetSFall;
+	
 }
 
 double Analyzer::getBJetSFResUp(CUTS ePos, const PartStats& stats) {  //07.05.18
   double bjetSFall = 1.00;
-  TLorentzVector ljet1;
-  TLorentzVector ljet2;
-  bool zerob = false;
   bool oneb = false;
   bool twob = false;
 
   if(! neededCuts.isPresent(ePos)) return bjetSFall;
   
-  //cout << "size: " << active_part->at(CUTS::eRBJet)->size() << endl;;
-  
   if(active_part->at(CUTS::eRBJet)->size() == 0){
-    zerob = true;
     return bjetSFall;
   }
 
   if(active_part->at(CUTS::eRBJet)->size() == 1){
-    TLorentzVector ljet1 = _Jet->p4(active_part->at(CUTS::eRBJet)->at(0));
     oneb = true;
   }
 
   if(active_part->at(CUTS::eRBJet)->size() == 2){
-    TLorentzVector ljet1 = _Jet->p4(active_part->at(CUTS::eRBJet)->at(0));
-    TLorentzVector ljet2 = _Jet->p4(active_part->at(CUTS::eRBJet)->at(1));
     twob = true;
   }
 
@@ -1985,74 +1972,37 @@ double Analyzer::getBJetSFResUp(CUTS ePos, const PartStats& stats) {  //07.05.18
   for( auto cut: stats.bset) {
       if(cut == "UseBtagSF") {
 	if(oneb){
-	  double pt1 = (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt();
-	  if(pt1 >= 20 && pt1 < 30){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.025381835177540779;}
-	  else if(pt1 >= 30 && pt1 < 50){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.012564006261527538;}
-	  else if (pt1 >= 50 && pt1 < 70){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.011564776301383972;}
-	  else if (pt1 >= 70 && pt1 < 100){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.011248723603785038;}
-	  else if (pt1 >= 100 && pt1 < 140){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.010811596177518368;}
-	  else if (pt1 >= 140 && pt1 < 200){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.010882497765123844;}
-	  else if (pt1 >= 200 && pt1 < 300){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.013456921093165874;}
-	  else if (pt1 >= 300 && pt1 < 600){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.017094610258936882;}
-	  else if (pt1 >= 600 && pt1 < 1000){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.02186630479991436;}
-	  else {bjetSF1 = 1;}
+	   // Same idea as in getBJetSF but now we look at the formulas corresponding going "up" in systematics.
+	   bjetSF1 = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
 	}
 	if(twob){
-	  double pt1 = (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt();
-	  double pt2 = (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt();
-	  if(pt1 >= 20 && pt1 < 30){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.025381835177540779;}
-	  else if(pt1 >= 30 && pt1 < 50){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.012564006261527538;}
-	  else if (pt1 >= 50 && pt1 < 70){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.011564776301383972;}
-	  else if (pt1 >= 70 && pt1 < 100){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.011248723603785038;}
-	  else if (pt1 >= 100 && pt1 < 140){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.010811596177518368;}
-	  else if (pt1 >= 140 && pt1 < 200){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.010882497765123844;}
-	  else if (pt1 >= 200 && pt1 < 300){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.013456921093165874;}
-	  else if (pt1 >= 300 && pt1 < 600){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.017094610258936882;}
-	  else if (pt1 >= 600 && pt1 < 1000){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))+0.02186630479991436;}
-	  else {bjetSF1 = 1;}
-
-	  if(pt2 >= 20 && pt2 < 30){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))+0.025381835177540779;}
-	  else if(pt2 >= 30 && pt2 < 50){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))+0.012564006261527538;}
-	  else if (pt2 >= 50 && pt2 < 70){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))+0.011564776301383972;}
-	  else if (pt2 >= 70 && pt2 < 100){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))+0.011248723603785038;}
-	  else if (pt2 >= 100 && pt2 < 140){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))+0.010811596177518368;}
-	  else if (pt2 >= 140 && pt2 < 200){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))+0.010882497765123844;}
-	  else if (pt2 >= 200 && pt2 < 300){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))+0.013456921093165874;}
-	  else if (pt2 >= 300 && pt2 < 600){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))+0.017094610258936882;}
-	  else if (pt2 >= 600 && pt2 < 1000){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))+0.02186630479991436;}
-	  else {bjetSF2 = 1;}
+           bjetSF1 = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+           bjetSF2 = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
 	}
       }
   }
+	
   bjetSFall = bjetSFall * bjetSF1 * bjetSF2;
+	
   return bjetSFall;
 }
 
 double Analyzer::getBJetSFResDown(CUTS ePos, const PartStats& stats) { //07.05.18
   double bjetSFall = 1.00;
-  TLorentzVector ljet1;
-  TLorentzVector ljet2;
-  bool zerob = false;
   bool oneb = false;
   bool twob = false;
 
   if(! neededCuts.isPresent(ePos)) return bjetSFall;
   
-  //cout << "size: " << active_part->at(CUTS::eRBJet)->size() << endl;;
-  
   if(active_part->at(CUTS::eRBJet)->size() == 0){
-    zerob = true;
     return bjetSFall;
   }
 
   if(active_part->at(CUTS::eRBJet)->size() == 1){
-    TLorentzVector ljet1 = _Jet->p4(active_part->at(CUTS::eRBJet)->at(0));
     oneb = true;
   }
 
   if(active_part->at(CUTS::eRBJet)->size() == 2){
-    TLorentzVector ljet1 = _Jet->p4(active_part->at(CUTS::eRBJet)->at(0));
-    TLorentzVector ljet2 = _Jet->p4(active_part->at(CUTS::eRBJet)->at(1));
     twob = true;
   }
 
@@ -2061,46 +2011,18 @@ double Analyzer::getBJetSFResDown(CUTS ePos, const PartStats& stats) { //07.05.1
   for( auto cut: stats.bset) {
       if(cut == "UseBtagSF") {
 	if(oneb){
-	  double pt1 = (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt();
-	  if(pt1 >= 20 && pt1 < 30){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.025381835177540779;} 
-	  else if (pt1 >= 30 && pt1 < 50){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.012564006261527538;} 
-	  else if (pt1 >= 50 && pt1 < 70){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.011564776301383972;} 
-	  else if (pt1 >= 70 && pt1 < 100){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.011248723603785038;} 
-	  else if (pt1 >= 100 && pt1 < 140){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.010811596177518368;} 
-	  else if (pt1 >= 140 && pt1 < 200){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.010882497765123844;} 
-	  else if (pt1 >= 200 && pt1 < 300){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.013456921093165874;} 
-	  else if (pt1 >= 300 && pt1 < 600){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.017094610258936882;} 
-	  else if (pt1 >= 600 && pt1 < 1000){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.02186630479991436;}
-	  else{bjetSF1 = 1.00;}
+	// Same idea as in getBJetSF but now we look at the formulas corresponding going "down" in systematics.
+           bjetSF1 = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
 	}
 	if(twob){
-	  double pt1 = (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt();
-	  double pt2 = (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt();
-	  if(pt1 >= 20 && pt1 < 30){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.025381835177540779;} 
-	  else if (pt1 >= 30 && pt1 < 50){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.012564006261527538;} 
-	  else if (pt1 >= 50 && pt1 < 70){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.011564776301383972;} 
-	  else if (pt1 >= 70 && pt1 < 100){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.011248723603785038;} 
-	  else if (pt1 >= 100 && pt1 < 140){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.010811596177518368;} 
-	  else if (pt1 >= 140 && pt1 < 200){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.010882497765123844;} 
-	  else if (pt1 >= 200 && pt1 < 300){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.013456921093165874;} 
-	  else if (pt1 >= 300 && pt1 < 600){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.017094610258936882;} 
-	  else if (pt1 >= 600 && pt1 < 1000){bjetSF1 = (0.887973*((1.+(0.0523821*pt1))/(1.+(0.0460876*pt1))))-0.02186630479991436;}
-	  else{bjetSF1 = 1.00;}
-	  
-	  if(pt2 >= 20 && pt2 < 30){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))-0.025381835177540779;} 
-	  else if (pt2 >= 30 && pt2 < 50){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))-0.012564006261527538;} 
-	  else if (pt2 >= 50 && pt2 < 70){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))-0.011564776301383972;} 
-	  else if (pt2 >= 70 && pt2 < 100){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))-0.011248723603785038;} 
-	  else if (pt2 >= 100 && pt2 < 140){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))-0.010811596177518368;} 
-	  else if (pt2 >= 140 && pt2 < 200){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))-0.010882497765123844;} 
-	  else if (pt2 >= 200 && pt2 < 300){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))-0.013456921093165874;} 
-	  else if (pt2 >= 300 && pt2 < 600){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))-0.017094610258936882;} 
-	  else if (pt2 >= 600 && pt2 < 1000){bjetSF2 = (0.887973*((1.+(0.0523821*pt2))/(1.+(0.0460876*pt2))))-0.02186630479991436;}
-	  else{bjetSF2 = 1.00;}
+           bjetSF1 = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+           bjetSF2 = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
 	}
       }
   }
+	
   bjetSFall = bjetSFall * bjetSF1 * bjetSF2;
+	
   return bjetSFall;
 }
 
