@@ -2295,7 +2295,7 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
           double CosDPhi1 = cos(absnormPhi(part1.Phi() - _MET->phi()));
           passCuts = passCuts && passCutRange(CosDPhi1, stats.pmap.at("CosDphiPtAndMetCut"));
         }
-	// ---------- New: VBF Z' team (Uniandes) ---------- //
+	// ---------- New: DY Z' team ---------- //
 	else if(cut == "DiscrByCosDphiLeadPtAndMet"){
 	  if(part1.Pt() > part2.Pt()){
 	    llep = part1;
@@ -2343,7 +2343,7 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
   }
 }
 
-// ---------- New function: VBF Z' team (Uniandes) ---------- //	     
+// ---------- New function: DY Z' team ---------- //	     
 double Analyzer::CalculateDiLepMassDeltaPt(const TLorentzVector& part1, const TLorentzVector& part2){
       double pt1  = part1.Pt();
       double eta1 = part1.Eta();
