@@ -2297,7 +2297,7 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
         }
 	// ---------- New: VBF Z' team (Uniandes) ---------- //
 	else if(cut == "DiscrByCosDphiLeadPtAndMet"){
-	  if(part1.Pt() > part2.Pt(){
+	  if(part1.Pt() > part2.Pt()){
 	    llep = part1;
 	  }
 	  else{
