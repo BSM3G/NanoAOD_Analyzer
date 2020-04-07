@@ -2295,7 +2295,7 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
           double CosDPhi1 = cos(absnormPhi(part1.Phi() - _MET->phi()));
           passCuts = passCuts && passCutRange(CosDPhi1, stats.pmap.at("CosDphiPtAndMetCut"));
         }
-	// ---------- New: VBF Z' analysis ---------- //
+	// ---------- New: VBF Z' team (Uniandes) ---------- //
 	else if(cut == "DiscrByCosDphiLeadPtAndMet"){
 	  if(part1.Pt() > part2.Pt(){
 	    llep = part1;
@@ -2343,6 +2343,37 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
   }
 }
 
+// ---------- New function: VBF Z' team (Uniandes) ---------- //	     
+double Analyzer::CalculateDiLepMassDeltaPt(const TLorentzVector& part1, const TLorentzVector& part2){
+      double pt1  = part1.Pt();
+      double eta1 = part1.Eta();
+      double phi1 = part1.Phi();
+      double mass1= 0.000511; // electron mass in GeV                                                           
+      double pt2  = part2.Pt();
+      double eta2 = part2.Eta();
+      double phi2 = part2.Phi();
+      double mass2= 1.777;    // tau mass in GeV
+      double mass3= 0.0;
+
+      double px1 = pt1*cos(phi1);
+      double py1 = pt1*sin(phi1);
+      double pz1 = pt1*sinh(eta1);
+      double E1  = sqrt( pow(pt1*cosh(eta1),2) + pow(mass1,2) );
+      double px2 = pt2*cos(phi2);
+      double py2 = pt2*sin(phi2);
+      double pz2 = pt2*sinh(eta2);
+      double E2  = sqrt( pow(pt2*cosh(eta2),2) + pow(mass2,2) );
+      double px3 = -(px1 + px2);
+      double py3 = -(py1 + py2);
+      double pz3 = -0.0;
+      double E3  = sqrt( pow(px3,2) + pow(py3,2) + pow(pz3,2) + pow(mass3,2) );
+
+      double diMass= sqrt(pow(E1+E2+E3,2)-pow(px1+px2+px3,2)-pow(py1+py2+py3,2)-pow(pz1+pz2+pz3,2));
+
+      return diMass;
+}	     
+// ---------------------------------------- //
+	     
 /////abs for values
 ///Find the number of lepton combos that pass the dilepton cuts
 void Analyzer::getGoodLeptonJetCombos(Lepton& lep1, Jet& jet1, CUTS ePos1, CUTS ePos2, CUTS ePosFin, const PartStats& stats, const int syst) {
