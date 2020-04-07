@@ -2314,11 +2314,11 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
 	    llep = part2;
 	  }
 	  double mTlead = calculateLeptonMetMt(llep);
-	  passCuts = passCuts && passCutRange(mTlead, stats.pmap.at("mTLeadPtAndMetCut"));
+	  passCuts = passCuts && passCutRange(mTlead, stats.pmap.at("MtLeadPtAndMetCut"));
 	}
 	else if(cut == "DiscrByDiLepMassDeltaPt"){
 	  double dilepmass = CalculateDiLepMassDeltaPt(part1, part2);
-	  passCuts = passCuts && passCutRange(dilepmass, stats.pmap.at("diLeadMassDeltaPtCut"));
+	  passCuts = passCuts && passCutRange(dilepmass, stats.pmap.at("DiLeadMassDeltaPtCut"));
 	}
 	// ---------------------------------------- //
 
