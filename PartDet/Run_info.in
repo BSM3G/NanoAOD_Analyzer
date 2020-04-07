@@ -10,6 +10,11 @@ MCHistos mc_pileup_Summer16.root
 DataPUHistName pileup
 MCPUHistName pileup
 
+SpecialMCPUCalculation false
+SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6.root
+/// SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_wanddylo_incl.root
+/// SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_dynlo_incl.root
+
 ApplyTauIDSF false
 UsePileUpWeight true
 ApplyZBoostSF true
