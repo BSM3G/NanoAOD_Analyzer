@@ -113,14 +113,48 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   setupGeneral();
   // std::cout << "post-setupGeneral()" << std::endl;
   // isData = distats["Run"].bfind("isData");
-  // std::cout<<"reader.load(calib, BTagEntry::FLAV_B, comb);"<<std::endl;
-  // reader.load(calib, BTagEntry::FLAV_B, "comb");
-
   
   //std::cout<<"CalculatePUSystematics..."<<std::endl;
   CalculatePUSystematics = distats["Run"].bfind("CalculatePUSystematics");
+  // New variable to do special PU weight calculation (2017)
+  specialPUcalculation = distats["Run"].bfind("SpecialMCPUCalculation");
   //std::cout<<"initializePileupInfo..."<<std::endl;
-  initializePileupInfo(distats["Run"].smap.at("MCHistos"), distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"),distats["Run"].smap.at("MCPUHistName"));
+  
+  // If specialPUcalculation is true, then take the name of the output file (when submitting jobs) 
+  // to retrieve the right MC nTruePU distribution to calculate the PU weights, otherwise, it will do
+  // the calculation as usual, having a single MC nTruePU histogram (MCHistos option).
+  // If you need to run the Analyzer interactively and use the specialPUcalculation option, make sure that you 
+  // include the name of the sample to analyze. For example, you can look at the names given to output files in past
+  // runs sumbitted as jobs and use those names instead. This will be improved later.
+  if(specialPUcalculation){
+	  
+	std::string outputname = outfile;
+	// std::cout << "output file: " << outfile << std::endl;
+
+	std::string delimitertune = "_Tune";
+	std::string delimiterenergy = "_13TeV";
+
+	bool istuneinname = outputname.find(delimitertune.c_str()) != std::string::npos;
+
+	std::string samplename;
+
+	if((samplename.length() == 0) && istuneinname){
+  		unsigned int pos = outputname.find(delimitertune.c_str());
+  		samplename = outputname.erase(pos, (outputname.substr(pos).length()));
+	}
+
+	if((samplename.length() == 0) && (!istuneinname)){
+  		unsigned int pos = outputname.find(delimiterenergy.c_str());
+  		samplename = outputname.erase(pos, (outputname.substr(pos).length()));
+	}
+
+    initializePileupInfo(distats["Run"].smap.at("SpecialMCPUHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"), samplename);
+  }
+  else{
+    // No special PU calculation.
+    initializePileupInfo(distats["Run"].smap.at("MCHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"),distats["Run"].smap.at("MCPUHistName") );
+  }
+  
   //std::cout<<"syst_names.push_back(orig)"<<std::endl;
   syst_names.push_back("orig");
   //std::cout<<"unordered_map<CUTS tmp;"<<std::endl;
