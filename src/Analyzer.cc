@@ -2701,6 +2701,11 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
     histAddVal(active_part->at(CUTS::eGBJet)->size(), "NBJ");
 
+    // Add these to the default histograms to perform quick checks if necessary.
+    histAddVal(nTruePU, "PUNTrueInt");
+    histAddVal(generatorht, "HT");
+    histAddVal(gen_weight, "Weight");
+
     for(auto it : *active_part->at(CUTS::eGZ)) {
       histAddVal(_Gen->pt(it), "ZPt");
       histAddVal(_Gen->eta(it), "ZEta");
