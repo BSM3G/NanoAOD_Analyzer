@@ -2265,7 +2265,7 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
   }
 
   bool sameParticle = (&lep1 == &lep2);
-  TLorentzVector part1, part2;
+  TLorentzVector part1, part2, llep;
 
   for(auto i1 : *active_part->at(ePos1)) {
     part1 = lep1.p4(i1);
@@ -2295,7 +2295,32 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
           double CosDPhi1 = cos(absnormPhi(part1.Phi() - _MET->phi()));
           passCuts = passCuts && passCutRange(CosDPhi1, stats.pmap.at("CosDphiPtAndMetCut"));
         }
-
+	// ---------- New: VBF Z' analysis ---------- //
+	else if(cut == "DiscrByCosDphiLeadPtAndMet"){
+	  if(part1.Pt() > part2.Pt(){
+	    llep = part1;
+	  }
+	  else{
+	    llep = part2;
+	  }
+	  double CosDPhiLead = cos(absnormPhi(llep.Phi() - _MET->phi()));
+	  passCuts = passCuts && passCutRange(CosDPhiLead, stats.pmap.at("CosDphiLeadPtAndMetCut"));
+	}
+	else if(cut == "DiscrByMtLeadPtAndMet"){
+	   if(part1.Pt() > part2.Pt()){
+	     llep = part1;
+	  }
+	  else{
+	    llep = part2;
+	  }
+	  double mTlead = calculateLeptonMetMt(llep);
+	  passCuts = passCuts && passCutRange(mTlead, stats.pmap.at("mTLeadPtAndMetCut"));
+	}
+	else if(cut == "DiscrByDiLepMassDeltaPt"){
+	  double dilepmass = CalculateDiLepMassDeltaPt(part1, part2);
+	  passCuts = passCuts && passCutRange(dilepmass, stats.pmap.at("diLeadMassDeltaPtCut"));
+	}
+	// ---------------------------------------- //
 
         else std::cout << "cut: " << cut << " not listed" << std::endl;
       }
