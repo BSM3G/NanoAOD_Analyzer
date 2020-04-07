@@ -121,6 +121,7 @@ public:
   void getGoodRecoFatJets(CUTS, const PartStats&, const int);
 
   void getGoodLeptonCombos(Lepton&, Lepton&, CUTS, CUTS, CUTS, const PartStats&, const int);
+  double CalculateDiLepMassDeltaPt(const TLorentzVector&, const TLorentzVector&);
   void getGoodLeptonJetCombos(Lepton&, Jet&, CUTS, CUTS, CUTS, const PartStats&, const int);
   void getGoodDiJets(const PartStats&, const int);
 
