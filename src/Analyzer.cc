@@ -3083,6 +3083,9 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(diMass, "NotReconstructableMass");
       }
 
+      double diMass1 = CalculateDiLepMassDeltaPt(part1, part2);
+      histAddVal(diMass1, "ReconstructableMassDeltaPt");
+	    
       double InvMass = diParticleMass(part1,part2, "InvariantMass");
       histAddVal(InvMass, "InvariantMass");
 
