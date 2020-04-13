@@ -1594,7 +1594,7 @@ void Analyzer::getGoodGen(const PartStats& stats) {
      
       if(id == 24 && abs(_Gen->status[j]) == 47) continue; //Changed on 05.15.18 to clean TT inclusive.  Talked to Klaas- GenW wasn't filling b/c we were explicitly requiring status 2 or 62.  The W's from TTbar have status 52 once the momentum is corrected.  He said we should just fill with everything that is not status 47.  Status 47 is W or Z from shower. 01.16.19
       // Search for electrons/muons with two different mother ID requirements (either one or the other)
-      if(id == 11 || id == 13) && (stats.bfind("DiscrLightLepByMotherID1") * stats.bfind("DiscrLightLepByMotherID2") == 1){
+      if(id == 11 || id == 13) && (stats.bfind("DiscrLightLepByMotherID1") * stats.bfind("DiscrLightLepByMotherID2") == 1)){
          bool motherid1 = abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) == stats.dmap.at("LightLepMotherID1");
 	 bool motherid2 = abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) == stats.dmap.at("LightLepMotherID2");
 	 
