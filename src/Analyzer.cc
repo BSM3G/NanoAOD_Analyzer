@@ -1741,10 +1741,12 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
 
         else if(cut == "DiscrByProngType") {
           passCuts = passCuts && (stats.smap.at("ProngType").find("hps") == std::string::npos || _Tau->DecayModeNewDMs[i] != 0);
-          passCuts = passCuts && passProng(stats.smap.at("ProngType"), _Tau->decayMode[i]);
+          // passCuts = passCuts && passProng(stats.smap.at("ProngType"), _Tau->decayMode[i]); //original.
+          passCuts = passCuts && passProng(stats.smap.at("ProngType"), _Tau->decayModeInt[i]);
         }
         else if(cut == "decayModeFindingNewDMs") passCuts = passCuts && _Tau->DecayModeNewDMs[i] != 0;
-        else if(cut == "decayModeFinding") passCuts = passCuts && _Tau->DecayMode[i] != 0;
+        // else if(cut == "decayModeFinding") passCuts = passCuts && _Tau->DecayMode[i] != 0; // original
+        else if(cut == "decayModeFinding") passCuts = passCuts && _Tau->DecayModeOldDMs[i] != 0;
               // ----anti-overlap requirements
         else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
@@ -2826,10 +2828,13 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(_Tau->charge(it), "Charge");
         histAddVal(_Tau->againstElectron[it], "againstElectron");
         histAddVal(_Tau->againstMuon[it], "againstMuon");
-        histAddVal(_Tau->DecayMode[it], "DecayMode");
+        //histAddVal(_Tau->DecayMode[it], "DecayMode"); // original
+        histAddVal(_Tau->DecayModeOldDMs[it], "DecayMode");
         histAddVal(_Tau->DecayModeNewDMs[it], "DecayModeNewDMs");
-        histAddVal(_Tau->MVAoldDM[it], "MVAoldDM");
-        histAddVal(_Tau->decayMode[it], "decayMode");
+        // histAddVal(_Tau->MVAoldDM[it], "MVAoldDM"); //original
+        histAddVal(_Tau->TauIdDiscr[it], "MVAoldDM");
+        //histAddVal(_Tau->decayMode[it], "decayMode"); // original
+        histAddVal(_Tau->decayModeInt[it], "decayMode"); 
         histAddVal(_Tau->leadTkDeltaEta[it], "leadTkDeltaEta");
         histAddVal(_Tau->leadTkDeltaPhi[it], "leadTkDeltaPhi");
         histAddVal(_Tau->leadTkPtOverTauPt[it], "leadTkPtOverTauPt");
@@ -3150,7 +3155,8 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
             //histAddVal(_Tau->leadChargedCandValidHits->at(matchedTauInd),"DiEleleadChargedCandValidHitGoodMatched");
             histAddVal2( matchedEle.Pt(),   (_Tau->p4(matchedTauInd).Pt()-matchedEle.Pt())/matchedEle.Pt(), "DiEleTauGoodMatchPt_vs_DeltaPt");
             histAddVal2( matchedEle.Pt(),   matchedEle.Eta(), "DiEleTauGoodMatchPt_vs_eta");
-            histAddVal2( _Tau->pt(matchedTauInd),   _Tau->decayMode[matchedTauInd], "DiEleTauGoodMatchPt_vs_Decay");
+            // histAddVal2( _Tau->pt(matchedTauInd),   _Tau->decayMode[matchedTauInd], "DiEleTauGoodMatchPt_vs_Decay"); //original
+            histAddVal2( _Tau->pt(matchedTauInd),   _Tau->decayModeInt[matchedTauInd], "DiEleTauGoodMatchPt_vs_Decay");
           }else{
             histAddVal(_Tau->p4(matchedTauInd).Pt(), "DiEleTauMatchPt");
             histAddVal(_Tau->p4(matchedTauInd).Pt()-matchedEle.Pt(), "DiEleTauMatchDeltaPt");
@@ -3161,7 +3167,8 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
             //histAddVal(_Tau->leadChargedCandValidHits->at(matchedTauInd),"DiEleleadChargedCandValidHitsMatched");
             histAddVal2( matchedEle.Pt(),   (_Tau->p4(matchedTauInd).Pt()-matchedEle.Pt())/matchedEle.Pt(), "DiEleTauMatchPt_vs_DeltaPt");
             histAddVal2( matchedEle.Pt(),   matchedEle.Eta(), "DiEleTauMatchPt_vs_eta");
-            histAddVal2( _Tau->pt(matchedTauInd),   _Tau->decayMode[matchedTauInd], "DiEleTauMatchPt_vs_Decay");
+            // histAddVal2( _Tau->pt(matchedTauInd),   _Tau->decayMode[matchedTauInd], "DiEleTauMatchPt_vs_Decay"); //original
+            histAddVal2( _Tau->pt(matchedTauInd),   _Tau->decayModeInt[matchedTauInd], "DiEleTauMatchPt_vs_Decay");
           }
         }else{
           histAddVal((part1+part2).M(), "DiEleEleUnMatchMass");
