@@ -19,6 +19,16 @@ TauSF 0
 doEfficiencyPlots true
 
 //////////////////////////////
+            TauID
+////////////////////////////
+
+# Options for TauIDAlgorithm: Tau_idMVAoldDM2017v2 or Tau_idDeepTau2017v2p1
+TauIDAlgorithm Tau_idDeepTau2017v2p1
+
+# This option needs to be set to 1 in case we are using MVA tau id and we are analyzing 2018 data/MC.
+Is2018 1
+
+//////////////////////////////
             Tau1
 ////////////////////////////
 
@@ -32,7 +42,7 @@ LeadTrackThreshold 5.0
 
 DoDiscrByIsolation true
 //1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight, 16 = VTight, 32 = VVTight
-DiscrByMinIsolation 1.
+DiscrByMinIsolation 16
 DiscrByMaxIsolation 2
 FlipIsolationRequirement false
 DiscrByProngType true
