@@ -477,12 +477,63 @@ Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
   tmp= pstats["Tau2"].dmap.at("DiscrAgainstMuon");
   tau2mu= tmp;
 
-  SetBranch("Tau_idAntiEle", againstElectron);
-  SetBranch("Tau_idAntiMu",  againstMuon);
-  SetBranch("Tau_idDecayMode",  DecayMode);
+  // Get the name of the tau ID algorithm to use.
+  std::string tauIdAlgorithm(pstats["TauID"].smap.at("TauIDAlgorithm"));
+
+  std::cout << "Tau ID algorithm chosen: " << tauIdAlgorithm << std::endl;
+
+  // Check this has either mva or deeptau. Otherwise, go back to MVA for compatibility purposes.
+  try{
+    if(tauIdAlgorithm.find("MVA") == std::string::npos && tauIdAlgorithm.find("DeepTau") == std::string::npos){
+      throw "is unknown or unavailable. Falling back to the MVA-based algorithm (MVAoldDM2017v2).";
+    }
+  }
+  catch(const char* msg){
+
+    std::cout << "ERROR! Tau ID algorithm *** " << tauIdAlgorithm << " *** "  << msg << std::endl; 
+    // --------- Anti-particle discriminators --------- //
+    if(pstats["TauID"].bfind("Is2018")){
+      SetBranch("Tau_idAntiEle2018", againstElectron);
+    }
+    else{
+      SetBranch("Tau_idAntiEle", againstElectron);
+    }
+    SetBranch("Tau_idAntiMu", againstMuon);
+
+    // --------- Tau isolation --------- //
+    SetBranch("Tau_idMVAoldDM2017v2", TauIdDiscr);
+  }
+
+  // Based on the options, assign the proper branches to each variable.
+  if(tauIdAlgorithm.find("MVA") != std::string::npos){
+    // --------- Anti-particle discriminators --------- //
+    SetBranch("Tau_idAntiMu", againstMuon);
+    if(pstats["TauID"].bfind("Is2018")){
+      SetBranch("Tau_idAntiEle2018", againstElectron);
+    }
+    else{
+      SetBranch("Tau_idAntiEle", againstElectron);
+    }
+    
+    // --------- Tau isolation --------- //
+    SetBranch("Tau_idMVAoldDM2017v2", TauIdDiscr);
+  }
+  else if(tauIdAlgorithm.find("DeepTau") != std::string::npos){
+    // --------- Anti-particle discriminators --------- //
+    SetBranch("Tau_idDeepTau2017v2p1VSmu", againstMuon);
+    SetBranch("Tau_idDeepTau2017v2p1VSe", againstElectron);
+
+    // --------- Tau isolation --------- //
+    SetBranch("Tau_idDeepTau2017v2p1VSjet", TauIdDiscr);
+
+  }
+
+  // --------- Decay modes --------- //
+  SetBranch("Tau_idDecayMode",  DecayModeOldDMs);
   SetBranch("Tau_idDecayModeNewDMs",  DecayModeNewDMs);
-  SetBranch("Tau_idMVAoldDM",  MVAoldDM);
-  SetBranch("Tau_decayMode", decayMode);
+  SetBranch("Tau_decayMode", decayModeInt);
+
+  // ------- Tau-related quantities ---------- //
   SetBranch("Tau_leadTkDeltaEta", leadTkDeltaEta);
   SetBranch("Tau_leadTkDeltaPhi", leadTkDeltaPhi);
   SetBranch("Tau_leadTkPtOverTauPt", leadTkPtOverTauPt);
@@ -513,7 +564,8 @@ std::vector<CUTS> Taus::findExtraCuts() {
 
 //onetwo is 1 for the first 0 for the second
 bool Taus::get_Iso(int index, double onetwo, double flipisolation) const {
-  std::bitset<8> tau_iso(MVAoldDM[index]);
+  //std::bitset<8> tau_iso(MVAoldDM[index]);
+  std::bitset<8> tau_iso(TauIdDiscr[index]);
   std::bitset<8> tau_isomin_mask(tau1minIso);
   std::bitset<8> tau_isomax_mask(tau1maxIso);
   

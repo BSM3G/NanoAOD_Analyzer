@@ -283,20 +283,26 @@ public:
   
   std::bitset<8> tau2ele;
   std::bitset<8> tau2mu;
-  
-  
+
+   // --------  Anti-particle discriminators ------- //
   UChar_t againstElectron[MAXINDEX];
   UChar_t againstMuon[MAXINDEX];
-  bool DecayMode[MAXINDEX];
+
+  // --------  Decay modes ------- //
+  bool DecayModeOldDMs[MAXINDEX];
   bool DecayModeNewDMs[MAXINDEX];
+  int decayModeInt[MAXINDEX];
+
+  // -------- Tau isolation ----------- //
+  UChar_t TauIdDiscr[MAXINDEX];
+  //UChar_t MVAoldDM[MAXINDEX];
+  //UChar_t MVAnewDM[MAXINDEX];
   //uint8_t Tau_idMVAnewDM2017v2[MAXINDEX];
-  UChar_t MVAoldDM[MAXINDEX];
-  UChar_t MVAnewDM[MAXINDEX];
   //uint8_t Tau_idMVAoldDM2017v1[MAXINDEX];
   //uint8_t Tau_idMVAoldDM2017v2[MAXINDEX];
   //uint8_t Tau_idMVAoldDMdR032017v2[MAXINDEX];
    
-  int decayMode[MAXINDEX];
+  // ------- Tau-related quantities ---------- //
   float leadTkDeltaEta[MAXINDEX];
   float leadTkDeltaPhi[MAXINDEX];
   float leadTkPtOverTauPt[MAXINDEX];
