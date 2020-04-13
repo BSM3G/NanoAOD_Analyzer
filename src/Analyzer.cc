@@ -1582,16 +1582,32 @@ int Analyzer::matchToGenPdg(const TLorentzVector& lvec, double minDR) {
 void Analyzer::getGoodGen(const PartStats& stats) {
   if(! neededCuts.isPresent(CUTS::eGen)) return;
   for(size_t j = 0; j < _Gen->size(); j++) {
+	  
     //we are not interested in pythia info here!
     //if(_Gen->status->at(j)>10){
       //continue;
     //}
     int id = abs(_Gen->pdg_id[j]);
+    // The cuts read in this function are set in Gen_info.in.
     if(genMaper.find(id) != genMaper.end() && _Gen->status[j] == genMaper.at(id)->status) {
       if(id == 15 && (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
-      //if(id == 15 && abs(_Gen->motherpdg_id->at(j)) != 24) continue;
+     
       if(id == 24 && abs(_Gen->status[j]) == 47) continue; //Changed on 05.15.18 to clean TT inclusive.  Talked to Klaas- GenW wasn't filling b/c we were explicitly requiring status 2 or 62.  The W's from TTbar have status 52 once the momentum is corrected.  He said we should just fill with everything that is not status 47.  Status 47 is W or Z from shower. 01.16.19
-      if((id == 11 || id == 13) && abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != 24) continue; //added for Z' signal considerations 11.28.18, 01.16.19
+      // Search for electrons/muons with two different mother ID requirements (either one or the other)
+      if(id == 11 || id == 13) && (stats.bfind("DiscrLightLepByMotherID1") * stats.bfind("DiscrLightLepByMotherID2") == 1){
+         bool motherid1 = abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) == stats.dmap.at("LightLepMotherID1");
+	 bool motherid2 = abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) == stats.dmap.at("LightLepMotherID2");
+	 
+	 if((motherid1 || motherid2) == 0) continue; // skip if neither of the requirements was satisfied.
+      }
+      
+      if((id == 11 || id == 13) && (stats.bfind("DiscrLightLepByMotherID1") * stats.bfind("DiscrLightLepByMotherID2") == 0)){
+         // This condition looks to a single mother id requirement:
+	 if(stats.bfind("DiscrLightLepByMotherID1") == 1 && abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.dmap.at("LightLepMotherID1")) continue;
+	 if(stats.bfind("DiscrLightLepByMotherID1") == 1 && abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.dmap.at("LightLepMotherID1")) continue;
+      }
+	    
+	    
       active_part->at(genMaper.at(id)->ePos)->push_back(j);
     }
     //something special for jet
