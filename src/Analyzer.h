@@ -48,7 +48,7 @@ static const int nTrigReq = 2;
 class Analyzer {
   friend class CRTester;
 public:
-  Analyzer(std::vector<std::string>, std::string, bool setCR = false, std::string configFolder="PartDet");
+  Analyzer(std::vector<std::string>, std::string, bool setCR = false, std::string configFolder="PartDet", std::string year="2016");
   ~Analyzer();
   void add_metadata(std::vector<std::string> infiles);
   void clear_values();
@@ -64,8 +64,6 @@ public:
   void checkParticleDecayList(); //01.16.19
   /*----------- ReadinJSON class variables -------------*/
   std::multimap<int,int> readinJSON(std::string);
-  std::string json_file;
-  int jsonfilelines = 0;
   std::multimap<int,int> jsonlinedict;
   /*----------------------------------------------------*/
   void writeParticleDecayList(int); //01.16.19
@@ -95,7 +93,7 @@ public:
   void initializeWkfactor(std::vector<std::string> infiles);
 
   void read_info(std::string);
-  void setupGeneral();
+  void setupGeneral(std::string);
   void setupEventGeneral(int);
   void branchException(std::string);
   void initializeTrigger();
