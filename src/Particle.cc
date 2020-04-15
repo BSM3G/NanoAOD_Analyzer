@@ -209,7 +209,7 @@ Generated::Generated(TTree* _BOOM, std::string filename, std::vector<std::string
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-Jet::Jet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Particle(_BOOM, "Jet", filename, syst_names) {
+Jet::Jet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Particle(_BOOM, "Jet", filename, syst_names) {
   type = PType::Jet;
   
   SetBranch("Jet_jetId", jetId);
@@ -275,7 +275,7 @@ bool Jet::passedTightJetID(int nobj) {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-FatJet::FatJet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Particle(_BOOM, "FatJet", filename, syst_names) {
+FatJet::FatJet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Particle(_BOOM, "FatJet", filename, syst_names) {
   type = PType::FatJet;
 
   SetBranch("FatJet_tau1", tau1);
@@ -315,7 +315,7 @@ std::vector<CUTS> FatJet::overlapCuts(CUTS ePos) {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-Lepton::Lepton(TTree* _BOOM, std::string GenName, std::string EndName, std::vector<std::string> syst_names) : Particle(_BOOM, GenName, EndName, syst_names) {
+Lepton::Lepton(TTree* _BOOM, std::string GenName, std::string EndName, std::vector<std::string> syst_names, std::string year) : Particle(_BOOM, GenName, EndName, syst_names) {
   SetBranch((GenName+"_charge").c_str(), _charge);
 }
 
@@ -340,7 +340,7 @@ double Lepton::charge(uint index)const     {return _charge[index];}
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Lepton(_BOOM, "Electron", filename, syst_names) {
+Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Lepton(_BOOM, "Electron", filename, syst_names) {
   type = PType::Electron;
   auto& elec1 = pstats["Elec1"];
   auto& elec2 = pstats["Elec2"];
@@ -423,7 +423,7 @@ bool Electron::get_Iso(int index, double min, double max) const {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Lepton(_BOOM, "Muon", filename, syst_names) {
+Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Lepton(_BOOM, "Muon", filename, syst_names) {
   type = PType::Muon;
   auto& mu1 = pstats["Muon1"];
   auto& mu2 = pstats["Muon2"];
@@ -454,7 +454,7 @@ bool Muon::get_Iso(int index, double min, double max) const {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Lepton(_BOOM, "Tau", filename, syst_names) {
+Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Lepton(_BOOM, "Tau", filename, syst_names) {
   type = PType::Tau;
   
   std::bitset<8> tmp=pstats["Tau1"].dmap.at("DiscrByMinIsolation");
@@ -477,22 +477,26 @@ Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
   tmp= pstats["Tau2"].dmap.at("DiscrAgainstMuon");
   tau2mu= tmp;
 
-  // Get the name of the tau ID algorithm to use.
-  std::string tauIdAlgorithm(pstats["TauID"].smap.at("TauIDAlgorithm"));
-
-  std::cout << "Tau ID algorithm chosen: " << tauIdAlgorithm << std::endl;
-
   // Check this has either mva or deeptau. Otherwise, go back to MVA for compatibility purposes.
   try{
-    if(tauIdAlgorithm.find("MVA") == std::string::npos && tauIdAlgorithm.find("DeepTau") == std::string::npos){
-      throw "is unknown or unavailable. Falling back to the MVA-based algorithm (MVAoldDM2017v2).";
+    if(pstats["TauID"].smap.at("TauIDAlgorithm").find("DeepTau") == std::string::npos){
+      throw "Setting MVA-based tau ID algorithm (MVAoldDM2017v2).";
+    }
+    else{
+       std::cout << "Setting DeepTau ID algorithm (DeepTau2017v2p1)." << std::endl;
+       // --------- Anti-particle discriminators --------- //
+       SetBranch("Tau_idDeepTau2017v2p1VSmu", againstMuon);
+       SetBranch("Tau_idDeepTau2017v2p1VSe", againstElectron);
+
+       // --------- Tau isolation --------- //
+       SetBranch("Tau_idDeepTau2017v2p1VSjet", TauIdDiscr);      
     }
   }
   catch(const char* msg){
 
-    std::cout << "ERROR! Tau ID algorithm *** " << tauIdAlgorithm << " *** "  << msg << std::endl; 
+    std::cout << "WARNING! " << msg << std::endl; 
     // --------- Anti-particle discriminators --------- //
-    if(pstats["TauID"].bfind("Is2018")){
+    if(year.compare("2018") == 0){
       SetBranch("Tau_idAntiEle2018", againstElectron);
     }
     else{
@@ -502,30 +506,6 @@ Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
 
     // --------- Tau isolation --------- //
     SetBranch("Tau_idMVAoldDM2017v2", TauIdDiscr);
-  }
-
-  // Based on the options, assign the proper branches to each variable.
-  if(tauIdAlgorithm.find("MVA") != std::string::npos){
-    // --------- Anti-particle discriminators --------- //
-    SetBranch("Tau_idAntiMu", againstMuon);
-    if(pstats["TauID"].bfind("Is2018")){
-      SetBranch("Tau_idAntiEle2018", againstElectron);
-    }
-    else{
-      SetBranch("Tau_idAntiEle", againstElectron);
-    }
-    
-    // --------- Tau isolation --------- //
-    SetBranch("Tau_idMVAoldDM2017v2", TauIdDiscr);
-  }
-  else if(tauIdAlgorithm.find("DeepTau") != std::string::npos){
-    // --------- Anti-particle discriminators --------- //
-    SetBranch("Tau_idDeepTau2017v2p1VSmu", againstMuon);
-    SetBranch("Tau_idDeepTau2017v2p1VSe", againstElectron);
-
-    // --------- Tau isolation --------- //
-    SetBranch("Tau_idDeepTau2017v2p1VSjet", TauIdDiscr);
-
   }
 
   // --------- Decay modes --------- //
