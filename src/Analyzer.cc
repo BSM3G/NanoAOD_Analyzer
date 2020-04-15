@@ -556,7 +556,7 @@ void Analyzer::setupEventGeneral(int nevent){
 }
 
 ///Function that does most of the work.  Calculates the number of each particle
-void Analyzer::preprocess(int event){ // This function no longer needs to get the JSON dictionary as input.
+void Analyzer::preprocess(int event, std::string year){ // This function no longer needs to get the JSON dictionary as input.
 
   int test= BOOM->GetEntry(event);
   if(test<0){
@@ -646,7 +646,7 @@ void Analyzer::preprocess(int event){ // This function no longer needs to get th
   // Apply here the MET filters, in case the option is turned on.
   applymetfilters = distats["Run"].bfind("ApplyMetFilters");
   if(applymetfilters){
-  	passedmetfilters = passMetFilters(json_file, event);	
+  	passedmetfilters = passMetFilters(year, event);	
   	if(!passedmetfilters){
   		clear_values();
   		return;
