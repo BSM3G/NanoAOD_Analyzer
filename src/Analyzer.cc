@@ -80,7 +80,7 @@ const std::unordered_map<std::string, CUTS> Analyzer::cut_num = {
 //////////////////////////////////////////////////////
 
 ///Constructor
-Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool setCR, std::string configFolder) : goodParts(getArray()), genName_regex(".*([A-Z][^[:space:]]+)"){
+Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool setCR, std::string configFolder, std::string year) : goodParts(getArray()), genName_regex(".*([A-Z][^[:space:]]+)"){
   std::cout << "setup start" << std::endl;
   
   routfile = new TFile(outfile.c_str(), "RECREATE", outfile.c_str(), ROOT::CompressionSettings(ROOT::kLZMA, 9));
@@ -176,15 +176,15 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   }
   //std::cout<< "files before" <<std::endl;
   //std::cout<<"end of that if.. now start with _Electron = new..."<<std::endl;
-  _Electron = new Electron(BOOM, filespace + "Electron_info.in", syst_names);
+  _Electron = new Electron(BOOM, filespace + "Electron_info.in", syst_names, year);
   //std::cout<< "electron" <<std::endl;
-  _Muon     = new Muon(BOOM, filespace + "Muon_info.in", syst_names);
+  _Muon     = new Muon(BOOM, filespace + "Muon_info.in", syst_names, year);
   //std::cout<< "muon" <<std::endl;
-  _Tau      = new Taus(BOOM, filespace + "Tau_info.in", syst_names);
+  _Tau      = new Taus(BOOM, filespace + "Tau_info.in", syst_names, year);
   //std::cout<< "tau" <<std::endl;
-  _Jet      = new Jet(BOOM, filespace + "Jet_info.in", syst_names);
+  _Jet      = new Jet(BOOM, filespace + "Jet_info.in", syst_names, year);
   //std::cout<< "jet" <<std::endl;
-  _FatJet   = new FatJet(BOOM, filespace + "FatJet_info.in", syst_names);
+  _FatJet   = new FatJet(BOOM, filespace + "FatJet_info.in", syst_names, year);
   //std::cout<< "fatjet" <<std::endl;
   _MET      = new Met(BOOM, "MET" , syst_names, distats["Run"].dmap.at("MT2Mass"));
   //std::cout<< "MET" <<std::endl;
@@ -1013,7 +1013,7 @@ void Analyzer::updateMet(int syst) {
   }
 }
 
-bool Analyzer::passMetFilters(std::string jsonname, int ievent){
+bool Analyzer::passMetFilters(std::string year, int ievent){
 
   // Set the branches accordingly:
   // good vertices filter
@@ -1035,7 +1035,7 @@ bool Analyzer::passMetFilters(std::string jsonname, int ievent){
   BOOM->GetEntry(ievent);
 
   // Check if the current event passed all the flags, depending on the year (only 2016 is different)
-  if(jsonname.find("2016") != std::string::npos){
+  if(year.compare("2016") == 0){
   	// only for 2016 the ecalbadcalibrationfilter is not applied.
   	allmetfilters = primaryvertexfilter && beamhalofilter && hbhenoisefilter && ecaltpfilter && badpfmuonfilter;
   }
@@ -1140,7 +1140,7 @@ void Analyzer::branchException(std::string branch){
 }
 
 /////sets up other values needed for analysis that aren't particle specific
-void Analyzer::setupGeneral() {
+void Analyzer::setupGeneral(std::string year) {
 
   genMaper = {
     {5, new GenFill(2, CUTS::eGJet)},     {6,  new GenFill(2, CUTS::eGTop)},
@@ -1179,16 +1179,14 @@ void Analyzer::setupGeneral() {
   read_info(filespace + "Run_info.in");
   read_info(filespace + "Systematics_info.in");
 	
-  // Read the information related to the JSON file from the config file Run_info.in:
-  json_file = distats["Run"].smap.at("JSONFileName");
   // Call readinJSON and save this in the jsonlinedict we declared in Analyzer.h
-  jsonlinedict = readinJSON(json_file);
+  jsonlinedict = readinJSON(year);
   // Print out the information each time the analyzer is run.
 	
-  std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
-  std::cout << "Analyzer::setupGeneral: JSON filename to analyze = " << json_file << std::endl;
-  std::cout << "Analyzer::setupGeneral::readinJSON: Number of lines in this JSON file = " << jsonfilelines << std::endl;
-  std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+  //std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+  //std::cout << "Analyzer::setupGeneral: JSON filename to analyze = " << json_file << std::endl;
+  //std::cout << "Analyzer::setupGeneral::readinJSON: Number of lines in this JSON file = " << jsonfilelines << std::endl;
+  //std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
   
   for(std::string trigger : trigNames){
     bool decison=false;
@@ -2539,21 +2537,14 @@ void Analyzer::writeParticleDecayList(int event){  //01.16.19
   return;
 }
 
-std::multimap<int,int> Analyzer::readinJSON(std::string jsonfile){ //NEW:  function for reading in the JSON file in the format that I established.  This happens once before events start entering preprocess.
-  // Newer: this function will take the name of the JSON file stored in the Pileup directory as an input.
-	
-  /* ----- Block that counts the number of lines in the JSON file ------- */
-  std::fstream fsread((PUSPACE+jsonfile).c_str(), std::fstream::in); // Take the info of the JSON file as input.
-  std::string readline; // This will be the line we are reading.
-  for(jsonfilelines = 0; getline(fsread, readline); jsonfilelines++); // Loop over all lines and add them to the counter.
-  /*----------------------------------------------------------------------*/	
-  
-  /*------------ Block that creates the dictionary from the JSON file ------------*/
-  std::fstream fs((PUSPACE+jsonfile).c_str(), std::fstream::in); // Take the info of the JSON file as input.	
+std::multimap<int,int> Analyzer::readinJSON(std::string year){ //NEW:  function for reading in the JSON file in the format that I established.  This happens once before events start entering preprocess.
+  // Newer: this function will take the year as an input to set the JSON file to be read.
+  // The naming convention is json201X.txt, make sure your JSON files match this convention.
+  std::fstream fs((PUSPACE+"json"+year+".txt").c_str(), std::fstream::in); // Take the info of the JSON file as input.	
   std::string line; //NEW:  need this since we'll be analyzing line by line.
   std::multimap<int,int> json_line_dict; //NEW:  we'll work with the information as a multimap (C++ equivalent of a python dictionary).
+  
   while(!fs.eof()){ //NEW:  while the file is open...
-    for(int i=0; i<jsonfilelines; i++){  //NEW:  go line-by-line through the json file, which has "jsonfilelines" lines.
       getline(fs, line); //NEW:  grab each line.
       if(line.size() == 0) continue;  //NEW:  if there's nothing in the line, skip it.
       std::vector<std::string> vals = string_split(line, {","});  //NEW:  put the contents of the line into a vector.
@@ -2561,10 +2552,9 @@ std::multimap<int,int> Analyzer::readinJSON(std::string jsonfile){ //NEW:  funct
       for(size_t p=1; p < vals.size(); p=p+1){  //NEW:  step through the remaining elements of the line.
 	json_line_dict.insert (std::make_pair(run_num_line,stringtotype<int>(vals[p]))); //NEW:  push the remaining lumisection bounds as each an element corresponding to the run_number key.
       }
-    }
-    fs.close();
   }
-  /*------------------------------------------------------------------------------*/
+  fs.close(); // Close the file once the loop has gone over all lines in the file.
+
   return json_line_dict;  //NEW:  returns the multimap that you need for proper filtering.
 }
 
