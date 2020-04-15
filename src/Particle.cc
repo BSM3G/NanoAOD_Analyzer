@@ -315,7 +315,7 @@ std::vector<CUTS> FatJet::overlapCuts(CUTS ePos) {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-Lepton::Lepton(TTree* _BOOM, std::string GenName, std::string EndName, std::vector<std::string> syst_names, std::string year) : Particle(_BOOM, GenName, EndName, syst_names) {
+Lepton::Lepton(TTree* _BOOM, std::string GenName, std::string EndName, std::vector<std::string> syst_names) : Particle(_BOOM, GenName, EndName, syst_names) {
   SetBranch((GenName+"_charge").c_str(), _charge);
 }
 
