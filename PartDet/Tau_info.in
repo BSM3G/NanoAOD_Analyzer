@@ -25,9 +25,6 @@ doEfficiencyPlots true
 # Options for TauIDAlgorithm: Tau_idMVAoldDM2017v2 or Tau_idDeepTau2017v2p1
 TauIDAlgorithm Tau_idDeepTau2017v2p1
 
-# This option needs to be set to 1 in case we are using MVA tau id and we are analyzing 2018 data/MC.
-Is2018 1
-
 //////////////////////////////
             Tau1
 ////////////////////////////
