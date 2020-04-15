@@ -27,7 +27,7 @@ void usage() {
   exit(EXIT_FAILURE);
 }
 
-void parseCommandLine(int argc, char *argv[], std::vector<std::string> &inputnames, std::string &outputname, bool &setCR, bool &testRun, std::string &configFolder) {
+void parseCommandLine(int argc, char *argv[], std::vector<std::string> &inputnames, std::string &outputname, bool &setCR, bool &testRun, std::string &configFolder, std::string &year) {
   if(argc < 3) {
     std::cout << std::endl;
     std::cout << "You have entered too little arguments, please type:\n";
