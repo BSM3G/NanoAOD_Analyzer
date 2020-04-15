@@ -21,6 +21,7 @@ void usage() {
   std::cout << "-CR: to run over the control regions (not the usual output)\n";
   std::cout << "-C: use a different config folder than the default 'PartDet'\n";
   std::cout << "-t: run over 100 events\n";
+  std::cout << "-y: specify year to run (2016, 2017 or 2018) \n";
   std::cout << "\n";
 
   exit(EXIT_FAILURE);
@@ -40,6 +41,11 @@ void parseCommandLine(int argc, char *argv[], std::vector<std::string> &inputnam
     }else if (strcmp(argv[arg], "-t") == 0) {
       testRun = true;
       continue;
+    }else if (strcmp(argv[arg], "-y") == 0) {
+        year = argv[arg+1];
+        std::cout << "Analyser: Year " << year << std::endl;
+        arg++;
+        continue;
     }else if (strcmp(argv[arg], "-C") == 0) {
       configFolder=argv[arg+1];
       std::cout << "Analyser: ConfigFolder " << configFolder << std::endl;
@@ -102,14 +108,16 @@ int main (int argc, char* argv[]) {
   std::string outputname;
   std::string configFolder="PartDet";
   std::vector<std::string> inputnames;
+  std::string year = "2016";
+    
 
 
   //get the command line options in a nice loop
-  parseCommandLine(argc, argv, inputnames, outputname, setCR, testRun, configFolder);
+  parseCommandLine(argc, argv, inputnames, outputname, setCR, testRun, configFolder, year);
 
 
   //setup the analyser
-  Analyzer testing(inputnames, outputname, setCR, configFolder);
+  Analyzer testing(inputnames, outputname, setCR, configFolder, year);
   //SpechialAnalysis spechialAna = SpechialAnalysis(&testing);
   //spechialAna.init();
 
@@ -131,7 +139,7 @@ int main (int argc, char* argv[]) {
 
     testing.clear_values();
     //std::cout<<"before preprocess"<<std::endl;
-    testing.preprocess(i);
+    testing.preprocess(i, year);
     //std::cout<<"after preprocess"<<std::endl;
     testing.fill_efficiency();
     //if (i < 25)
