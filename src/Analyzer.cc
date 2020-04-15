@@ -300,7 +300,10 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     }
   }
 
-  // initializeMCSelection(infiles);
+  if(distats["Run"].bfind("InitializeMCSelection")){
+     std::cout << "MC selection initialized." << std::endl;
+     initializeMCSelection(infiles);
+  }
   initializeWkfactor(infiles);
   setCutNeeds();
   
