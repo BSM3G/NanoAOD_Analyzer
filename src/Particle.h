@@ -147,7 +147,7 @@ public:
 class Jet : public Particle {
 
 public:
-  Jet(TTree*, std::string, std::vector<std::string>);
+  Jet(TTree*, std::string, std::vector<std::string>, std::string);
 
   std::vector<CUTS> findExtraCuts();
   std::vector<CUTS> overlapCuts(CUTS);
@@ -177,7 +177,7 @@ public:
 class FatJet : public Particle {
 
 public:
-  FatJet(TTree*, std::string, std::vector<std::string>);
+  FatJet(TTree*, std::string, std::vector<std::string>, std::string);
 
   std::vector<CUTS> findExtraCuts();
   std::vector<CUTS> overlapCuts(CUTS);
@@ -207,7 +207,7 @@ public:
 class Electron : public Lepton {
 
 public:
-  Electron(TTree*, std::string, std::vector<std::string>);
+  Electron(TTree*, std::string, std::vector<std::string>, std::string);
 
   bool get_Iso(int, double, double) const;
   
@@ -248,7 +248,7 @@ public:
 class Muon : public Lepton {
 
 public:
-  Muon(TTree*, std::string, std::vector<std::string>);
+  Muon(TTree*, std::string, std::vector<std::string>, std::string);
 
   bool get_Iso(int, double, double) const;
 
@@ -264,9 +264,8 @@ public:
 class Taus : public Lepton {
 
 public:
-  Taus(TTree*, std::string, std::vector<std::string>);
+  Taus(TTree*, std::string, std::vector<std::string>, std::string);
 
-  //  void findExtraCuts();
   std::vector<CUTS> findExtraCuts();
   bool get_Iso(int, double, double) const;
   bool pass_against_Elec(CUTS, int);
@@ -295,13 +294,7 @@ public:
 
   // -------- Tau isolation ----------- //
   UChar_t TauIdDiscr[MAXINDEX];
-  //UChar_t MVAoldDM[MAXINDEX];
-  //UChar_t MVAnewDM[MAXINDEX];
-  //uint8_t Tau_idMVAnewDM2017v2[MAXINDEX];
-  //uint8_t Tau_idMVAoldDM2017v1[MAXINDEX];
-  //uint8_t Tau_idMVAoldDM2017v2[MAXINDEX];
-  //uint8_t Tau_idMVAoldDMdR032017v2[MAXINDEX];
-   
+	
   // ------- Tau-related quantities ---------- //
   float leadTkDeltaEta[MAXINDEX];
   float leadTkDeltaPhi[MAXINDEX];
