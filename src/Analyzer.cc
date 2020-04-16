@@ -1593,7 +1593,8 @@ void Analyzer::getGoodGen(const PartStats& stats) {
     if(genMaper.find(id) != genMaper.end() && _Gen->status[j] == genMaper.at(id)->status) {
       if(id == 15 && (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
      
-      if(id == 24 && abs(_Gen->status[j]) == 47) continue; //Changed on 05.15.18 to clean TT inclusive.  Talked to Klaas- GenW wasn't filling b/c we were explicitly requiring status 2 or 62.  The W's from TTbar have status 52 once the momentum is corrected.  He said we should just fill with everything that is not status 47.  Status 47 is W or Z from shower. 01.16.19
+      // if(id == 24 && abs(_Gen->status[j]) == 47) continue; //Changed on 05.15.18 to clean TT inclusive.  Talked to Klaas- GenW wasn't filling b/c we were explicitly requiring status 2 or 62.  The W's from TTbar have status 52 once the momentum is corrected.  He said we should just fill with everything that is not status 47.  Status 47 is W or Z from shower. 01.16.19
+
       // Search for electrons/muons with two different mother ID requirements (either one or the other)
       if((id == 11 || id == 13) && (stats.bfind("DiscrLightLepByMotherID1") * stats.bfind("DiscrLightLepByMotherID2") == 1)){
          bool motherid1 = abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) == stats.dmap.at("LightLepMotherID1");
@@ -1747,7 +1748,7 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
       else if(lep.type == PType::Tau){
         if(cut == "DoDiscrByCrackCut") passCuts = passCuts && !isInTheCracks(lvec.Eta());
         /////tau cuts
-        else if(cut == "DoDzCut") passCuts = passCuts && (_Tau->dz[i] <= stats.dmap.at("DzCutThreshold"));
+        else if(cut == "DoDzCut") passCuts = passCuts && (abs(_Tau->dz[i]) <= stats.dmap.at("DzCutThreshold"));
         else if(cut == "DoDiscrByLeadTrack") passCuts = passCuts && (_Tau->leadTkPtOverTauPt[i]*_Tau->pt(i) >= stats.dmap.at("LeadTrackThreshold"));
              // ----Electron and Muon vetos
         else if (cut == "DoDiscrAgainstElectron") passCuts = passCuts && _Tau->pass_against_Elec(ePos, i);

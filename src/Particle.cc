@@ -556,9 +556,11 @@ bool Taus::get_Iso(int index, double onetwo, double flipisolation) const {
   
   if(!flipisolation){
     //cout<<tau_isomax_mask<<"  "<<tau_iso<<"   "<<(tau_isomax_mask& tau_iso)<<"   "<<  (tau_isomax_mask& tau_iso).count()<<std::endl; 
-    return (tau_isomax_mask& tau_iso).count();
+    // return (tau_isomax_mask& tau_iso).count();
+    return (tau_isomin_mask& tau_iso).count();
   }else{
-    return(!((tau_isomax_mask&tau_iso).count()) and (tau_isomin_mask&tau_iso).count());
+    // return(!((tau_isomax_mask&tau_iso).count()) and (tau_isomin_mask&tau_iso).count());
+    return(!((tau_isomin_mask&tau_iso).count()) and (tau_isomax_mask&tau_iso).count());
   }
 }
 
