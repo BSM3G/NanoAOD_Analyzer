@@ -111,7 +111,7 @@ public:
 
 
   void getGoodParticles(int);
-  void getGoodTauNu();
+  void getGenHadronicTauNeutrinos();
   void getGoodGen(const PartStats&);
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);

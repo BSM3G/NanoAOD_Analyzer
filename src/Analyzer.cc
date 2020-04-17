@@ -33,7 +33,7 @@ const std::string PUSPACE = "Pileup/";
 //////////PUBLIC FUNCTIONS////////////////////
 
 const std::vector<CUTS> Analyzer::genCuts = {
-  CUTS::eGTau, CUTS::eNuTau, CUTS::eGTop,
+  CUTS::eGTau, CUTS::eGNuTau, CUTS::eGTop,
   CUTS::eGElec, CUTS::eGMuon, CUTS::eGZ,
   CUTS::eGW, CUTS::eGHiggs, CUTS::eGJet, CUTS::eGBJet
 };
@@ -660,7 +660,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   if(!isData){
     _Gen->setOrigReco();
     getGoodGen(_Gen->pstats["Gen"]);
-    getGoodTauNu();
+    getGenHadronicTauNeutrinos();
     getGoodGenBJet(); //01.16.19
   }
 
@@ -1531,7 +1531,7 @@ TLorentzVector Analyzer::matchTauToGen(const TLorentzVector& lvec, double lDelta
   TLorentzVector genVec(0,0,0,0);
   int i = 0;
   for(vec_iter it=active_part->at(CUTS::eGTau)->begin(); it !=active_part->at(CUTS::eGTau)->end();it++, i++) {
-    int nu = active_part->at(CUTS::eNuTau)->at(i);
+    int nu = active_part->at(CUTS::eGNuTau)->at(i);
     if(nu == -1) continue;
 
     genVec = _Gen->p4(*it) - _Gen->p4(nu);
@@ -1640,22 +1640,37 @@ double Analyzer::getTopBoostWeight(){ //01.15.19
   return SFttbar;
 }
 
-////Tau neutrino specific function used for calculating the number of hadronic taus
-void Analyzer::getGoodTauNu() { //01.16.19 liked my version better
-  for(auto it : *active_part->at(CUTS::eGTau)) {
-    bool leptonDecay = false;
-    int nu = -1;
-    for(size_t j = 0; j < _Gen->size(); j++) {
-      if(abs(_Gen->genPartIdxMother[j]) == (it)) {
-        if( (abs(_Gen->pdg_id[j]) == 16) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) == 15) && (_Gen->status[_Gen->genPartIdxMother[j]] == 2) ) nu = j;
-        else if( (abs(_Gen->pdg_id[j]) == 12) || (abs(_Gen->pdg_id[j]) == 14) ) leptonDecay = true;
-      }
-      //if( (abs(_Gen->pdg_id[j]) == 16) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) == 15) ) nu = j;
-      //else if( (abs(_Gen->pdg_id[j]) == 12) || (abs(_Gen->pdg_id[j]) == 14) ) leptonDecay = true;
-      //}
+// --- Function that looks for tau neutrinos coming from hadronic tau decays at gen-level --- //
+void Analyzer::getGenHadronicTauNeutrinos() {
+
+  
+  bool isTauLeptonicDecay = false;        // Flag to identify tau leptonic decays
+  int genTauNeutrino_idx = -1, genHadTauNeutrino_idx = -1;   // integers for the particle indices in the gen-particle vector.
+
+  // Loop over the gen-level taus that satisfied the conditions imposed in getGoodGen, which are stored at CUTS::eGTau.
+  for(auto gentau_it : *active_part->at(CUTS::eGTau)){ // (gentau_it) is the index of the gen-level tau in the gen-particles vector.
+    // For each iteration, reset the tau neutrino index and the leptonic flag.
+    genTauNeutrino_idx = -1, genHadTauNeutrino_idx = -1;
+    isTauLeptonicDecay = false;
+
+    // Make sure that the status code of the current gen-tau is 2, meaning, it's an unstable particle about to decay
+    if(_Gen->status[(gentau_it)] != 2) continue;
+
+    // Loop over all gen-level particles to find those that come from the decay of the current gen-tau.
+    for(size_t genpart_idx = 0; genpart_idx < _Gen->size(); genpart_idx++) {
+
+      // Check that the mother particle index matches the index of the current gen-tau:
+      if( abs(_Gen->genPartIdxMother[genpart_idx]) != (gentau_it) ) continue;
+
+      // Look specifically for electron, muon and tau neutrinos. They are enough to tell if a decay was hadronic or leptonic.
+      if( ( abs(_Gen->pdg_id[genpart_idx]) == 12 || ( abs(_Gen->pdg_id[genpart_idx]) == 14 ) ) ) isTauLeptonicDecay = true;
+      else if( abs(_Gen->pdg_id[genpart_idx]) == 16 ) genTauNeutrino_idx = genpart_idx;
+
     }
-    nu = (leptonDecay) ? -1 : nu;
-    active_part->at(CUTS::eNuTau)->push_back(nu);
+    // Check if the current tau decayed hadronically or leptonically and assign the index accordingly
+    genHadTauNeutrino_idx = (isTauLeptonicDecay) ? -1 : genTauNeutrino_idx;
+
+    active_part->at(CUTS::eGNuTau)->push_back(genHadTauNeutrino_idx);
   }
 
 }
@@ -2740,7 +2755,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     TLorentzVector genVec;
     int i = 0;
     for(vec_iter it=active_part->at(CUTS::eGTau)->begin(); it!=active_part->at(CUTS::eGTau)->end(); it++, i++) {
-      int nu = active_part->at(CUTS::eNuTau)->at(i);
+      int nu = active_part->at(CUTS::eGNuTau)->at(i);
       if(nu != -1) {
         genVec = _Gen->p4(*it) - _Gen->p4(nu);
         histAddVal(genVec.Pt(), "HadTauPt");

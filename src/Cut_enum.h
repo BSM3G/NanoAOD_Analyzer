@@ -63,7 +63,7 @@ enum class CUTS {
   eElec1Tau1,   eElec1Tau2,   eElec2Tau1,   eElec2Tau2,
   eElec1Jet1,   eElec1Jet2,   eElec2Jet1,   eElec2Jet2,
   eMuon1Elec1,  eMuon1Elec2,  eMuon2Elec1,  eMuon2Elec2,
-  eSusyCom,     eMET,         eNuTau,       eRTrig1,      eRTrig2,
+  eSusyCom,     eMET,         eGNuTau,       eRTrig1,      eRTrig2,
   First = eGen,
   Last = eRTrig2};
 
@@ -80,7 +80,7 @@ static std::unordered_map<CUTS, std::string, EnumHash> enumNames {
   {CUTS::eMuon2Tau2, "eMuon2Tau2"}, {CUTS::eElec1Tau1, "eElec1Tau1"}, {CUTS::eElec1Tau2, "eElec1Tau2"},
   {CUTS::eElec2Tau1, "eElec2Tau1"},   {CUTS::eElec2Tau2, "eElec2Tau2"}, {CUTS::eMuon1Elec1, "eMuon1Elec1"},
   {CUTS::eMuon1Elec2, "eMuon1Elec2"}, {CUTS::eMuon2Elec1, "eMuon2Elec1"}, {CUTS::eMuon2Elec2, "eMuon2Elec2"},
-  {CUTS::eSusyCom, "eSusyCom"}, {CUTS::eMET, "eMET"}, {CUTS::eNuTau, "eNuTau"}, {CUTS::eRTrig1, "eRTrig1"}, {CUTS::eRTrig2, "eRTrig2"}
+  {CUTS::eSusyCom, "eSusyCom"}, {CUTS::eMET, "eMET"}, {CUTS::eGNuTau, "eGNuTau"}, {CUTS::eRTrig1, "eRTrig1"}, {CUTS::eRTrig2, "eRTrig2"}
   };
 
 
