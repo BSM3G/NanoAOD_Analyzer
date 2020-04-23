@@ -85,8 +85,8 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   std::cout << "setup start" << std::endl;
   
   routfile = new TFile(outfile.c_str(), "RECREATE", outfile.c_str(), ROOT::CompressionSettings(ROOT::kLZMA, 9));
-  //Copy the original trees (optional)
-  //add_metadata(infiles);
+  
+  add_metadata(infiles);
 
   BOOM= new TChain("Events");
   infoFile=0;
@@ -296,58 +296,50 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 }
 
 void Analyzer::add_metadata(std::vector<std::string> infiles){
-  // std::fstream fs("json2016.txt", std::fstream::in);
-  // std::string line;
-  // int runs[393];
-  // while(!fs.eof()){
-  //   for(int i=0; i<393; i++){
-  //     getline(fs, line);
-  //     if(line.size() == 0) continue;
-  //     std::vector<std::string> vals = string_split(line, {","});
-  //     double run=stringtotype<double>(vals[0]);
-  //     runs[i]=run;}
-  //   fs.close();
-  // }
-  //for(int i=0; i<393; i++){
-  //std::cout<<runs[i]<<std::endl;
-  //}
-  std::cout<<"Start copying the essentials."<<std::endl;
+  std::cout << "------------------------------------------------------------ " << std::endl;
+  std::cout << "Copying minimal original trees from input files:"<<std::endl;
+  
+  // Define all the variables needed for this function
+  TFile* rfile;
+  std::string keyname;
+  TTree* keytree;
+
+  // Loop over the list of input files.
   for( std::string infile: infiles){
-    std::cout<<infile<<std::endl;
-    //TFile rfile(infile.c_str());
-    TFile* rfile = TFile::Open(infile.c_str());
+    std::cout << "File: " << infile << std::endl;
+
+    // Open the input file
+    rfile = TFile::Open(infile.c_str());
     routfile->cd();
-    for(const auto&& k: *rfile->GetListOfKeys()){
-      std::string kn(k->GetName());
-      std::cout<<kn<<std::endl;
-      if (kn == "Events"){
-        TTree* t= ((TTree*) rfile->Get(kn.c_str()));
-        t->SetBranchStatus("*",0);
-        t->SetBranchStatus("run",1);
-	//t->SetBranchStatus("luminosityBlock",1); //05.27.19
-        otherTrees[kn] = t->CopyTree("1","",1);
-      }else if(kn == "MetaData" or kn== "ParameterSets"){
-        otherTrees[kn] = ((TTree*) rfile->Get(kn.c_str()))->CopyTree("1");
-      }else if(kn == "LuminosityBlocks" or kn == "Runs"){
-        otherTrees[kn] = ((TTree*) rfile->Get(kn.c_str()))->CopyTree("1");  //05.24.19
-      }else if( std::string(k->ClassName()) == "TTree"){
-        std::cout<<"Not copying unknown tree kn"<<std::endl;
-      }else{
-        //otherObjects[kn] = rfile.Get(kn)
+    // Loop over all key stored in the current input file
+    std::cout << "Processing key: " << std::endl;
+    for(const auto&& inkey : *rfile->GetListOfKeys()){
+      keyname = inkey->GetName();
+      std::cout << "\t" << keyname << std::endl;
+
+      if(keyname == "Events"){
+        keytree= ((TTree*) rfile->Get(keyname.c_str()));     // Get the tree from file
+        keytree->SetBranchStatus("*",0);                     // Disable all branches
+        keytree->SetBranchStatus("run",1);                   // Enable only the branch named run
+        originalTrees[keyname] = keytree->CopyTree("1","",1); // Add this tree to the original trees map. No selection nor option (1st and 2nd arg.) are applied, only 1 event is stored (3rd arg.)
+      }else if(keyname == "MetaData" or keyname == "ParameterSets" or keyname == "Runs"){ // All branches from these trees are included but only 1 event is stored.
+        originalTrees[keyname] = ((TTree*) rfile->Get(keyname.c_str()))->CopyTree("1","",1); 
+      }else if(keyname == "LuminosityBlocks"){
+        originalTrees[keyname] = ((TTree*) rfile->Get(keyname.c_str()))->CopyTree("1");  // All events for this tree are stored since they are useful when comparing with lumi filtering (JSON)
+      }else if( std::string(inkey->ClassName()) == "TTree"){
+        std::cout << "Not copying unknown tree " << inkey->GetName() << std::endl;
       }
     }
     routfile->cd();
-    for(auto t : otherTrees){
-      t.second->Write();
+    for(auto tree : originalTrees){
+      tree.second->Write();
     }
     rfile->Close();
     delete rfile;
   }
   
-  std::cout<<"Finished copying the essentials."<<std::endl;
-  //for on,ov in self._otherObjects.iteritems():
-    //self._file.WriteTObject(ov,on)
-
+  std::cout << "Finished copying minimal original trees." << std::endl;
+  std::cout << "------------------------------------------------------------ " << std::endl;
 }
 
 std::unordered_map<CUTS, std::vector<int>*, EnumHash> Analyzer::getArray() {
