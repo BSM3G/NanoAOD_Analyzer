@@ -543,6 +543,20 @@ void Analyzer::setupEventGeneral(int nevent){
 
 }
 
+bool Analyzer::passGenHTFilter(float genhtvalue){
+
+  if(genhtvalue >= distats["Run"].dmap.at("LowerGenHtCut") && genhtvalue <= distats["Run"].dmap.at("UpperGenHtCut")){
+    std::cout << "genhtvalue = " << genhtvalue << ", passed genht filter " << std::endl;
+    return true;
+  }
+  else{
+    std::cout << "genhtvalue = " << genhtvalue << ", failed genht filter " << std::endl;
+    return false;
+  }
+
+}
+
+
 ///Function that does most of the work.  Calculates the number of each particle
 void Analyzer::preprocess(int event, std::string year){ // This function no longer needs to get the JSON dictionary as input.
 
@@ -562,7 +576,88 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     clear_values();
     return;
   }
-  //--- filtering inclusive HT-binned samples ---
+
+  // Call the new function setupEventGeneral: this will set generatorht, pu weight and genweight
+  setupEventGeneral(event);
+
+  
+  
+  if(!isData){ // Do everything that corresponds only to MC
+
+    //--- filtering inclusive HT-binned samples: must be done after setupEventGeneral ---
+
+    if(distats["Run"].bfind("DiscrByGenHT")){ 
+      //std::cout << "generatorht = " << generatorht << std::endl;
+      if(passGenHTFilter(generatorht) == false){
+        clear_values();
+        return;
+      }
+    }
+
+    // Initialize the lists of generator-level particles.
+    _Gen->setOrigReco();
+    _GenHadTau->setOrigReco();
+
+    getGoodGen(_Gen->pstats["Gen"]);
+    getGoodGenHadronicTaus(_GenHadTau->pstats["Gen"]);
+    getGoodGenHadronicTauNeutrinos(_Gen->pstats["Gen"]);
+    getGoodGenBJet(); //01.16.19
+
+  }
+  else if(isData){
+    //std::cout << "made it in" << std::endl;
+    BOOM->GetEntry(event);  //NEW:  get event.
+    UInt_t run_num;  //NEW:  create run_num to store the run number.
+    UInt_t luminosityBlock_num;  //NEW:  create luminosityBlock_num to store the number of the luminosity block.
+    SetBranch("run",run_num);  //NEW:  define the branch for the run number.
+  //std::cout << "run_num: " << run_num << std::endl;
+    SetBranch("luminosityBlock",luminosityBlock_num);  //NEW:  define the branch for the luminosity block.
+    int key = run_num;
+    int element = luminosityBlock_num;
+    int good_run = 0;  //NEW:  this will be the checker for the good runs.
+    int good_runandlumi = 0; //NEW:  this will be the checker to see that good runs have good lumisection.
+    auto search = jsonlinedict.find(key);  //NEW:  see if the run number is in the json dictionary.
+    if(search != jsonlinedict.end())  //NEW:  this means that the run is in there.
+      {good_run = good_run + 1;} //NEW:  increment the checker.
+    else 
+      {good_run = good_run + 0;} //NEW:  don't increment the checker.
+  
+    if(good_run != 1){  //NEW:  if not a good run, don't fill.
+      clear_values();
+      return;
+    }
+
+    else{ //NEW:  Check to see that a good run also has a good lumi.
+      std::vector<int> lumivector;  //NEW:  going to make a container to store the lumis for the run.
+      for (auto itr = jsonlinedict.begin(); itr != jsonlinedict.end(); itr++){ //NEW:  go through all the pairs of run, lumibound in the dictionary.    
+  if (itr -> first == key){ //NEW:  look for the run number.
+    lumivector.push_back(itr -> second);  //NEW:  grab all of the lumibounds corresponding to the run number.
+  }
+      }
+      for(size_t p = 0; p < lumivector.size(); p=p+2){  //NEW:  going to go through pairs.  good lumi sections defined by [lumibound1, lumibound2], [lumibound3, lumibound4], etc.  This is why we have to step through the check in twos.
+  int q = p+1; //NEW:  checking bounds that are side-by-side in the vector.
+  if(element >= lumivector[p] && element <= lumivector[q]){  //NEW:  does the lumisection fall in the bounds (check all)?
+    good_runandlumi = 1;
+  }
+  else{
+    good_runandlumi = good_runandlumi + 0;
+  }
+      }
+    }
+
+    if(good_runandlumi != 1){ //NEW:  Ditch good runs that have a bad lumi.
+      //std::cout << "--------------------" << std::endl;
+      //std::cout << "run: " << key << std::endl;
+      //std::cout << "lumiblock: " << element << std::endl;
+      //std::cout << "BAD event" << std::endl;
+      //std::cout << "--------------------" << std::endl;
+      clear_values();
+      return;
+    }
+  }
+
+
+  /*
   if(!isData){
   bool checkgenht = distats["Run"].bfind("DiscrByGenHT");
   float_t HT;
@@ -573,8 +668,23 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     if(gen_ht >= distats["Run"].dmap.at("LowerGenHtCut") && gen_ht <= distats["Run"].dmap.at("UpperGenHtCut")){}
     else{clear_values();
       return;}}}
+  */
+
+  /*
+  // SET NUMBER OF GEN PARTICLES
+  if(!isData){
+    _Gen->setOrigReco();
+    _GenHadTau->setOrigReco();
+
+    getGoodGen(_Gen->pstats["Gen"]);
+    getGoodGenHadronicTaus(_GenHadTau->pstats["Gen"]);
+    getGoodGenHadronicTauNeutrinos(_Gen->pstats["Gen"]);
+    getGoodGenBJet(); //01.16.19
+  }
+  */
 
   //need to check runs and lumis 05.27.19
+/*
   if(isData){
     //std::cout << "made it in" << std::endl;
     BOOM->GetEntry(event);  //NEW:  get event.
@@ -626,12 +736,11 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
       return;
     }
   }
+*/
 
-  // Call the new function setupEventGeneral:
-  setupEventGeneral(event);
 	
   // Call the new function passMetFilters
-  // Apply here the MET filters, in case the option is turned on.
+  // Apply here the MET filters, in case the option is turned on. It applies to both data and MC
   applymetfilters = distats["Run"].bfind("ApplyMetFilters");
   if(applymetfilters){
   	passedmetfilters = passMetFilters(year, event);	
@@ -640,18 +749,6 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   		return;
   	}
   }
-
-  // SET NUMBER OF GEN PARTICLES
-  if(!isData){
-    _Gen->setOrigReco();
-    _GenHadTau->setOrigReco();
-
-    getGoodGen(_Gen->pstats["Gen"]);
-    getGoodGenHadronicTaus(_GenHadTau->pstats["Gen"]);
-    getGoodGenHadronicTauNeutrinos(_Gen->pstats["Gen"]);
-    getGoodGenBJet(); //01.16.19
-  }
-
 
 
   //////Triggers and Vertices

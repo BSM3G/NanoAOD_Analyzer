@@ -103,6 +103,8 @@ public:
   void setupGeneral(std::string);
   void setupEventGeneral(int);
   void getTriggerBranchesList(std::string);
+  bool passGenHTFilter(float);
+  //bool checkRunsAndLumis();
   void branchException(std::string);
   void initializeTrigger();
   void setCutNeeds();
