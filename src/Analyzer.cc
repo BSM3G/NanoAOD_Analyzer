@@ -1194,17 +1194,6 @@ void Analyzer::setupGeneral(std::string year) {
     std::cout<<"This file needs the new version of the analyzer"<<std::endl;
   } 
   
-  for( int i=0; i<BOOM->GetListOfBranches()->GetSize(); i++){
-    std::string branch_name(BOOM->GetListOfBranches()->At(i)->GetName());
-    //if (branch_name.find("Electron_mva")!=std::string::npos){
-      //std::cout<< branch_name << std::endl;
-    //}
-    //std::cout<<"--------------------------------------------------"<<std::endl;
-    //if (branch_name.find("HLT_Double")!=std::string::npos){
-      //std::cout<< branch_name << std::endl;
-    //}
-  }
-
   read_info(filespace + "ElectronTau_info.in");
   read_info(filespace + "MuonTau_info.in");
   read_info(filespace + "MuonElectron_info.in");
@@ -1229,7 +1218,7 @@ void Analyzer::setupGeneral(std::string year) {
     }
   
   }
-  
+
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
   std::cout << "Full list of triggers to be probed: " << std::endl;
   for(std::string name : triggerBranchesList){
