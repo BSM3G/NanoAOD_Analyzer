@@ -99,27 +99,17 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   nentries = (int) BOOM->GetEntries();
   BOOM->SetBranchStatus("*", 0);
   std::cout << "TOTAL EVENTS: " << nentries << std::endl;
-  //std::cout <<"----------------------------------------------"<<std::endl;
 
-  //std::cout<<"srand(0)"<< std::endl;
   srand(0);
   
-  //std::cout<<"filespace=configFolder"<<std::endl;
   filespace=configFolder;//"PartDet";
-  //std::cout<<"filespace+=/"<< std::endl;
   filespace+="/";
 
-  //std::cout << "pre-setupGeneral()" << std::endl;
-  //std::cout<<"setupGeneral();"<< std::endl;
   setupGeneral(year);
-  // std::cout << "post-setupGeneral()" << std::endl;
-  // isData = distats["Run"].bfind("isData");
   
-  //std::cout<<"CalculatePUSystematics..."<<std::endl;
   CalculatePUSystematics = distats["Run"].bfind("CalculatePUSystematics");
   // New variable to do special PU weight calculation (2017)
   specialPUcalculation = distats["Run"].bfind("SpecialMCPUCalculation");
-  //std::cout<<"initializePileupInfo..."<<std::endl;
   
   // If specialPUcalculation is true, then take the name of the output file (when submitting jobs) 
   // to retrieve the right MC nTruePU distribution to calculate the PU weights, otherwise, it will do
@@ -130,7 +120,6 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   if(specialPUcalculation){
 	  
 	std::string outputname = outfile;
-	// std::cout << "output file: " << outfile << std::endl;
 
 	std::string delimitertune = "_Tune";
 	std::string delimiterenergy = "_13TeV";
@@ -156,13 +145,9 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     initializePileupInfo(distats["Run"].smap.at("MCHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"),distats["Run"].smap.at("MCPUHistName") );
   }
   
-  //std::cout<<"syst_names.push_back(orig)"<<std::endl;
   syst_names.push_back("orig");
-  //std::cout<<"unordered_map<CUTS tmp;"<<std::endl;
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> tmp;
-  //std::cout<<"syst_parts.push_back(tmp)"<<std::endl;
   syst_parts.push_back(tmp);
-  //std::cout<<"if isData Systematics useSystematics..."<<std::endl;
   if(!isData && distats["Systematics"].bfind("useSystematics")) {
     for(auto systname : distats["Systematics"].bset) {
       if( systname == "useSystematics")
@@ -175,23 +160,19 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   }else {
     doSystematics=false;
   }
-  //std::cout<< "files before" <<std::endl;
-  //std::cout<<"end of that if.. now start with _Electron = new..."<<std::endl;
-  _Electron = new Electron(BOOM, filespace + "Electron_info.in", syst_names, year);
-  //std::cout<< "electron" <<std::endl;
-  _Muon     = new Muon(BOOM, filespace + "Muon_info.in", syst_names, year);
-  //std::cout<< "muon" <<std::endl;
-  _Tau      = new Taus(BOOM, filespace + "Tau_info.in", syst_names, year);
-  //std::cout<< "tau" <<std::endl;
-  _Jet      = new Jet(BOOM, filespace + "Jet_info.in", syst_names, year);
-  //std::cout<< "jet" <<std::endl;
-  _FatJet   = new FatJet(BOOM, filespace + "FatJet_info.in", syst_names, year);
-  //std::cout<< "fatjet" <<std::endl;
-  _MET      = new Met(BOOM, "MET" , syst_names, distats["Run"].dmap.at("MT2Mass"));
-  //std::cout<< "MET" <<std::endl;
 
-  //std::cout<<"---------------------------------------------------"<<std::endl;
-  //std::cout<< "files after" <<std::endl;
+  _Electron = new Electron(BOOM, filespace + "Electron_info.in", syst_names, year);
+
+  _Muon     = new Muon(BOOM, filespace + "Muon_info.in", syst_names, year);
+
+  _Tau      = new Taus(BOOM, filespace + "Tau_info.in", syst_names, year);
+
+  _Jet      = new Jet(BOOM, filespace + "Jet_info.in", syst_names, year);
+
+  _FatJet   = new FatJet(BOOM, filespace + "FatJet_info.in", syst_names, year);
+
+  _MET      = new Met(BOOM, "MET" , syst_names, distats["Run"].dmap.at("MT2Mass"));
+
 	
   // B-tagging scale factor stuff
   setupBJetSFInfo(_Jet->pstats["BJet"]); 	
@@ -209,11 +190,10 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     std::cout<<"This is Data if not, change the flag!"<<std::endl;
     allParticles= {_Electron,_Muon,_Tau,_Jet,_FatJet};
   }
-  //std::cout<< "cutmap before" <<std::endl;
+
   particleCutMap[CUTS::eGElec]=_Electron;
   particleCutMap[CUTS::eGMuon]=_Muon;
   particleCutMap[CUTS::eGTau]=_Tau;
-  //std::cout<< "cutmap after" <<std::endl;
 
   std::vector<std::string> cr_variables;
   if(setCR) {
@@ -2013,123 +1993,93 @@ void Analyzer::setupBJetSFInfo(const PartStats& stats){
 }
 
 double Analyzer::getBJetSF(CUTS ePos, const PartStats& stats) {
-  double bjetSFall = 1.00;
-  bool oneb = false;
-  bool twob = false;
+  double bjetSFall = 1.0, bjetSFtemp = 1.0; 
 
-  if(! neededCuts.isPresent(ePos)) return bjetSFall;
-    
-  if(active_part->at(CUTS::eRBJet)->size() == 0){
-    return bjetSFall;
+  if(!neededCuts.isPresent(ePos)) return bjetSFall;
+
+  if(!stats.bfind("UseBtagSF")){
+    bjetSFtemp = 1.0;
+  }
+  else{
+
+    if(active_part->at(CUTS::eRBJet)->size() == 0){
+      bjetSFtemp = 1.0;
+    }
+    else if(active_part->at(CUTS::eRBJet)->size() == 1){
+      bjetSFtemp = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+    }
+    else if(active_part->at(CUTS::eRBJet)->size() == 2){
+      // Get the SF for the first b-jet
+      bjetSFtemp = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      // Now multiply by the SF of the second b-jet
+      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
+    }
+
   }
 
-  if(active_part->at(CUTS::eRBJet)->size() == 1){
-    oneb = true;
-  }
+  // Calculate the full SF
+  bjetSFall = bjetSFall * bjetSFtemp;
 
-  if(active_part->at(CUTS::eRBJet)->size() == 2){
-    twob = true;
-  }
-
-  double bjetSF1 = 1;
-  double bjetSF2 = 1;
-  for( auto cut: stats.bset) {
-      if(cut == "UseBtagSF") {
-	if(oneb){
-	   // _Jet->p4(active_part->at(CUTS::eRBJet)->at(i))) returns the TLorentzVector (P4) of the i-th b-jet stored in the b-jet vector (i-th element).
-	   // The formula we access here corresponds to "central" or the nominal formula of the scale factor, BTagEntry::FLAV_B is for b-tagged jets and
-	   // btagsfreader.eval_auto_bounds takes the eta & pt of this jet to properly find the SF formula corresponding to those bounds in an automatic way.
-	   // You can have a look to the CSV file with this information to get a better picture of this function after reading the description above.
-	   bjetSF1 = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
-	}
-	if(twob){
-       	   bjetSF1 = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
-       	   bjetSF2 = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
-	}
-      }
-  }
-	
-  bjetSFall = bjetSFall * bjetSF1 * bjetSF2;
-	
-  return bjetSFall;
-	
-}
-
-double Analyzer::getBJetSFResUp(CUTS ePos, const PartStats& stats) {  //07.05.18
-  double bjetSFall = 1.00;
-  bool oneb = false;
-  bool twob = false;
-
-  if(! neededCuts.isPresent(ePos)) return bjetSFall;
-  
-  if(active_part->at(CUTS::eRBJet)->size() == 0){
-    return bjetSFall;
-  }
-
-  if(active_part->at(CUTS::eRBJet)->size() == 1){
-    oneb = true;
-  }
-
-  if(active_part->at(CUTS::eRBJet)->size() == 2){
-    twob = true;
-  }
-
-  double bjetSF1 = 1;
-  double bjetSF2 = 1;
-  for( auto cut: stats.bset) {
-      if(cut == "UseBtagSF") {
-	if(oneb){
-	   // Same idea as in getBJetSF but now we look at the formulas corresponding going "up" in systematics.
-	   bjetSF1 = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
-	}
-	if(twob){
-           bjetSF1 = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
-           bjetSF2 = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
-	}
-      }
-  }
-	
-  bjetSFall = bjetSFall * bjetSF1 * bjetSF2;
-	
   return bjetSFall;
 }
 
-double Analyzer::getBJetSFResDown(CUTS ePos, const PartStats& stats) { //07.05.18
-  double bjetSFall = 1.00;
-  bool oneb = false;
-  bool twob = false;
+double Analyzer::getBJetSFResUp(CUTS ePos, const PartStats& stats) {
+  double bjetSFall = 1.0, bjetSFtemp = 1.0; 
 
-  if(! neededCuts.isPresent(ePos)) return bjetSFall;
-  
-  if(active_part->at(CUTS::eRBJet)->size() == 0){
-    return bjetSFall;
+  if(!neededCuts.isPresent(ePos)) return bjetSFall;
+
+  if(!stats.bfind("UseBtagSF")){
+    bjetSFtemp = 1.0;
+  }
+  else{
+
+    if(active_part->at(CUTS::eRBJet)->size() == 0){
+      bjetSFtemp = 1.0;
+    }
+    else if(active_part->at(CUTS::eRBJet)->size() == 1){
+      bjetSFtemp = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+    }
+    else if(active_part->at(CUTS::eRBJet)->size() == 2){
+      // Get the SF for the first b-jet
+      bjetSFtemp = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      // Now multiply by the SF of the second b-jet
+      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
+    }
+
   }
 
-  if(active_part->at(CUTS::eRBJet)->size() == 1){
-    oneb = true;
+  // Calculate the full SF
+  bjetSFall = bjetSFall * bjetSFtemp;
+
+  return bjetSFall;
+}
+
+double Analyzer::getBJetSFResDown(CUTS ePos, const PartStats& stats) { 
+  double bjetSFall = 1.0, bjetSFtemp = 1.0; 
+
+  if(!neededCuts.isPresent(ePos)) return bjetSFall;
+
+  if(!stats.bfind("UseBtagSF")){
+    bjetSFtemp = 1.0;
+  }
+  else{
+    if(active_part->at(CUTS::eRBJet)->size() == 0){
+      bjetSFtemp = 1.0;
+    }
+    else if(active_part->at(CUTS::eRBJet)->size() == 1){
+      bjetSFtemp = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+    }
+    else if(active_part->at(CUTS::eRBJet)->size() == 2){
+      // Get the SF for the first b-jet
+      bjetSFtemp = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      // Now multiply by the SF of the second b-jet
+      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
+    }
   }
 
-  if(active_part->at(CUTS::eRBJet)->size() == 2){
-    twob = true;
-  }
+  // Calculate the full SF
+  bjetSFall = bjetSFall * bjetSFtemp;
 
-  double bjetSF1 = 1;
-  double bjetSF2 = 1;
-  for( auto cut: stats.bset) {
-      if(cut == "UseBtagSF") {
-	if(oneb){
-	// Same idea as in getBJetSF but now we look at the formulas corresponding going "down" in systematics.
-           bjetSF1 = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
-	}
-	if(twob){
-           bjetSF1 = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
-           bjetSF2 = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
-	}
-      }
-  }
-	
-  bjetSFall = bjetSFall * bjetSF1 * bjetSF2;
-	
   return bjetSFall;
 }
 
