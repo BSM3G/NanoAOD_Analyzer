@@ -1052,20 +1052,19 @@ bool Analyzer::passMetFilters(std::string year, int ievent){
   // SetBranch("Flag_BadChargedCandidateFilter", badchargedhadronfilter);
   // ECAL bad calibration filter (2017 + 2018).
   // SetBranch("Flag_ecalBadCalibFilter", ecalbadcalibrationfilter);
+  if(year.compare("2016") == 0){
+    // in 2016, this filter is not recommended... therefore we set it always to true.
+    ecalbadcalibrationfilter = true;
+  }
+  else{
+    SetBranch("Flag_ecalBadCalibFilterV2", ecalbadcalibrationfilter);
+  }
 
   // Call get entry so all the branches assigned here are filled with the proper values for each event.
   BOOM->GetEntry(ievent);
 
-  // Check if the current event passed all the flags, depending on the year (only 2016 is different)
-  if(year.compare("2016") == 0){
-  	// only for 2016 the ecalbadcalibrationfilter is not applied.
-  	allmetfilters = primaryvertexfilter && beamhalofilter && hbhenoisefilter && ecaltpfilter && badpfmuonfilter;
-  }
-  else{
-	// SetBranch("Flag_ecalBadCalibFilter", ecalbadcalibrationfilter);
-	SetBranch("Flag_ecalBadCalibFilterV2", ecalbadcalibrationfilter);
-  	allmetfilters = primaryvertexfilter && beamhalofilter && hbhenoisefilter && ecaltpfilter && badpfmuonfilter && ecalbadcalibrationfilter;
-  }
+  // Check if the current event passed all the flags
+  allmetfilters = primaryvertexfilter && beamhalofilter && hbhenoisefilter && ecaltpfilter && badpfmuonfilter && ecalbadcalibrationfilter;
 
   return allmetfilters;
 
