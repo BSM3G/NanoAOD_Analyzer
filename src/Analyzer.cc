@@ -558,6 +558,17 @@ void Analyzer::setupEventGeneral(int nevent){
 
   // Calculate the pu_weight for this event.
   pu_weight = (!isData && CalculatePUSystematics) ? hPU[(int)(nTruePU+1)] : 1.0;
+
+  // Get the trigger decision vector.
+  triggerDecision = false; // Reset the decision flag for each event.
+
+  for(std::string triggname : triggerBranchesList){
+    SetBranch(triggname.c_str(), triggerDecision);
+    BOOM->GetEntry(nevent);
+    //std::cout << "Trigger name: " << triggname << ", decision = " << triggerDecision << std::endl;
+    triggernamedecisions.push_back(&triggerDecision);
+  }
+
 }
 
 ///Function that does most of the work.  Calculates the number of each particle
@@ -674,7 +685,8 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   //////Triggers and Vertices
   active_part->at(CUTS::eRVertex)->resize(bestVertices);
   //TriggerCuts(*(trigPlace[0]), *(trigName[0]), CUTS::eRTrig1);
-  TriggerCuts( CUTS::eRTrig1);
+
+  TriggerCuts(CUTS::eRTrig1);
 
   ////check update met is ok
   for(size_t i=0; i < syst_names.size(); i++) {
@@ -1149,6 +1161,19 @@ void Analyzer::branchException(std::string branch){
   }
 }
 
+void Analyzer::getTriggerBranchesList(std::string trigger){
+
+  for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+
+    std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+    if(branch_name.find(trigger) == std::string::npos) continue;
+    //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+    triggerBranchesList.push_back(branch_name);
+  }
+
+  if(triggerBranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.";
+}
+
 /////sets up other values needed for analysis that aren't particle specific
 void Analyzer::setupGeneral(std::string year) {
 
@@ -1191,56 +1216,26 @@ void Analyzer::setupGeneral(std::string year) {
 	
   // Call readinJSON and save this in the jsonlinedict we declared in Analyzer.h
   jsonlinedict = readinJSON(year);
-  // Print out the information each time the analyzer is run.
-	
-  //std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
-  //std::cout << "Analyzer::setupGeneral: JSON filename to analyze = " << json_file << std::endl;
-  //std::cout << "Analyzer::setupGeneral::readinJSON: Number of lines in this JSON file = " << jsonfilelines << std::endl;
-  //std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
-  
+
+
   for(std::string trigger : trigNames){
-    bool decison=false;
-    //std::cout<< "Trigger: "<< trigger<<std::endl;
-    
-   for( int i=0; i<BOOM->GetListOfBranches()->GetSize(); i++){
-	   std::string branch_name(BOOM->GetListOfBranches()->At(i)->GetName());
-	   //if (branch_name.find("HLT_")!=std::string::npos){
-	   //std::cout<< branch_name << std::endl;
-	   //}
-   }
 
-/*
-    if(BOOM->FindBranch(trigger.c_str()) == 0){
-      std::cout<<"ERROR! Trigger "<< trigger << ": Branch not found in this sample. Check the config files associated to this branch." << std::endl;
-      std::exit(1);
-      //std::cout<<"FindBranch("<< trigger << ") = "<< BOOM->FindBranch(trigger.c_str()) << std::endl;
-      //  throw "Please check the name of the trigger you are applying.";
-    }
-    SetBranch(trigger.c_str(),decison);       
-    trig_decision.push_back(decison);
-*/
-    
     try{
-       branchException(trigger.c_str());
+      getTriggerBranchesList(trigger);
     }
-
-    catch (const char* msg){
-      std::cout << "ERROR! Trigger " << trigger << ": "  << msg << std::endl;
-//      std::cout<< "options are:" << std::endl;
-//      for( int i=0; i<BOOM->GetListOfBranches()->GetSize(); i++){
-//        std::string branch_name(BOOM->GetListOfBranches()->At(i)->GetName());
-//        if (branch_name.find("HLT_")!=std::string::npos){
-//          std::cout<< branch_name << std::endl;
-//        }
-//      }
+    catch(const char* msg){
+      std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
       continue;
-      //std::exit(1);
     }
-
-    SetBranch(trigger.c_str(),decison);       
-    trig_decision.push_back(&decison);
-    
+  
   }
+  
+  std::cout << " ---------------------------------------------------------------------- " << std::endl;
+  std::cout << "Full list of triggers to be probed: " << std::endl;
+  for(std::string name : triggerBranchesList){
+    std::cout << name << std::endl;
+  }
+  std::cout << " ---------------------------------------------------------------------- " << std::endl;
 }
 
 
@@ -1386,6 +1381,7 @@ void Analyzer::setCutNeeds() {
 
   neededCuts.loadCuts(CUTS::eGHadTau);
   neededCuts.loadCuts(CUTS::eGBJet); //01.16.19
+
   neededCuts.loadCuts(_Jet->findExtraCuts());
   if(doSystematics) {
     neededCuts.loadCuts(CUTS::eGen);
@@ -2219,13 +2215,17 @@ bool Analyzer::isInTheCracks(float etaValue){
 ///sees if the event passed one of the two cuts provided
 void Analyzer::TriggerCuts(CUTS ePos) {
   if(! neededCuts.isPresent(ePos)) return;
-  for(bool* trigger : trig_decision){
-   //#std::cout<< "trig_decision: "<< *trigger << std::endl;
-    if(*trigger){
+
+  //std::cout << "Trigger decisions: " << std::endl;
+  for(bool* decision : triggernamedecisions){
+    //std::cout << *decision << std::endl;
+    if(*decision){
       active_part->at(ePos)->push_back(0);
       return;
     }
   }
+
+  triggernamedecisions.clear();
 }
 
 

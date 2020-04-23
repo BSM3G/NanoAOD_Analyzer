@@ -95,6 +95,7 @@ public:
   void read_info(std::string);
   void setupGeneral(std::string);
   void setupEventGeneral(int);
+  void getTriggerBranchesList(std::string);
   void branchException(std::string);
   void initializeTrigger();
   void setCutNeeds();
@@ -127,6 +128,7 @@ public:
   void getGoodDiJets(const PartStats&, const int);
 
   void VBFTopologyCut(const PartStats&, const int);
+  void fastTriggerCuts(CUTS);
   void TriggerCuts(CUTS);
 
 
@@ -225,8 +227,10 @@ public:
 
   std::vector<int>* trigPlace[nTrigReq];
   bool setTrigger = false;
-  std::vector<std::string> trigNames;
-  std::vector<bool*> trig_decision;
+  std::vector<std::string> triggerBranchesList;
+  bool triggerDecision = false;
+  std::vector<std::string> trigNames; // Brenda: This will take the triggers from the configuration file Run_info.in
+  std::vector<bool*> triggernamedecisions; // Brenda
   std::vector<int> cuts_per, cuts_cumul;
 
   std::unordered_map< std::string,float > zBoostTree;
