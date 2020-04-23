@@ -43,6 +43,13 @@ double absnormPhi(double phi);
 //#define const
 //using namespace std;
 
+template <typename T>
+void removeDuplicates(std::vector<T>& vec)
+{
+  std::sort(vec.begin(), vec.end());
+  vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+}
+
 static const int nTrigReq = 2;
 
 class Analyzer {
@@ -229,7 +236,7 @@ public:
   bool setTrigger = false;
   std::vector<std::string> triggerBranchesList;
   bool triggerDecision = false;
-  std::vector<std::string> trigNames; // Brenda: This will take the triggers from the configuration file Run_info.in
+  std::vector<std::string> inputTriggerNames; // Brenda: This will take the triggers from the configuration file Run_info.in
   std::vector<bool*> triggernamedecisions; // Brenda
   std::vector<int> cuts_per, cuts_cumul;
 

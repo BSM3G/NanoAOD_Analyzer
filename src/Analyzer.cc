@@ -1206,7 +1206,7 @@ void Analyzer::setupGeneral(std::string year) {
   jsonlinedict = readinJSON(year);
 
 
-  for(std::string trigger : trigNames){
+  for(std::string trigger : inputTriggerNames){
 
     try{
       getTriggerBranchesList(trigger);
@@ -1217,6 +1217,10 @@ void Analyzer::setupGeneral(std::string year) {
     }
   
   }
+
+  // Check that there are no elements on the trigger list that refer to the same trigger 
+  // to speed up the process.
+  removeDuplicates(triggerBranchesList);
 
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
   std::cout << "Full list of triggers to be probed: " << std::endl;
@@ -1312,7 +1316,7 @@ void Analyzer::read_info(std::string filename) {
       if(stemp.at(0).find("Trigger") != std::string::npos) {
         for(auto trigger : stemp){
           if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
-            trigNames.push_back(trigger);
+            inputTriggerNames.push_back(trigger);
           }
         }
         continue;
@@ -1323,7 +1327,7 @@ void Analyzer::read_info(std::string filename) {
       if(stemp.at(0).find("Trigger") != std::string::npos) {
         for(auto trigger : stemp){
           if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
-            trigNames.push_back(trigger);
+            inputTriggerNames.push_back(trigger);
           }
         }
         continue;
