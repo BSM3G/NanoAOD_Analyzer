@@ -105,13 +105,16 @@ public:
   bool JetMatchesLepton(const Lepton&, const TLorentzVector&, double, CUTS);
   TLorentzVector matchLeptonToGen(const TLorentzVector&, const PartStats&, CUTS);
   TLorentzVector matchTauToGen(const TLorentzVector&, double);
+  TLorentzVector matchHadTauToGen(const TLorentzVector&, double);
   TLorentzVector matchJetToGen(const TLorentzVector&, const PartStats&, CUTS);
 
   int matchToGenPdg(const TLorentzVector& lvec, double minDR);
 
 
   void getGoodParticles(int);
-  void getGenHadronicTauNeutrinos();
+  void getGoodGenHadronicTaus(const PartStats&);
+  void getGoodGenHadronicTauNeutrinos(const PartStats&);
+  TLorentzVector getGenHadronicTau4Vector(int,int);
   void getGoodGen(const PartStats&);
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
@@ -178,6 +181,7 @@ public:
   
 
   Generated* _Gen;
+  GenHadronicTaus* _GenHadTau;
   Electron* _Electron;
   Muon* _Muon;
   Taus* _Tau;

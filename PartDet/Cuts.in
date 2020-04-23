@@ -26,7 +26,7 @@ NGenMuon	0  -1
 NGenZ		0  -1
 NGenW		0  -1
 NGenHiggs	0  -1
-NGenTau		1  -1
+NGenTau		0  -1
 
 ***NRecoVertex        1   -1   ///at least one good vertex
 ***NRecoTriggers1     0   -1   ///events must fire the HLT_IsoMu24 trigger
@@ -41,8 +41,8 @@ NRecoBJet	      0   -1
 NRecoMuon2	      0   -1
 NRecoElectron1        0   -1   
 NRecoElectron2	      0   -1
-***NRecoTau1	      1   -1
-***NRecoTau2	      1   -1
+***NRecoTau1	      0   -1
+***NRecoTau2	      0   -1
 NRecoCentralJet	      0   -1
 NRecoTriggers2	      0   -1           ///only 0 or 1
 NRecoSecondLeadingJet 0   -1    ///only 0 or 1

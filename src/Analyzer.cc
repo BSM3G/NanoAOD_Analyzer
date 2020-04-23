@@ -35,7 +35,7 @@ const std::string PUSPACE = "Pileup/";
 const std::vector<CUTS> Analyzer::genCuts = {
   CUTS::eGTau, CUTS::eGNuTau, CUTS::eGTop,
   CUTS::eGElec, CUTS::eGMuon, CUTS::eGZ,
-  CUTS::eGW, CUTS::eGHiggs, CUTS::eGJet, CUTS::eGBJet
+  CUTS::eGW, CUTS::eGHiggs, CUTS::eGJet, CUTS::eGBJet, CUTS::eGHadTau
 };
 
 const std::vector<CUTS> Analyzer::jetCuts = {
@@ -52,7 +52,8 @@ const std::unordered_map<std::string, CUTS> Analyzer::cut_num = {
   {"NGenElectron", CUTS::eGElec},                       {"NGenMuon", CUTS::eGMuon},
   {"NGenZ", CUTS::eGZ},                                 {"NGenW", CUTS::eGW},
   {"NGenHiggs", CUTS::eGHiggs},                         {"NGenJet", CUTS::eGJet},
-  {"NGenBJet", CUTS::eGBJet}, {"NRecoMuon1", CUTS::eRMuon1},                        {"NRecoMuon2", CUTS::eRMuon2},
+  {"NGenBJet", CUTS::eGBJet},                           {"NGenHadTau", CUTS::eGHadTau},
+  {"NRecoMuon1", CUTS::eRMuon1},                        {"NRecoMuon2", CUTS::eRMuon2},
   {"NRecoElectron1", CUTS::eRElec1},                    {"NRecoElectron2",CUTS::eRElec2},
   {"NRecoTau1", CUTS::eRTau1},                          {"NRecoTau2", CUTS::eRTau2},
   {"NRecoJet1", CUTS::eRJet1},                          {"NRecoJet2", CUTS::eRJet2},
@@ -202,7 +203,8 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
     _Gen = new Generated(BOOM, filespace + "Gen_info.in", syst_names);
-    allParticles= {_Gen,_Electron,_Muon,_Tau,_Jet,_FatJet};
+    _GenHadTau = new GenHadronicTaus(BOOM, filespace + "Gen_info.in", syst_names);
+    allParticles= {_Gen,_GenHadTau,_Electron,_Muon,_Tau,_Jet,_FatJet};
   } else {
     std::cout<<"This is Data if not, change the flag!"<<std::endl;
     allParticles= {_Electron,_Muon,_Tau,_Jet,_FatJet};
@@ -659,8 +661,11 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   // SET NUMBER OF GEN PARTICLES
   if(!isData){
     _Gen->setOrigReco();
+    _GenHadTau->setOrigReco();
+
     getGoodGen(_Gen->pstats["Gen"]);
-    getGenHadronicTauNeutrinos();
+    getGoodGenHadronicTaus(_GenHadTau->pstats["Gen"]);
+    getGoodGenHadronicTauNeutrinos(_Gen->pstats["Gen"]);
     getGoodGenBJet(); //01.16.19
   }
 
@@ -717,8 +722,10 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoLeptons(*_Electron, CUTS::eRElec2, CUTS::eGElec, _Electron->pstats["Elec2"],syst);
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon1, CUTS::eGMuon, _Muon->pstats["Muon1"],syst);
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon2, CUTS::eGMuon, _Muon->pstats["Muon2"],syst);
-  getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGTau, _Tau->pstats["Tau1"],syst);
-  getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGTau, _Tau->pstats["Tau2"],syst);
+  //getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGTau, _Tau->pstats["Tau1"],syst);
+  //getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGTau, _Tau->pstats["Tau2"],syst);
+  getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGHadTau, _Tau->pstats["Tau1"],syst);
+  getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGHadTau, _Tau->pstats["Tau2"],syst);
   getGoodRecoBJets(CUTS::eRBJet, _Jet->pstats["BJet"],syst); //01.16.19
   //getGoodRecoJets(CUTS::eRBJet, _Jet->pstats["BJet"],syst);
   getGoodRecoJets(CUTS::eRJet1, _Jet->pstats["Jet1"],syst);
@@ -1377,6 +1384,7 @@ void Analyzer::setCutNeeds() {
     neededCuts.loadCuts(CUTS::eGW);
   }
 
+  neededCuts.loadCuts(CUTS::eGHadTau);
   neededCuts.loadCuts(CUTS::eGBJet); //01.16.19
   neededCuts.loadCuts(_Jet->findExtraCuts());
   if(doSystematics) {
@@ -1511,17 +1519,33 @@ bool Analyzer::JetMatchesLepton(const Lepton& lepton, const TLorentzVector& jetV
 
 
 ////checks if reco object matchs a gen object.  If so, then reco object is for sure a correctly identified particle
-TLorentzVector Analyzer::matchLeptonToGen(const TLorentzVector& lvec, const PartStats& stats, CUTS ePos) {
+TLorentzVector Analyzer::matchLeptonToGen(const TLorentzVector& recoLepton4Vector, const PartStats& stats, CUTS ePos) {
   if(ePos == CUTS::eGTau) {
-    return matchTauToGen(lvec, stats.dmap.at("GenMatchingDeltaR"));
+    return matchTauToGen(recoLepton4Vector, stats.dmap.at("GenMatchingDeltaR"));
+  }
+  if(ePos == CUTS::eGHadTau){
+    return matchHadTauToGen(recoLepton4Vector, stats.dmap.at("GenMatchingDeltaR"));
   }
   for(auto it : *active_part->at(ePos)) {
-    if(lvec.DeltaR(_Gen->p4(it)) <= stats.dmap.at("GenMatchingDeltaR")) {
+    if(recoLepton4Vector.DeltaR(_Gen->p4(it)) <= stats.dmap.at("GenMatchingDeltaR")) {
       if(stats.bfind("UseMotherID") && abs(_Gen->pdg_id[_Gen->genPartIdxMother[it]]) != stats.dmap.at("MotherID")) continue;
       return _Gen->p4(it);
     }
   }
   return TLorentzVector(0,0,0,0);
+}
+
+///Tau specific matching function.  Works by seeing if a tau doesn't decay into a muon/electron and has
+//a matching tau neutrino showing that the tau decayed and decayed hadronically
+TLorentzVector Analyzer::matchHadTauToGen(const TLorentzVector& recoTau4Vector, double recogenDeltaR) {
+  TLorentzVector genTau4Vector(0,0,0,0);
+
+  for(vec_iter genhadtau_it = active_part->at(CUTS::eGHadTau)->begin(); genhadtau_it != active_part->at(CUTS::eGHadTau)->end(); genhadtau_it++){ // (genhadtau_it) is the index of the gen-level hadronic tau in the gen-hadtau vector.
+    genTau4Vector = _GenHadTau->p4(*genhadtau_it);
+    if(recoTau4Vector.DeltaR(genTau4Vector) <= recogenDeltaR) return genTau4Vector;
+
+  }
+  return genTau4Vector;
 }
 
 
@@ -1580,42 +1604,118 @@ int Analyzer::matchToGenPdg(const TLorentzVector& lvec, double minDR) {
 
 
 ////Calculates the number of gen particles.  Based on id number and status of each particle
+// The file that corresponds to PartStats& stats is Gen_info.in
 void Analyzer::getGoodGen(const PartStats& stats) {
-  if(! neededCuts.isPresent(CUTS::eGen)) return;
-  for(size_t j = 0; j < _Gen->size(); j++) {
-	  
-    //we are not interested in pythia info here!
-    //if(_Gen->status->at(j)>10){
-      //continue;
-    //}
-    int id = abs(_Gen->pdg_id[j]);
-    // The cuts read in this function are set in Gen_info.in.
-    if(genMaper.find(id) != genMaper.end() && _Gen->status[j] == genMaper.at(id)->status) {
-      if(id == 15 && (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
-     
-      // if(id == 24 && abs(_Gen->status[j]) == 47) continue; //Changed on 05.15.18 to clean TT inclusive.  Talked to Klaas- GenW wasn't filling b/c we were explicitly requiring status 2 or 62.  The W's from TTbar have status 52 once the momentum is corrected.  He said we should just fill with everything that is not status 47.  Status 47 is W or Z from shower. 01.16.19
 
-      // Search for electrons/muons with two different mother ID requirements (either one or the other)
-      if((id == 11 || id == 13) && (stats.bfind("DiscrLightLepByMotherID1") * stats.bfind("DiscrLightLepByMotherID2") == 1)){
-         bool motherid1 = abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) == stats.dmap.at("LightLepMotherID1");
-	 bool motherid2 = abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) == stats.dmap.at("LightLepMotherID2");
-	 
-	 if((motherid1 || motherid2) == 0) continue; // skip if neither of the requirements was satisfied.
-      }
-      
-      if((id == 11 || id == 13) && (stats.bfind("DiscrLightLepByMotherID1") * stats.bfind("DiscrLightLepByMotherID2") == 0)){
-         // This condition looks to a single mother id requirement:
-	 if(stats.bfind("DiscrLightLepByMotherID1") == 1 && abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.dmap.at("LightLepMotherID1")) continue;
-	 if(stats.bfind("DiscrLightLepByMotherID1") == 1 && abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.dmap.at("LightLepMotherID1")) continue;
-      }
-	    
-	    
-      active_part->at(genMaper.at(id)->ePos)->push_back(j);
-    }
-    //something special for jet
-    if( (id<5 || id==9 ||  id==21) && genMaper.find(id) != genMaper.end() && _Gen->status[j] == genMaper.at(5)->status) {
+  if(! neededCuts.isPresent(CUTS::eGen)) return;
+
+  int particle_id = 0;
+
+  for(size_t j = 0; j < _Gen->size(); j++) {
+
+    particle_id = abs(_Gen->pdg_id[j]);
+
+    if( (particle_id < 5 || particle_id == 9 || particle_id == 21) && genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(5)->status){
       active_part->at(genMaper.at(5)->ePos)->push_back(j);
     }
+    else if(genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(particle_id)->status) {
+      // Cuts on gen-taus (before decaying)
+      if(stats.bfind("DiscrTauByPtAndEta")){
+        if(particle_id == 15 && (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
+      }
+      // Cuts on light lepton mother IDs
+      else if(stats.bfind("DiscrLightLepByMotherID")){
+       if( (particle_id == 11 || particle_id == 13) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("LightLepMotherIDs").first || abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("LightLepMotherIDs").second)) continue;
+      }
+
+      active_part->at(genMaper.at(particle_id)->ePos)->push_back(j);    
+    }
+
+  }
+}
+
+// --- Function that applies selections to hadronic taus at gen-level (stored in the GenVisTau list) --- //
+void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
+
+  // Loop over all gen-level hadronic taus stored in the corresponding list to apply certain selections
+  for(size_t i=0; i < _GenHadTau->size(); i++){
+
+    if(_GenHadTau->pt(i) < stats.pmap.at("HadTauPtCut").first || _GenHadTau->pt(i) > stats.pmap.at("HadTauPtCut").second || abs(_GenHadTau->eta(i)) > stats.dmap.at("HadTauEtaCut")) continue;
+    else if( stats.bfind("DiscrByTauDecayMode") && (_GenHadTau->decayMode[i] < stats.pmap.at("TauDecayModes").first || _GenHadTau->decayMode[i] > stats.pmap.at("TauDecayModes").second)) continue;
+
+    active_part->at(CUTS::eGHadTau)->push_back(i);
+  } 
+}
+
+// --- Function that gets the Lorentz vector of taus that decayed hadronically using the tagging method in Analyzer::getGenHadronicTauNeutrinos() --- //
+TLorentzVector Analyzer::getGenHadronicTau4Vector(int gentau_idx, int gentaunu_idx){
+  TLorentzVector hadTau4Vector(0,0,0,0);
+
+  if(gentaunu_idx != -1 && gentau_idx != -1){
+    hadTau4Vector = _Gen->p4(gentau_idx) - _Gen->p4(gentaunu_idx);
+  } 
+  return hadTau4Vector;
+}
+
+// --- Function that looks for tau neutrinos coming from hadronic tau decays in the full gen-level particle list --- //
+void Analyzer::getGoodGenHadronicTauNeutrinos(const PartStats& stats){
+  int genTauNeutrino_idx = -1, genHadTauNeutrino_idx = -1;   // integers for the particle indices in the gen-particle vector.
+  TLorentzVector genVisHadTau4Vector(0,0,0,0);
+
+  // Loop over the gen-level taus that satisfied the conditions imposed in getGoodGen, which are stored at CUTS::eGTau.
+  for(auto gentau_it : *active_part->at(CUTS::eGTau)){ // (gentau_it) is the index of the gen-level tau in the gen-particles vector.
+    // For each iteration, reset the tau neutrino index and the leptonic flag.
+    genTauNeutrino_idx = -1, genHadTauNeutrino_idx = -1;
+    // isTauLeptonicDecay = false;
+
+    // Make sure that the status code of the current gen-tau is 2, meaning, it's an unstable particle about to decay
+    if(_Gen->status[(gentau_it)] != 2) continue;
+
+    // Loop over all gen-level particles to find those that come from the decay of the current gen-tau.
+    for(size_t genpart_idx = 0; genpart_idx < _Gen->size(); genpart_idx++) {
+
+      // Check that the mother particle index matches the index of the current gen-tau and that the particle is any neutrino:
+      if( abs(_Gen->genPartIdxMother[genpart_idx]) != (gentau_it)) continue; // || abs(_Gen->pdg_id[genpart_idx]) != 12 || abs(_Gen->pdg_id[genpart_idx]) != 14 || abs(_Gen->pdg_id[genpart_idx]) != 16) continue;
+
+      // Look specifically for electron, muon and tau neutrinos. They are enough to tell if a decay was hadronic or leptonic.
+      // If in the particle decays there is an electron or muon neutrino, the decay is leptonic and we break this for loop and continue with the next gen-tau in CUTS::eGTau
+      if( ( abs(_Gen->pdg_id[genpart_idx]) == 12 || ( abs(_Gen->pdg_id[genpart_idx]) == 14 ) ) ){
+        genTauNeutrino_idx = -1;
+        break;
+      }
+      // Since we reject all taus that have e/mu neutrinos, we will only get hadronic tau decays and we want to store the index of the neutrino for these events.
+      // As soon as it's found, then break the loop to not go over the entire list of gen particles for this events.
+      else if( abs(_Gen->pdg_id[genpart_idx]) == 16){ // genTauNeutrino_idx = genpart_idx;
+        genTauNeutrino_idx = genpart_idx;
+      }
+    }
+
+    // Check if the current tau decayed hadronically or leptonically and assign the index accordingly
+    genHadTauNeutrino_idx = genTauNeutrino_idx;
+
+    // Apply kinematic cuts on the visible hadronic tau vector
+    genVisHadTau4Vector = getGenHadronicTau4Vector(gentau_it, genHadTauNeutrino_idx);
+    if(genVisHadTau4Vector.Pt() < stats.pmap.at("HadTauPtCut").first || genVisHadTau4Vector.Pt() > stats.pmap.at("HadTauPtCut").second || abs(genVisHadTau4Vector.Eta()) > stats.dmap.at("HadTauEtaCut")){
+      genHadTauNeutrino_idx = -1;
+    }
+
+    active_part->at(CUTS::eGNuTau)->push_back(genHadTauNeutrino_idx);
+  }
+
+}
+
+void Analyzer::getGoodGenBJet() { //01.16.19
+  for (size_t j=0; j < _Gen->size(); j++){
+    int id = abs(_Gen->pdg_id[j]);
+    int motherid = abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]);
+    int motherind = abs(_Gen->genPartIdxMother[j]);
+    if(id == 5 && motherid == 6)
+      {for(size_t k=0; k < _Gen->size(); k++){
+    if(abs(_Gen->pdg_id[k]) == 24 && _Gen->genPartIdxMother[k] == motherind)
+      {active_part->at(CUTS::eGBJet)->push_back(j);
+      }
+  }
+      }
   }
 }
 
@@ -1638,56 +1738,6 @@ double Analyzer::getTopBoostWeight(){ //01.15.19
     SFttbar = sqrt(SFtop * SFtopBar);} //calculate the total SF
   
   return SFttbar;
-}
-
-// --- Function that looks for tau neutrinos coming from hadronic tau decays at gen-level --- //
-void Analyzer::getGenHadronicTauNeutrinos() {
-
-  
-  bool isTauLeptonicDecay = false;        // Flag to identify tau leptonic decays
-  int genTauNeutrino_idx = -1, genHadTauNeutrino_idx = -1;   // integers for the particle indices in the gen-particle vector.
-
-  // Loop over the gen-level taus that satisfied the conditions imposed in getGoodGen, which are stored at CUTS::eGTau.
-  for(auto gentau_it : *active_part->at(CUTS::eGTau)){ // (gentau_it) is the index of the gen-level tau in the gen-particles vector.
-    // For each iteration, reset the tau neutrino index and the leptonic flag.
-    genTauNeutrino_idx = -1, genHadTauNeutrino_idx = -1;
-    isTauLeptonicDecay = false;
-
-    // Make sure that the status code of the current gen-tau is 2, meaning, it's an unstable particle about to decay
-    if(_Gen->status[(gentau_it)] != 2) continue;
-
-    // Loop over all gen-level particles to find those that come from the decay of the current gen-tau.
-    for(size_t genpart_idx = 0; genpart_idx < _Gen->size(); genpart_idx++) {
-
-      // Check that the mother particle index matches the index of the current gen-tau:
-      if( abs(_Gen->genPartIdxMother[genpart_idx]) != (gentau_it) ) continue;
-
-      // Look specifically for electron, muon and tau neutrinos. They are enough to tell if a decay was hadronic or leptonic.
-      if( ( abs(_Gen->pdg_id[genpart_idx]) == 12 || ( abs(_Gen->pdg_id[genpart_idx]) == 14 ) ) ) isTauLeptonicDecay = true;
-      else if( abs(_Gen->pdg_id[genpart_idx]) == 16 ) genTauNeutrino_idx = genpart_idx;
-
-    }
-    // Check if the current tau decayed hadronically or leptonically and assign the index accordingly
-    genHadTauNeutrino_idx = (isTauLeptonicDecay) ? -1 : genTauNeutrino_idx;
-
-    active_part->at(CUTS::eGNuTau)->push_back(genHadTauNeutrino_idx);
-  }
-
-}
-
-void Analyzer::getGoodGenBJet() { //01.16.19
-  for (size_t j=0; j < _Gen->size(); j++){
-    int id = abs(_Gen->pdg_id[j]);
-    int motherid = abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]);
-    int motherind = abs(_Gen->genPartIdxMother[j]);
-    if(id == 5 && motherid == 6)
-      {for(size_t k=0; k < _Gen->size(); k++){
-	  if(abs(_Gen->pdg_id[k]) == 24 && _Gen->genPartIdxMother[k] == motherind)
-	    {active_part->at(CUTS::eGBJet)->push_back(j);
-	    }
-	}
-      }
-  }
 }
 
 ///Function used to find the number of reco leptons that pass the various cuts.
@@ -2770,6 +2820,15 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(diParticleMass(_Gen->p4(*it),_Gen->p4(*it2), "none"), "DiTauMass");
       }
     }
+
+    for(vec_iter genhadtau_it = active_part->at(CUTS::eGHadTau)->begin(); genhadtau_it != active_part->at(CUTS::eGHadTau)->end(); genhadtau_it++){
+        histAddVal(_GenHadTau->pt(*genhadtau_it), "VisHadTauPt");
+        histAddVal(_GenHadTau->eta(*genhadtau_it), "VisHadTauEta");
+        histAddVal(_GenHadTau->phi(*genhadtau_it), "VisHadTauPhi");
+        histAddVal(_GenHadTau->p4(*genhadtau_it).M(), "VisHadTauMass");
+        histAddVal(_GenHadTau->decayMode[*genhadtau_it], "VisHadTauDecayMode");
+    }
+    histAddVal(active_part->at(CUTS::eGHadTau)->size(), "NVisHadTau");
 
     int grbj = 0;
     TLorentzVector genVec2;

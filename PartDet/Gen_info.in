@@ -2,8 +2,20 @@
 
 Gen
 
+DiscrTauByPtAndEta true
 TauPtCut -10.0  10000.0 
 TauEtaCut 10.0
+
+DiscrHadTauByPtAndEta true
+HadTauPtCut   18.0  9999.9
+HadTauEtaCut  2.4
+DiscrByTauDecayMode false
+TauDecayModes		0    15          
+
+DiscrLightLepByMotherID 0
+LightLepMotherIDs 23. 24.
+
+//// ----- THESE OPTIONS ARE NOT USED ANYMORE ----- ////
 
 TauID 15.
 TauStatus 2.
@@ -25,11 +37,3 @@ WStatus 2.
 
 HiggsID 25.
 HiggsStatus 2.
-
-DiscrLightLepByMotherID1 0
-LightLepMotherID1 23.
-
-DiscrLightLepByMotherID2 0
-LightLepMotherID2 24.
-
-
