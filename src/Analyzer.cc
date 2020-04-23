@@ -1050,13 +1050,13 @@ bool Analyzer::passMetFilters(std::string year, int ievent){
   SetBranch("Flag_BadPFMuonFilter", badpfmuonfilter);
   // Bad charged hadron filter - not recommended.
   // SetBranch("Flag_BadChargedCandidateFilter", badchargedhadronfilter);
-  // ECAL bad calibration filter (2017 + 2018).
-  // SetBranch("Flag_ecalBadCalibFilter", ecalbadcalibrationfilter);
   if(year.compare("2016") == 0){
     // in 2016, this filter is not recommended... therefore we set it always to true.
     ecalbadcalibrationfilter = true;
   }
   else{
+    // ECAL bad calibration filter (2017 + 2018).
+    // SetBranch("Flag_ecalBadCalibFilter", ecalbadcalibrationfilter);
     SetBranch("Flag_ecalBadCalibFilterV2", ecalbadcalibrationfilter);
   }
 
