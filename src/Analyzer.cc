@@ -2162,18 +2162,21 @@ bool Analyzer::isInTheCracks(float etaValue){
 
 ///sees if the event passed one of the two cuts provided
 void Analyzer::TriggerCuts(CUTS ePos) {
-  if(! neededCuts.isPresent(ePos)) return;
+	if(! neededCuts.isPresent(ePos)) return;
 
-  //std::cout << "Trigger decisions: " << std::endl;
-  for(bool* decision : triggernamedecisions){
-    //std::cout << *decision << std::endl;
-    if(*decision){
-      active_part->at(ePos)->push_back(0);
-      return;
-    }
-  }
-
-  triggernamedecisions.clear();
+	// Loop over all elements of the trigger decisions vector
+	for(bool* decision : triggernamedecisions){
+		if(*decision){
+			// If one element is true (1), then store back the event in the triggers vector
+			active_part->at(ePos)->push_back(0);
+			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
+			triggernamedecisions.clear();
+			// End of the function
+			return;
+		}
+	}
+	// If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
+	triggernamedecisions.clear();
 }
 
 
