@@ -104,7 +104,7 @@ public:
   void setupEventGeneral(int);
   void getTriggerBranchesList(std::string);
   bool passGenHTFilter(float);
-  //bool checkRunsAndLumis();
+  bool checkGoodRunsAndLumis(int);
   void branchException(std::string);
   void initializeTrigger();
   void setCutNeeds();
