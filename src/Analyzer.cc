@@ -35,7 +35,7 @@ const std::string PUSPACE = "Pileup/";
 const std::vector<CUTS> Analyzer::genCuts = {
   CUTS::eGTau, CUTS::eGNuTau, CUTS::eGTop,
   CUTS::eGElec, CUTS::eGMuon, CUTS::eGZ,
-  CUTS::eGW, CUTS::eGHiggs, CUTS::eGJet, CUTS::eGBJet, CUTS::eGHadTau
+  CUTS::eGW, CUTS::eGHiggs, CUTS::eGJet, CUTS::eGBJet, CUTS::eGHadTau, CUTS::eGMatchedHadTau
 };
 
 const std::vector<CUTS> Analyzer::jetCuts = {
@@ -53,6 +53,7 @@ const std::unordered_map<std::string, CUTS> Analyzer::cut_num = {
   {"NGenZ", CUTS::eGZ},                                 {"NGenW", CUTS::eGW},
   {"NGenHiggs", CUTS::eGHiggs},                         {"NGenJet", CUTS::eGJet},
   {"NGenBJet", CUTS::eGBJet},                           {"NGenHadTau", CUTS::eGHadTau},
+  {"NMatchedGenHadTau", CUTS::eGMatchedHadTau},
   {"NRecoMuon1", CUTS::eRMuon1},                        {"NRecoMuon2", CUTS::eRMuon2},
   {"NRecoElectron1", CUTS::eRElec1},                    {"NRecoElectron2",CUTS::eRElec2},
   {"NRecoTau1", CUTS::eRTau1},                          {"NRecoTau2", CUTS::eRTau2},
@@ -1512,14 +1513,22 @@ TLorentzVector Analyzer::matchLeptonToGen(const TLorentzVector& recoLepton4Vecto
 ///Tau specific matching function.  Works by seeing if a tau doesn't decay into a muon/electron and has
 //a matching tau neutrino showing that the tau decayed and decayed hadronically
 TLorentzVector Analyzer::matchHadTauToGen(const TLorentzVector& recoTau4Vector, double recogenDeltaR) {
-  TLorentzVector genTau4Vector(0,0,0,0);
-
+  //TLorentzVector genTau4Vector(0,0,0,0);
+  //int i = 0; // This will give us the position of the element at CUTS::eGHadTau we are looking at
   for(vec_iter genhadtau_it = active_part->at(CUTS::eGHadTau)->begin(); genhadtau_it != active_part->at(CUTS::eGHadTau)->end(); genhadtau_it++){ // (genhadtau_it) is the index of the gen-level hadronic tau in the gen-hadtau vector.
-    genTau4Vector = _GenHadTau->p4(*genhadtau_it);
-    if(recoTau4Vector.DeltaR(genTau4Vector) <= recogenDeltaR) return genTau4Vector;
-
+    //genTau4Vector = _GenHadTau->p4(*genhadtau_it);
+    // Compare the separation between the reco and gen hadronic tau candidates. If it's greather than the requirement, continue with the next gen-tau_h candidate.
+    if(recoTau4Vector.DeltaR(_GenHadTau->p4(*genhadtau_it)) > recogenDeltaR) continue;
+    // If the requirement DeltaR <= recogenDeltaR, the code will get to this point. Then we want to fill a vector that only stores the matched gen taus
+    active_part->at(CUTS::eGMatchedHadTau)->push_back(*genhadtau_it); 
+    // Remove this gen-tau from CUTS::eGHadTau to avoid getting matched again with any other tau present in the event.
+    active_part->at(CUTS::eGHadTau)->erase(genhadtau_it);
+    // And we also return the gen-tau p4 vector, which we are interested in.
+    //return genTau4Vector;
+    return _GenHadTau->p4(*genhadtau_it);
   }
-  return genTau4Vector;
+  //return genTau4Vector;
+  return TLorentzVector(0,0,0,0);
 }
 
 
@@ -1622,13 +1631,13 @@ void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
 }
 
 // --- Function that gets the Lorentz vector of taus that decayed hadronically using the tagging method in Analyzer::getGenHadronicTauNeutrinos() --- //
-TLorentzVector Analyzer::getGenHadronicTau4Vector(int gentau_idx, int gentaunu_idx){
-  TLorentzVector hadTau4Vector(0,0,0,0);
+TLorentzVector Analyzer::getGenVisibleTau4Vector(int gentau_idx, int gentaunu_idx){
+  TLorentzVector visTau4Vector(0,0,0,0);
 
   if(gentaunu_idx != -1 && gentau_idx != -1){
-    hadTau4Vector = _Gen->p4(gentau_idx) - _Gen->p4(gentaunu_idx);
+    visTau4Vector = _Gen->p4(gentau_idx) - _Gen->p4(gentaunu_idx);
   } 
-  return hadTau4Vector;
+  return visTau4Vector;
 }
 
 // --- Function that looks for tau neutrinos coming from hadronic tau decays in the full gen-level particle list --- //
@@ -1668,7 +1677,7 @@ void Analyzer::getGoodGenHadronicTauNeutrinos(const PartStats& stats){
     genHadTauNeutrino_idx = genTauNeutrino_idx;
 
     // Apply kinematic cuts on the visible hadronic tau vector
-    genVisHadTau4Vector = getGenHadronicTau4Vector(gentau_it, genHadTauNeutrino_idx);
+    genVisHadTau4Vector = getGenVisibleTau4Vector(gentau_it, genHadTauNeutrino_idx);
     if(genVisHadTau4Vector.Pt() < stats.pmap.at("HadTauPtCut").first || genVisHadTau4Vector.Pt() > stats.pmap.at("HadTauPtCut").second || abs(genVisHadTau4Vector.Eta()) > stats.dmap.at("HadTauEtaCut")){
       genHadTauNeutrino_idx = -1;
     }
@@ -2780,6 +2789,15 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(_GenHadTau->decayMode[*genhadtau_it], "VisHadTauDecayMode");
     }
     histAddVal(active_part->at(CUTS::eGHadTau)->size(), "NVisHadTau");
+
+    for(vec_iter matchedgentauh_it = active_part->at(CUTS::eGMatchedHadTau)->begin(); matchedgentauh_it != active_part->at(CUTS::eGMatchedHadTau)->end(); matchedgentauh_it++){
+        histAddVal(_GenHadTau->pt(*matchedgentauh_it), "MatchedVisTauHPt");
+        histAddVal(_GenHadTau->eta(*matchedgentauh_it), "MatchedVisTauHEta");
+        histAddVal(_GenHadTau->phi(*matchedgentauh_it), "MatchedVisTauHPhi");
+        histAddVal(_GenHadTau->p4(*matchedgentauh_it).M(), "MatchedVisTauHMass");
+        histAddVal(_GenHadTau->decayMode[*matchedgentauh_it], "MatchedVisTauHDecayMode");
+    }
+    histAddVal(active_part->at(CUTS::eGHadTau)->size(), "NMatchedVisTauH");
 
     int grbj = 0;
     TLorentzVector genVec2;
