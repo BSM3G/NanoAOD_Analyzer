@@ -20,16 +20,19 @@ ApplyZBoostSF true
 isData false
 ApplyGenWeight  true
 
-/// ------ Gen-level cuts ------///
+/// ------ Data-specific cuts ------///
+FilterDataByGoldenJSON true
+
+/// ------ MC Gen-level cuts ------///
 /// --- HT filter --- ///
-DiscrByGenHT false
+DiscrByGenHT true
 LowerGenHtCut 0.0
 UpperGenHtCut 100.0
 
 /// --- MC selection --- ///
 InitializeMCSelection false
 
-///------Triggers-----///
+/// ------ Triggers ----- ///
 
 Trigger1FirstRequirement HLT_IsoMu24
 Trigger1SecondRequirement HLT_IsoMu27
