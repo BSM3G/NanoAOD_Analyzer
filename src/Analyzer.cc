@@ -547,11 +547,11 @@ void Analyzer::setupEventGeneral(int nevent){
 bool Analyzer::passGenHTFilter(float genhtvalue){
 
   if(genhtvalue >= distats["Run"].dmap.at("LowerGenHtCut") && genhtvalue <= distats["Run"].dmap.at("UpperGenHtCut")){
-    std::cout << "genhtvalue = " << genhtvalue << ", passed genht filter " << std::endl;
+    //std::cout << "genhtvalue = " << genhtvalue << ", passed genht filter " << std::endl;
     return true;
   }
   else{
-    std::cout << "genhtvalue = " << genhtvalue << ", failed genht filter " << std::endl;
+    //std::cout << "genhtvalue = " << genhtvalue << ", failed genht filter " << std::endl;
     return false;
   }
 
