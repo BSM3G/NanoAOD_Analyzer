@@ -116,10 +116,15 @@ int main (int argc, char* argv[]) {
   parseCommandLine(argc, argv, inputnames, outputname, setCR, testRun, configFolder, year);
 
 
-  //setup the analyser
+  //setup the main analyzer
   Analyzer testing(inputnames, outputname, setCR, configFolder, year);
-  //SpechialAnalysis spechialAna = SpechialAnalysis(&testing);
-  //spechialAna.init();
+
+  // --------------------------------------------------------------------------- //
+  // In case you want to use the special analyzer, you need the following lines.
+  // If you are not interested in using it, just comment them out.
+  // SpechialAnalysis spechialAna = SpechialAnalysis(&testing);
+  // spechialAna.init();
+  // --------------------------------------------------------------------------- //
 
   //catch ctrl+c and just exit the loop
   //this way we still have the output
@@ -136,16 +141,20 @@ int main (int argc, char* argv[]) {
   
   //main event loop
   for(size_t i=0; i < Nentries; i++) {
-
+    
+    //if(i == 0) spechialAna.begin_run();   // Special analyzer
+    
     testing.clear_values();
-    //std::cout<<"before preprocess"<<std::endl;
+
     testing.preprocess(i, year);
-    //std::cout<<"after preprocess"<<std::endl;
+
     testing.fill_efficiency();
     //if (i < 25)
     //{testing.writeParticleDecayList(i);}  //01.16.19:  This will write the particle decay list for the first 25 events.
     testing.fill_histogram();
-    //spechialAna.analyze();
+    
+    //spechialAna.analyze();                // Special analyzer
+    
     //this will be set if ctrl+c is pressed
     if(do_break){
       testing.nentries=i+1;
@@ -153,6 +162,8 @@ int main (int argc, char* argv[]) {
     }
   }
   testing.printCuts();
-  //spechialAna.end_run();
+  
+  //spechialAna.end_run();                // Special analyzer
+  
   return 0;
 }
