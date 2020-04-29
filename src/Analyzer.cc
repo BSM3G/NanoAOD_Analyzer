@@ -1522,7 +1522,7 @@ TLorentzVector Analyzer::matchHadTauToGen(const TLorentzVector& recoTau4Vector, 
     // If the requirement DeltaR <= recogenDeltaR, the code will get to this point. Then we want to fill a vector that only stores the matched gen taus
     active_part->at(CUTS::eGMatchedHadTau)->push_back(*genhadtau_it); 
     // Remove this gen-tau from CUTS::eGHadTau to avoid getting matched again with any other tau present in the event.
-    active_part->at(CUTS::eGHadTau)->erase(genhadtau_it);
+    // active_part->at(CUTS::eGHadTau)->erase(genhadtau_it);
     // And we also return the gen-tau p4 vector, which we are interested in.
     //return genTau4Vector;
     return _GenHadTau->p4(*genhadtau_it);
