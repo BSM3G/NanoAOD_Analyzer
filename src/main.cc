@@ -21,12 +21,13 @@ void usage() {
   std::cout << "-CR: to run over the control regions (not the usual output)\n";
   std::cout << "-C: use a different config folder than the default 'PartDet'\n";
   std::cout << "-t: run over 100 events\n";
+  std::cout << "-y: specify year to run (2016, 2017 or 2018) \n";
   std::cout << "\n";
 
   exit(EXIT_FAILURE);
 }
 
-void parseCommandLine(int argc, char *argv[], std::vector<std::string> &inputnames, std::string &outputname, bool &setCR, bool &testRun, std::string &configFolder) {
+void parseCommandLine(int argc, char *argv[], std::vector<std::string> &inputnames, std::string &outputname, bool &setCR, bool &testRun, std::string &configFolder, std::string &year) {
   if(argc < 3) {
     std::cout << std::endl;
     std::cout << "You have entered too little arguments, please type:\n";
@@ -40,6 +41,11 @@ void parseCommandLine(int argc, char *argv[], std::vector<std::string> &inputnam
     }else if (strcmp(argv[arg], "-t") == 0) {
       testRun = true;
       continue;
+    }else if (strcmp(argv[arg], "-y") == 0) {
+        year = argv[arg+1];
+        std::cout << "Analyser: Year " << year << std::endl;
+        arg++;
+        continue;
     }else if (strcmp(argv[arg], "-C") == 0) {
       configFolder=argv[arg+1];
       std::cout << "Analyser: ConfigFolder " << configFolder << std::endl;
@@ -102,16 +108,23 @@ int main (int argc, char* argv[]) {
   std::string outputname;
   std::string configFolder="PartDet";
   std::vector<std::string> inputnames;
+  std::string year = "2016";
+    
 
 
   //get the command line options in a nice loop
-  parseCommandLine(argc, argv, inputnames, outputname, setCR, testRun, configFolder);
+  parseCommandLine(argc, argv, inputnames, outputname, setCR, testRun, configFolder, year);
 
 
-  //setup the analyser
-  Analyzer testing(inputnames, outputname, setCR, configFolder);
-  //SpechialAnalysis spechialAna = SpechialAnalysis(&testing);
-  //spechialAna.init();
+  //setup the main analyzer
+  Analyzer testing(inputnames, outputname, setCR, configFolder, year);
+
+  // --------------------------------------------------------------------------- //
+  // In case you want to use the special analyzer, you need the following lines.
+  // If you are not interested in using it, just comment them out.
+  // SpechialAnalysis spechialAna = SpechialAnalysis(&testing);
+  // spechialAna.init();
+  // --------------------------------------------------------------------------- //
 
   //catch ctrl+c and just exit the loop
   //this way we still have the output
@@ -122,22 +135,26 @@ int main (int argc, char* argv[]) {
     Nentries=100;
     testing.nentries=100;
   }
-  std::multimap<int,int> json_line_dict = testing.readinJSON(); //05.28.19
+    
+  // std::multimap<int,int> json_line_dict = testing.readinJSON(); //05.28.19
   //testing.checkParticleDecayList(); 01.16.19
+  
   //main event loop
   for(size_t i=0; i < Nentries; i++) {
-    //if(i==0){
-    //spechialAna.begin_run();
-    //}
+    
+    //if(i == 0) spechialAna.begin_run();   // Special analyzer
+    
     testing.clear_values();
-    //std::cout<<"before preprocess"<<std::endl;
-    testing.preprocess(i,json_line_dict);
-    //std::cout<<"after preprocess"<<std::endl;
+
+    testing.preprocess(i, year);
+
     testing.fill_efficiency();
     //if (i < 25)
     //{testing.writeParticleDecayList(i);}  //01.16.19:  This will write the particle decay list for the first 25 events.
     testing.fill_histogram();
-    //spechialAna.analyze();
+    
+    //spechialAna.analyze();                // Special analyzer
+    
     //this will be set if ctrl+c is pressed
     if(do_break){
       testing.nentries=i+1;
@@ -145,6 +162,8 @@ int main (int argc, char* argv[]) {
     }
   }
   testing.printCuts();
-  //spechialAna.end_run();
+  
+  //spechialAna.end_run();                // Special analyzer
+  
   return 0;
 }

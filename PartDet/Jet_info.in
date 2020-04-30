@@ -19,6 +19,7 @@ EtaCut 0. 5.0
 PtCut 30.0
 
 ApplyLooseID 1
+ApplyTightID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 0
@@ -44,7 +45,9 @@ BJMatchingDeltaR 0.3
 
 EtaCut 0. 5.0
 PtCut 30.0
+
 ApplyLooseID 1
+ApplyTightID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 0
@@ -68,8 +71,10 @@ BJMatchingDeltaR 0.3
           CentralJet
 ###################################
 
-ApplyLooseID 1
 PtCut 30.0
+
+ApplyLooseID 1
+ApplyTightID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 0
@@ -92,9 +97,11 @@ Tau2MatchingDeltaR 0.3
 
 DoDiscrByThisJet 1
 
-ApplyLooseID 1
 EtaCut 0.0 5.0
 PtCut 30.0
+
+ApplyLooseID 1
+ApplyTightID 0
 
 RemoveOverlapWithMuon1s 1 
 RemoveOverlapWithMuon2s 0
@@ -119,7 +126,9 @@ DoDiscrByThisJet 1
 
 EtaCut 0.0 5.0
 PtCut 30.0
-ApplyLooseID 1       
+
+ApplyLooseID 1
+ApplyTightID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 0
@@ -158,9 +167,14 @@ RemoveOverlapWithTau2s 0
 Tau1MatchingDeltaR 0.3
 Tau2MatchingDeltaR 0.3
 
-ApplyJetBTagging 1
-JetBTaggingCut  0.8484
+ApplyJetBTaggingCSVv2 0 
+ApplyJetBTaggingDeepCSV 1
+ApplyJetBTaggingDeepFlav 0
+
+JetBTaggingWP   medium
+JetBTaggingCut  0.6321
 MatchBToGen     0
 UseBtagSF       1
+BtagSFCSVfile   DeepCSV_94XSF_WP_V4_B_F.csv
 RemoveBJetsFromJets 0
 

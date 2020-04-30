@@ -43,17 +43,23 @@ double absnormPhi(double phi);
 //#define const
 //using namespace std;
 
+template <typename T>
+void removeDuplicates(std::vector<T>& vec)
+{
+  std::sort(vec.begin(), vec.end());
+  vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+}
+
 static const int nTrigReq = 2;
 
 class Analyzer {
   friend class CRTester;
 public:
-  Analyzer(std::vector<std::string>, std::string, bool setCR = false, std::string configFolder="PartDet");
+  Analyzer(std::vector<std::string>, std::string, bool setCR = false, std::string configFolder="PartDet", std::string year="2016");
   ~Analyzer();
   void add_metadata(std::vector<std::string> infiles);
   void clear_values();
-  void preprocess(int,std::multimap<int,int>); //05.28.19
-  //void preprocess(int); //05.28.19
+  void preprocess(int, std::string); //05.28.19
   bool fillCuts(bool);
   void printCuts();
   void writeout();
@@ -63,7 +69,10 @@ public:
   void fill_Tree();
   void setControlRegions() { histo.setControlRegions();}
   void checkParticleDecayList(); //01.16.19
-  std::multimap<int,int> readinJSON(); //05.28.19
+  /*----------- ReadinJSON class variables -------------*/
+  std::multimap<int,int> readinJSON(std::string);
+  std::multimap<int,int> jsonlinedict;
+  /*----------------------------------------------------*/
   void writeParticleDecayList(int); //01.16.19
   void getGoodGenBJet(); //01.16.19
   std::vector<int>* getList(CUTS ePos) {return goodParts[ePos];}
@@ -85,12 +94,17 @@ public:
 
   void getInputs();
   void setupJob(std::string);
+  bool specialPUcalculation = false;
   void initializePileupInfo(std::string, std::string, std::string, std::string);
   void initializeMCSelection(std::vector<std::string> infiles);
   void initializeWkfactor(std::vector<std::string> infiles);
 
   void read_info(std::string);
-  void setupGeneral();
+  void setupGeneral(std::string);
+  void setupEventGeneral(int);
+  void getTriggerBranchesList(std::string);
+  bool passGenHTFilter(float);
+  bool checkGoodRunsAndLumis(int);
   void branchException(std::string);
   void initializeTrigger();
   void setCutNeeds();
@@ -101,13 +115,16 @@ public:
   bool JetMatchesLepton(const Lepton&, const TLorentzVector&, double, CUTS);
   TLorentzVector matchLeptonToGen(const TLorentzVector&, const PartStats&, CUTS);
   TLorentzVector matchTauToGen(const TLorentzVector&, double);
+  TLorentzVector matchHadTauToGen(const TLorentzVector&, double);
   TLorentzVector matchJetToGen(const TLorentzVector&, const PartStats&, CUTS);
 
   int matchToGenPdg(const TLorentzVector& lvec, double minDR);
 
 
   void getGoodParticles(int);
-  void getGoodTauNu();
+  void getGoodGenHadronicTaus(const PartStats&);
+  void getGoodGenHadronicTauNeutrinos(const PartStats&);
+  TLorentzVector getGenVisibleTau4Vector(int, int);
   void getGoodGen(const PartStats&);
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
@@ -115,10 +132,12 @@ public:
   void getGoodRecoFatJets(CUTS, const PartStats&, const int);
 
   void getGoodLeptonCombos(Lepton&, Lepton&, CUTS, CUTS, CUTS, const PartStats&, const int);
+  double CalculateDiLepMassDeltaPt(const TLorentzVector&, const TLorentzVector&);
   void getGoodLeptonJetCombos(Lepton&, Jet&, CUTS, CUTS, CUTS, const PartStats&, const int);
   void getGoodDiJets(const PartStats&, const int);
 
   void VBFTopologyCut(const PartStats&, const int);
+  void fastTriggerCuts(CUTS);
   void TriggerCuts(CUTS);
 
 
@@ -137,6 +156,7 @@ public:
   double getWkfactor();
   double getZBoostWeight();
   double getTopBoostWeight(); //01.15.19
+  void setupBJetSFInfo(const PartStats&); // new function that sets up the b-tagging SF info
   double getBJetSF(CUTS, const PartStats&); //01.16.19
   double getBJetSFResUp(CUTS, const PartStats&); //01.16.19
   double getBJetSFResDown(CUTS, const PartStats&); //01.16.19
@@ -148,6 +168,7 @@ public:
   bool findCut(const std::vector<std::string>&, std::string);
 
   void updateMet(int syst=0);
+  bool passMetFilters(std::string, int);
   //  void treatMuons_Met(std::string syst="orig");
   double getPileupWeight(float);
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> getArray();
@@ -162,15 +183,16 @@ public:
   TFile* infoFile;
   TFile* routfile;
   std::string filespace = "";
-  double hPU[200];
-  double hPU_up[200];
-  double hPU_down[200];
+  double hPU[200] = { };        // initialize this array to zero.
+  double hPU_up[200] = { };     // initialize this array to zero.
+  double hPU_down[200] = { };   // initialize this array to zero.
   int version=0;
-  std::map<std::string,TTree* > otherTrees;
+  std::map<std::string,TTree* > originalTrees;
   //std::map<std::string,*TObject> otherObjects;
   
 
   Generated* _Gen;
+  GenHadronicTaus* _GenHadTau;
   Electron* _Electron;
   Muon* _Muon;
   Taus* _Tau;
@@ -203,6 +225,7 @@ public:
   bool isVSample;
   bool isWSample;
 
+  std::string btagalgoname;
 
   std::vector<Particle*> allParticles;
   std::vector<std::string> syst_names;
@@ -213,8 +236,10 @@ public:
 
   std::vector<int>* trigPlace[nTrigReq];
   bool setTrigger = false;
-  std::vector<std::string> trigNames;
-  std::vector<bool*> trig_decision;
+  std::vector<std::string> triggerBranchesList;
+  bool triggerDecision = false;
+  std::vector<std::string> inputTriggerNames; // Brenda: This will take the triggers from the configuration file Run_info.in
+  std::vector<bool*> triggernamedecisions; // Brenda
   std::vector<int> cuts_per, cuts_cumul;
 
   std::unordered_map< std::string,float > zBoostTree;
@@ -226,9 +251,28 @@ public:
   float nTruePU = 0;
   int bestVertices = 0;
   float gen_weight = 0;
+  float generatorht = 0;
+  
+  // Met filters' variables
+  bool applymetfilters = false;
+  bool primaryvertexfilter = false;
+  bool beamhalofilter = false;
+  bool hbhenoisefilter = false;
+  bool ecaltpfilter = false;
+  bool badpfmuonfilter = false;
+  bool badchargedhadronfilter = false;
+  bool ecalbadcalibrationfilter = false;
+  bool allmetfilters = false;
+  bool passedmetfilters = false;
 
-  BTagCalibration calib = BTagCalibration("csvv1", "Pileup/btagging.csv");
-  BTagCalibrationReader reader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
+  //BTagCalibration calib = BTagCalibration("csvv1", "Pileup/btagging.csv");
+  //BTagCalibrationReader reader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
+  
+  // B-tagging scale factors - calibration + readers
+  BTagCalibration calib;
+  BTagCalibrationReader btagsfreader;
+  BTagCalibrationReader btagsfreaderup;
+  BTagCalibrationReader btagsfreaderdown;
 
   double rho =20.;
 

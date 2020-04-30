@@ -201,6 +201,18 @@ Generated::Generated(TTree* _BOOM, std::string filename, std::vector<std::string
   //SetBranch("Gen_numDaught",numDaught); //01.15.19
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////    GEN HADRONIC TAUS   ////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+
+
+GenHadronicTaus::GenHadronicTaus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Particle(_BOOM, "GenVisTau", filename, syst_names) {
+
+  SetBranch("GenVisTau_genPartIdxMother", genPartIdxMother);
+  SetBranch("GenVisTau_status", decayMode);
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -209,7 +221,7 @@ Generated::Generated(TTree* _BOOM, std::string filename, std::vector<std::string
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-Jet::Jet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Particle(_BOOM, "Jet", filename, syst_names) {
+Jet::Jet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Particle(_BOOM, "Jet", filename, syst_names) {
   type = PType::Jet;
   
   SetBranch("Jet_jetId", jetId);
@@ -219,7 +231,12 @@ Jet::Jet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names
   SetBranch("Jet_nMuons", nMuons);
   SetBranch("Jet_chHEF", chargedHadronEnergyFraction);
   SetBranch("Jet_chEmEF", chargedEmEnergyFraction);
-  SetBranch("Jet_btagCSVV2", bDiscriminator);
+  // SetBranch("Jet_btagCSVV2", bDiscriminator);
+  
+  SetBranch("Jet_btagCSVV2", bDiscriminatorCSVv2);
+  SetBranch("Jet_btagDeepB", bDiscriminatorDeepCSV);
+  SetBranch("Jet_btagDeepFlavB", bDiscriminatorDeepFlav);
+  
   SetBranch("Jet_puId", puID);
   SetBranch("Jet_area", area);
   if(_BOOM->FindBranch("Jet_partonFlavour")!=0){
@@ -251,8 +268,15 @@ std::vector<CUTS> Jet::overlapCuts(CUTS ePos) {
 }
 
 bool Jet::passedLooseJetID(int nobj) {
+// bit1 = Loose ID, bit2 = Tight ID, bit3 =  TightLepVeto
   std::bitset<8> bit_jet(jetId[nobj]);
-  return bit_jet[0];
+  return bit_jet[0]; // This will return the Tight ID bit
+}
+
+bool Jet::passedTightJetID(int nobj) {
+  // bit1 = Loose ID, bit2 = Tight ID, bit3 =  TightLepVeto
+  std::bitset<8> bit_jet(jetId[nobj]);
+  return bit_jet[1]; // This will return the Tight ID bit
 }
 
 
@@ -263,7 +287,7 @@ bool Jet::passedLooseJetID(int nobj) {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-FatJet::FatJet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Particle(_BOOM, "FatJet", filename, syst_names) {
+FatJet::FatJet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Particle(_BOOM, "FatJet", filename, syst_names) {
   type = PType::FatJet;
 
   SetBranch("FatJet_tau1", tau1);
@@ -328,7 +352,7 @@ double Lepton::charge(uint index)const     {return _charge[index];}
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Lepton(_BOOM, "Electron", filename, syst_names) {
+Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Lepton(_BOOM, "Electron", filename, syst_names) {
   type = PType::Electron;
   auto& elec1 = pstats["Elec1"];
   auto& elec2 = pstats["Elec2"];
@@ -343,12 +367,14 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
   tmp=elec2.dmap.at("DiscrByHLTID");
   cbHLTIDele2=tmp;
 
+  /*
   if(_BOOM->FindBranch("Electron_mvaSpring16GP")!=0){
     std::cout<<"Electron MVA ID: Electron_mvaSpring16"<<std::endl;
   } else{
     std::cout<<"Electron MVA ID: Electron_mvaFall17"<<std::endl;
   }
- 
+  */
+  
   if((elec1.bfind("DoDiscrByIsolation") || elec2.bfind("DoDiscrByIsolation")) && _BOOM->FindBranch("Electron_mvaFall17Iso")!=0 ) {
    SetBranch("Electron_miniPFRelIso_all", miniPFRelIso_all);
    SetBranch("Electron_miniPFRelIso_chg", miniPFRelIso_chg);
@@ -369,6 +395,10 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
 
   if(elec1.bfind("DoDiscrByCBID") || elec2.bfind("DoDiscrByLooseID")) {
     SetBranch("Electron_cutBased", cutBased);
+    // SetBranch("Electron_cutBased_HLTPreSel", cutBased_HLTPreSel);
+  }
+  
+  if(elec1.bfind("DoDiscrByHLTID") || elec2.bfind("DoDiscrByHLTID")){
     SetBranch("Electron_cutBased_HLTPreSel", cutBased_HLTPreSel);
   }
   
@@ -405,7 +435,7 @@ bool Electron::get_Iso(int index, double min, double max) const {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Lepton(_BOOM, "Muon", filename, syst_names) {
+Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Lepton(_BOOM, "Muon", filename, syst_names) {
   type = PType::Muon;
   auto& mu1 = pstats["Muon1"];
   auto& mu2 = pstats["Muon2"];
@@ -436,7 +466,7 @@ bool Muon::get_Iso(int index, double min, double max) const {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Lepton(_BOOM, "Tau", filename, syst_names) {
+Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Lepton(_BOOM, "Tau", filename, syst_names) {
   type = PType::Tau;
   
   std::bitset<8> tmp=pstats["Tau1"].dmap.at("DiscrByMinIsolation");
@@ -459,12 +489,58 @@ Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
   tmp= pstats["Tau2"].dmap.at("DiscrAgainstMuon");
   tau2mu= tmp;
 
-  SetBranch("Tau_idAntiEle", againstElectron);
-  SetBranch("Tau_idAntiMu",  againstMuon);
-  SetBranch("Tau_idDecayMode",  DecayMode);
+  // Check this has either mva or deeptau. Otherwise, go back to MVA for compatibility purposes.
+  try{
+
+    if(pstats["TauID"].smap.at("TauIDAlgorithm").find("DeepTau") == std::string::npos){
+      throw "Setting MVA-based tau ID algorithm (MVAoldDM2017v2).";
+    }
+
+    std::cout << "Setting DeepTau ID algorithm (DeepTau2017v2p1)." << std::endl;
+    // --------- Anti-particle discriminators --------- //
+    SetBranch("Tau_idDeepTau2017v2p1VSmu", againstMuon);
+    SetBranch("Tau_idDeepTau2017v2p1VSe", againstElectron);
+
+    // --------- Tau isolation --------- //
+    SetBranch("Tau_idDeepTau2017v2p1VSjet", TauIdDiscr);      
+
+  }
+  catch(const char* msg){
+
+    std::cout << "WARNING! " << msg << std::endl; 
+    // --------- Anti-particle discriminators --------- //
+    if(year.compare("2018") == 0){
+      SetBranch("Tau_idAntiEle2018", againstElectron);
+    }
+    else{
+      SetBranch("Tau_idAntiEle", againstElectron);
+    }
+    SetBranch("Tau_idAntiMu", againstMuon);
+
+    // --------- Tau isolation --------- //
+    SetBranch("Tau_idMVAoldDM2017v2", TauIdDiscr);
+  }
+  catch(...){
+    std::cout << "ERROR! Tau ID algorithm is not set up in your config file. Setting MVA-based tau ID algorithm (MVAoldDM2017v2). " << std::endl;
+
+    if(year.compare("2018") == 0){
+      SetBranch("Tau_idAntiEle2018", againstElectron);
+    }
+    else{
+      SetBranch("Tau_idAntiEle", againstElectron);
+    }
+    SetBranch("Tau_idAntiMu", againstMuon);
+
+    // --------- Tau isolation --------- //
+    SetBranch("Tau_idMVAoldDM2017v2", TauIdDiscr);
+  }
+
+  // --------- Decay modes --------- //
+  SetBranch("Tau_idDecayMode",  DecayModeOldDMs);
   SetBranch("Tau_idDecayModeNewDMs",  DecayModeNewDMs);
-  SetBranch("Tau_idMVAoldDM",  MVAoldDM);
-  SetBranch("Tau_decayMode", decayMode);
+  SetBranch("Tau_decayMode", decayModeInt);
+
+  // ------- Tau-related quantities ---------- //
   SetBranch("Tau_leadTkDeltaEta", leadTkDeltaEta);
   SetBranch("Tau_leadTkDeltaPhi", leadTkDeltaPhi);
   SetBranch("Tau_leadTkPtOverTauPt", leadTkPtOverTauPt);
@@ -495,7 +571,8 @@ std::vector<CUTS> Taus::findExtraCuts() {
 
 //onetwo is 1 for the first 0 for the second
 bool Taus::get_Iso(int index, double onetwo, double flipisolation) const {
-  std::bitset<8> tau_iso(MVAoldDM[index]);
+  //std::bitset<8> tau_iso(MVAoldDM[index]);
+  std::bitset<8> tau_iso(TauIdDiscr[index]);
   std::bitset<8> tau_isomin_mask(tau1minIso);
   std::bitset<8> tau_isomax_mask(tau1maxIso);
   
@@ -506,9 +583,11 @@ bool Taus::get_Iso(int index, double onetwo, double flipisolation) const {
   
   if(!flipisolation){
     //cout<<tau_isomax_mask<<"  "<<tau_iso<<"   "<<(tau_isomax_mask& tau_iso)<<"   "<<  (tau_isomax_mask& tau_iso).count()<<std::endl; 
-    return (tau_isomax_mask& tau_iso).count();
+    // return (tau_isomax_mask& tau_iso).count();
+    return (tau_isomin_mask& tau_iso).count();
   }else{
-    return(!((tau_isomax_mask&tau_iso).count()) and (tau_isomin_mask&tau_iso).count());
+    // return(!((tau_isomax_mask&tau_iso).count()) and (tau_isomin_mask&tau_iso).count());
+    return(!((tau_isomin_mask&tau_iso).count()) and (tau_isomax_mask&tau_iso).count());
   }
 }
 

@@ -26,6 +26,13 @@ DeltaPtDivSumPtCutValue    0.1  1.0
 DiscrByDeltaPt 		   0
 DeltaPtCutValue 	   30.0   1000.0
 
+DiscrByCosDphiLeadPtAndMet 0
+CosDphiLeadPtAndMetCut 0.0 9999.0
+DiscrByMtLeadPtAndMet 0
+MtLeadPtAndMetCut 0.0 9999.0
+DiscrByDiLepMassDeltaPt 0
+DiLeadMassDeltaPtCut 0.0 9999.0
+
 #########################################
              Electron1Tau2
 #########################################
@@ -53,6 +60,13 @@ DiscrByDeltaPtDivSumPt     0
 DeltaPtDivSumPtCutValue    0.1  1.0
 DiscrByDeltaPt 		   0
 DeltaPtCutValue 	   30.0   1000.0
+
+DiscrByCosDphiLeadPtAndMet 0
+CosDphiLeadPtAndMetCut 0.0 9999.0
+DiscrByMtLeadPtAndMet 0
+MtLeadPtAndMetCut 0.0 9999.0
+DiscrByDiLepMassDeltaPt 0
+DiLeadMassDeltaPtCut 0.0 9999.0
 
 #########################################
              Electron2Tau1
@@ -82,6 +96,13 @@ DeltaPtDivSumPtCutValue    0.1  1.0
 DiscrByDeltaPt 		   0
 DeltaPtCutValue 	   30.0   1000.0
 
+DiscrByCosDphiLeadPtAndMet 0
+CosDphiLeadPtAndMetCut 0.0 9999.0
+DiscrByMtLeadPtAndMet 0
+MtLeadPtAndMetCut 0.0 9999.0
+DiscrByDiLepMassDeltaPt 0
+DiLeadMassDeltaPtCut 0.0 9999.0
+
 #########################################
             Electron2Tau2
 #########################################
@@ -110,3 +131,9 @@ DeltaPtDivSumPtCutValue    0.1  1.0
 DiscrByDeltaPt 		   0
 DeltaPtCutValue 	   30.0   1000.0
 
+DiscrByCosDphiLeadPtAndMet 0
+CosDphiLeadPtAndMetCut 0.0 9999.0
+DiscrByMtLeadPtAndMet 0
+MtLeadPtAndMetCut 0.0 9999.0
+DiscrByDiLepMassDeltaPt 0
+DiLeadMassDeltaPtCut 0.0 9999.0

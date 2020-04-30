@@ -467,7 +467,7 @@ namespace HistClass {
      * \param[in] value Value that should be filled
      * \param[in] weight Weight of the event that should be filled
      */
-    static void Fill(int n_histo, std::string name, double value, double weight) {
+    SUPPRESS_NOT_USED_WARN static void Fill(int n_histo, std::string name, double value, double weight) {
       std::unordered_map<std::string, TH1D * >::iterator it = histo.find("h1_"+std::to_string(n_histo)+"_"+name);
         
         //Form("h1_%d_%s", n_histo, name));

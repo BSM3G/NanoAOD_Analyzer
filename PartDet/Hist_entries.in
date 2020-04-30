@@ -30,6 +30,15 @@ NVertices   100   0.  100.
 
 FillGen 1
 
+GenVisHadTauPt 				100   0.     250.
+GenVisHadTauEta 			72  -3.6      +3.6
+GenVisHadTauPhi				36	-3.15	  +3.15
+GenVisHadTauMass			100	  0. 	  2.
+GenVisHadTauDecayMode		16	  0.	  16.
+NGenVisHadTau				20   0.       20.
+PUNTrueInt    99 0. 99. // nTruePU - change the number of bins accordingly for each year's datatset
+GenHT       4000 0. 4000.
+GenWeight  10000 -50000. 50000. 
 NGenHadW	5	0.	5. //05.21.18
 NGenTau            20   0.       20.
 NGenHadTau         20   0.       20.
@@ -62,7 +71,7 @@ GenDiTauMass      100   0.    10000.
 
 //------------------------------------------------//
 
-FillTau1 0
+FillTau1 1
 
 NTau1                    20   0.      20.
 Tau1Energy             2000   0.    5000.
@@ -76,7 +85,7 @@ Tau1SeedTrackPt        2000   0.    5000.
 Tau1Charge               10  -5.       5.
 Tau1MetMt		 200  0.       1000.
 
-FillTau2 0
+FillTau2 1
 
 NTau2                    20   0.      20.
 Tau2Energy             2000   0.    5000.
@@ -116,7 +125,7 @@ Electron2MetMt              100   0      500
 
 //------------------------------------------------//
 
-FillMuon1 1
+FillMuon1 0
 
 NMuon1                   20   0.      20.
 Muon1Energy            2000   0.    5000.
@@ -127,7 +136,7 @@ FirstLeadingMuon1Eta    144  -7.2     +7.2
 Muon1Phi                 36  -3.15    +3.15
 Muon1MetMt              100   0      500
 
-FillMuon2 1
+FillMuon2 0
 
 NMuon2                   20   0.      20.
 Muon2Energy            2000   0.    5000.
