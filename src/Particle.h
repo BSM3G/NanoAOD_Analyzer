@@ -144,14 +144,26 @@ public:
 };
 
 /////////////////////////////////////////////////////////////////////////
-class GenHadronicTaus : public Particle {
+class GenHadronicTau : public Particle {
 
 public:
-  GenHadronicTaus();
-  GenHadronicTaus(TTree*, std::string, std::vector<std::string>);
+  GenHadronicTau();
+  GenHadronicTau(TTree*, std::string, std::vector<std::string>);
   
   int  genPartIdxMother[MAXINDEX];
   int  decayMode[MAXINDEX];
+  
+};
+
+/////////////////////////////////////////////////////////////////////////
+class GenJet : public Particle {
+
+public:
+  GenJet();
+  GenJet(TTree*, std::string, std::vector<std::string>);
+  
+UChar_t  genHadronFlavor[MAXINDEX];
+int      genPartonFlavor[MAXINDEX];
   
 };
 
