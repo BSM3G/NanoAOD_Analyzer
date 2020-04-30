@@ -8,6 +8,7 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
 
   SetBranch((GenName+"_pt").c_str(), m_pt);
   SetBranch((GenName+"_phi").c_str(), m_phi);
+  // std::cout << "Name of the branch loaded for MET: " << (GenName+"_pt").c_str() << std::endl;
 
   systdeltaMEx.resize(syst_names.size());
   systdeltaMEy.resize(syst_names.size());
