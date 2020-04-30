@@ -22,6 +22,7 @@ struct CRTester;
 #include <TChain.h>
 #include <TTree.h>
 #include <TH1.h>
+#include <TMath.h>
 
 #include "Particle.h"
 #include "MET.h"
@@ -34,8 +35,14 @@ struct CRTester;
 #include "FillInfo.h"
 #include "CRTest.h"
 #include "Systematics.h"
-#include "JetScaleResolution.h"
 #include "DepGraph.h"
+#include "JetScaleResolution.h"
+#include "CondFormats/JetMETObjects/interface/JetResolution.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
+#include "JetMETCorrections/Modules/interface/JetResolution.h"
+#include "CondFormats/JetMETObjects/interface/JetResolutionObject.h"
+
 
 double normPhi(double phi);
 double absnormPhi(double phi);
@@ -204,8 +211,10 @@ public:
   std::unordered_map<CUTS, std::vector<int>*, EnumHash>* active_part;
   static const std::unordered_map<std::string, CUTS> cut_num;
 
+  // ------------  Systematics --------------- //
   Systematics systematics;
   JetScaleResolution jetScaleRes;
+  JetResolution jer;
   PartStats genStat;
 
   std::unordered_map<std::string, PartStats> distats;

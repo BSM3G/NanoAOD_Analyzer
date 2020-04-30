@@ -4,6 +4,7 @@
 #include <sstream>
 #include <cmath>
 #include <map>
+#include <typeinfo>
 //// Used to convert Enums to integers
 #define ival(x) static_cast<int>(x)
 //// BIG_NUM = sqrt(sizeof(int)) so can use diparticle convention of
@@ -172,8 +173,13 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 
   _FatJet   = new FatJet(BOOM, filespace + "FatJet_info.in", syst_names, year);
 
-  _MET      = new Met(BOOM, "MET" , syst_names, distats["Run"].dmap.at("MT2Mass"));
-
+  // To solve EE issues in 2017, we need to load a different branch for MET:
+  if(year.compare("2017") == 0){
+    _MET      = new Met(BOOM, "METFixEE2017" , syst_names, distats["Run"].dmap.at("MT2Mass"));
+  }
+  else{
+    _MET      = new Met(BOOM, "MET" , syst_names, distats["Run"].dmap.at("MT2Mass"));
+  }
 	
   // B-tagging scale factor stuff
   setupBJetSFInfo(_Jet->pstats["BJet"]); 	
@@ -232,10 +238,69 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   histo = Histogramer(1, filespace+"Hist_entries.in", filespace+"Cuts.in", outfile, isData, cr_variables);
   if(doSystematics)
     syst_histo=Histogramer(1, filespace+"Hist_syst_entries.in", filespace+"Cuts.in", outfile, isData, cr_variables,syst_names);
+  
   systematics = Systematics(distats);
   jetScaleRes = JetScaleResolution("Pileup/Summer16_23Sep2016V4_MC_Uncertainty_AK4PFchs.txt", "",  "Pileup/Spring16_25nsV6_MC_PtResolution_AK4PFchs.txt", "Pileup/Spring16_25nsV6_MC_SF_AK4PFchs.txt");
 
 
+  // ------------------------ NEW: Jet Energy Scale and Resolution corrections initialization ------------------- //
+  static std::map<std::string, std::string> jecTagsMC = {
+    {"2016" , "Summer16_07Aug2017_V11_MC"}, 
+    {"2017" , "Fall17_17Nov2017_V32_MC"}, 
+    {"2018" , "Autumn18_V19_MC"}
+  };
+
+  static std::map<std::string, std::string> jecTagsFastSim = {
+    {"2016" , "Summer16_FastSimV1_MC"},
+    {"2017" , "Fall17_FastSimV1_MC"},
+    {"2018" , "Autumn18_FastSimV1_MC"}
+  };
+
+  static std::map<std::string, std::string>archiveTagsDATA = {
+    {"2016" , "Summer16_07Aug2017_V11_DATA"}, 
+    {"2017" , "Fall17_17Nov2017_V32_DATA"}, 
+    {"2018" , "Autumn18_V19_DATA"}
+  };
+
+  static std::map<std::string, std::string> jecTagsDATA = { 
+    {"2016B" , "Summer16_07Aug2017BCD_V11_DATA"}, 
+    {"2016C" , "Summer16_07Aug2017BCD_V11_DATA"}, 
+    {"2016D" , "Summer16_07Aug2017BCD_V11_DATA"}, 
+    {"2016E" , "Summer16_07Aug2017EF_V11_DATA"}, 
+    {"2016F" , "Summer16_07Aug2017EF_V11_DATA"}, 
+    {"2016G" , "Summer16_07Aug2017GH_V11_DATA"}, 
+    {"2016H" , "Summer16_07Aug2017GH_V11_DATA"}, 
+    {"2017B" , "Fall17_17Nov2017B_V32_DATA"}, 
+    {"2017C" , "Fall17_17Nov2017C_V32_DATA"}, 
+    {"2017D" , "Fall17_17Nov2017DE_V32_DATA"}, 
+    {"2017E" , "Fall17_17Nov2017DE_V32_DATA"}, 
+    {"2017F" , "Fall17_17Nov2017F_V32_DATA"}, 
+    {"2018A" , "Autumn18_RunA_V19_DATA"},
+    {"2018B" , "Autumn18_RunB_V19_DATA"},
+    {"2018C" , "Autumn18_RunC_V19_DATA"},
+    {"2018D" , "Autumn18_RunD_V19_DATA"}
+  };
+
+  static std::map<std::string, std::string> jerTagsMC = {
+    {"2016" , "Summer16_25nsV1_MC"},
+    {"2017" , "Fall17_V3_MC"},
+    {"2018" , "Autumn18_V7_MC"}
+  };
+
+  std::string jertag=jerTagsMC.begin()->second;
+  //std::cout << "jertag (1) = " << jertag << std::endl;
+  if(!isData){
+    jertag=jerTagsMC[year];
+  }
+  //std::cout << "jertag (2) = " << jertag << std::endl;
+
+  auto jetcorrectorparams = JetCorrectorParameters("Pileup/JetResDatabase/textFiles/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PFchs.txt","Total");
+  auto jesUncertainty = JetCorrectionUncertainty(jetcorrectorparams);
+  auto params_sf_and_uncertainty = JME::JetParameters();
+  auto params_resolution = JME::JetParameters();
+  TRandom *rnd = new TRandom3(12345);
+  auto jer = JME::JetResolutionScaleFactor("Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_PtResolution_AK4PFchs.txt");
+  // ------------------------------------------------------------------------------------------------------- //
 
   ///this can be done nicer
   //put the variables that you use here:
