@@ -1,0 +1,16 @@
+obj/*o
+[^PU]*root
+*txt
+TODO
+*~
+src/*~
+src/svfit/*~
+PartDet/*~
+Analyzer
+Histo
+Particle
+work_svfit
+PartDet/*.in
+*.C
+*.png
+*.pdf
