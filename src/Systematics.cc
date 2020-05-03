@@ -12,6 +12,46 @@ void Systematics::init(){
 
 }
 
+/*
+void Systematics::shiftParticleRes(Particle& jet, TLorentzVector recoJet, double const& shiftSF, int syst){
+
+  // Recalculate pt and mass values:
+  double jet_pt_res_shifted = shiftSF * recoJet.Pt();
+  double jet_mass_res_shifted = shiftSF * recoJet.M();
+  
+  // If nominal calculation, check the sign of these quantities
+  if(syst == 0){
+    if(jet_pt_res_shifted < 0.0) jet_pt_res_shifted *= -1.0;
+    if(jet_mass_res_shifted < 0.0) jet_mass_res_shifted *= -1.0;
+  }
+  // Set the new components of the 4-momentum
+  TLorentzVector shiftedRecoJet = SetPtEtaPhiM(jet_pt_res_shifted, recoJet.Eta(), recoJet.Phi(), jet_mass_res_shifted); // Eta and phi components shouldn't change
+  // Change the particle content for the particle
+  jet.addP4Syst(shiftedRecJet, syst);
+  return;
+}
+*/
+
+/*
+void Systematics::shiftParticleScale(Particle& jet, TLorentzVector recoJet, double const& jer_sf_nom, double const& jes_delta, double const& sigma, int syst){
+  // Recalculate pt and mass values from nominal JER correction:
+  double jet_pt_nom = jer_sf_nom * recoJet.Pt();
+  double jet_mass_nom = jer_sf_nom * recoJet.M();
+
+  // Make sure they are positive
+  if(jet_pt_shifted < 0.0) jet_pt_shifted *= -1.0;
+  if(jet_mass_shifted < 0.0) jet_mass_shifted *= -1.0;
+
+  double jet_pt_jes_shifted = jet_pt_nom * (1.0 + sigma*jes_delta);
+  double jet_mass_jes_shifted = jet_pt_nom * (1.0 + sigma*jes_delta);
+
+  // Set the new components of the 4-momentum
+  TLorentzVector shiftedRecoJet = SetPtEtaPhiM(jet_pt_jes_shifted, recoJet.Eta(), recoJet.Phi(), jet_mass_jes_shifted);
+  jet.addP4Syst(shiftedRecoJet, syst);
+  return;
+
+}
+*/
 
 void Systematics::shiftParticle(Particle& jet, TLorentzVector recJet, double const& ratio, double& dPx, double& dPy, int syst){
 

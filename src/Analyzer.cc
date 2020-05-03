@@ -173,13 +173,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 
   _FatJet   = new FatJet(BOOM, filespace + "FatJet_info.in", syst_names, year);
 
-  // To solve EE issues in 2017, we need to load a different branch for MET:
-  if(year.compare("2017") == 0){
-    _MET      = new Met(BOOM, "METFixEE2017" , syst_names, distats["Run"].dmap.at("MT2Mass"));
-  }
-  else{
-    _MET      = new Met(BOOM, "MET" , syst_names, distats["Run"].dmap.at("MT2Mass"));
-  }
+  _MET      = new Met(BOOM, "MET" , syst_names, distats["Run"].dmap.at("MT2Mass"), year);
 	
   // B-tagging scale factor stuff
   setupBJetSFInfo(_Jet->pstats["BJet"]); 	
@@ -191,7 +185,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
     _Gen = new Generated(BOOM, filespace + "Gen_info.in", syst_names);
-    _GenHadTau = new GenHadronicTaus(BOOM, filespace + "Gen_info.in", syst_names);
+    _GenHadTau = new GenHadronicTau(BOOM, filespace + "Gen_info.in", syst_names);
     allParticles= {_Gen,_GenHadTau,_Electron,_Muon,_Tau,_Jet,_FatJet};
   } else {
     std::cout<<"This is Data if not, change the flag!"<<std::endl;
@@ -294,12 +288,15 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   }
   //std::cout << "jertag (2) = " << jertag << std::endl;
 
-  auto jetcorrectorparams = JetCorrectorParameters("Pileup/JetResDatabase/textFiles/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PFchs.txt","Total");
-  auto jesUncertainty = JetCorrectionUncertainty(jetcorrectorparams);
+  // auto jetcorrectorparams = JetCorrectorParameters("Pileup/JetResDatabase/textFiles/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PFchs.txt","Total");
+  // auto jesUncertainty = JetCorrectionUncertainty(jetcorrectorparams);
+  JetCorrectorParameters jetcorrectorparams = JetCorrectorParameters("Pileup/JetResDatabase/textFiles/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PFchs.txt","Total");
+  JetCorrectionUncertainty jesUncertainty = JetCorrectionUncertainty(jetcorrectorparams);
   auto params_sf_and_uncertainty = JME::JetParameters();
   auto params_resolution = JME::JetParameters();
   TRandom *rnd = new TRandom3(12345);
-  auto jer = JME::JetResolutionScaleFactor("Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_PtResolution_AK4PFchs.txt");
+  auto jer = JME::JetResolution("Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_PtResolution_AK8PFPuppi.txt");
+  auto jerSF_and_Uncertainty = JME::JetResolutionScaleFactor("Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_SF_AK8PFPuppi.txt");
   // ------------------------------------------------------------------------------------------------------- //
 
   ///this can be done nicer
@@ -580,6 +577,8 @@ void Analyzer::setupEventGeneral(int nevent){
   }
   // Get the number of primary vertices, applies to both data and MC
   SetBranch("PV_npvs", bestVertices);
+  // Get the offset energy density for jet energy corrections: https://twiki.cern.ch/twiki/bin/view/CMS/IntroToJEC
+  SetBranch("fixedGridRhoFastjetAll", jec_rho);
 
   // Finally, call get entry so all the branches assigned here are filled with the proper values for each event.
   BOOM->GetEntry(nevent);
@@ -1517,9 +1516,12 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
 
 
   std::string systname = syst_names.at(syst);
+  // std::cout << "smearJet: systname = " << systname << ", syst = " << syst << std::endl;
 
   for(size_t i=0; i< jet.size(); i++) {
+    const TLorentzVector origJetReco = jet.RecoP4(i);
     TLorentzVector jetReco = jet.RecoP4(i);
+
     if(JetMatchesLepton(*_Muon, jetReco, stats.dmap.at("MuonMatchingDeltaR"), CUTS::eGMuon) ||
        JetMatchesLepton(*_Tau, jetReco, stats.dmap.at("TauMatchingDeltaR"), CUTS::eGTau) ||
        JetMatchesLepton(*_Electron, jetReco,stats.dmap.at("ElectronMatchingDeltaR"), CUTS::eGElec)){
@@ -1527,22 +1529,62 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
       continue;
     }
 
+    /*
+    TLorentzVector = genJet = matchJetToGen(jetReco, jet.pstats["Smear"], eGenPos);
+    double jer_sf_nom = jetScaleRes.GetRes(jetReco, genJet, jec_rho, 0);
+    double jer_sf_up = jetScaleRes.GetRes(jetReco, genJet, jec_rho, 1);
+    double jer_sf_down = jetScaleRes.GetRes(jetReco, genJet, jec_rho, -1);
+    double jes_delta = jetScaleRes.GetScale(jetReco, jer_sf_nom); 
+  
+    if(jer_sf_up < jer_sf_down){
+      double jer_sf_up_tmp = jer_sf_up;
+      jer_sf_up = jer_sf_down;
+      jer_sf_down = jer_sf_up_tmp
+    }
+
+    // JER applied only for systematics: shift the particle for JER and propagate everything to MET
+    if(systname == "orig" && stats.bfind("SmearTheJet")){ 
+      // We probably want to correct always for energy resolution to propagate this to the MET
+      // if(systname == "orig"){
+      systematics.shiftParticleRes(jet, jetReco, jer_sf_nom, syst);
+      _MET->propagateJER(origJetReco, jer_sf_nom, jer_sf_nom, syst);
+    }
+    else if(systname == "Jet_Res_Up"){
+      systematics.shiftParticleRes(jet, jetReco, jer_sf_up, syst);
+      _MET->propagateJER(origJetReco, jer_sf_nom, jer_sf_up, syst);
+    }
+    else if(systname == "Jet_Res_Down"){
+      systematics.shiftParticleRes(jet, jetReco, jer_sf_down, syst);
+      _MET->propagateJER(origJetReco, jer_sf_nom, jer_sf_down, syst);
+    }
+    // JES applied only for systematics
+    else if(systname == "Jet_Scale_Up"){
+      systematics.shiftParticleScale(jet, jetReco, jer_sf_nom, jes_delta, +1.0, syst);
+      _MET->propagateJES(origJetReco, jer_sf_nom, jes_delta, +1.0, syst);
+    }
+    else if(systname == "Jet_Scale_Down"){
+      systematics.shiftParticleScale(jet, jetReco, jer_sf_nom, jes_delta, -1.0, syst);
+      _MET->propagateJES(origJetReco, jer_sf_nom, jes_delta, -1.0, syst);
+    }
+    */
+
     double sf=1.;
     //only apply corrections for jets not for FatJets
 
     TLorentzVector genJet=matchJetToGen(jetReco, jet.pstats["Smear"],eGenPos);
     if(systname=="orig" && stats.bfind("SmearTheJet")){
-      sf=jetScaleRes.GetRes(jetReco,genJet, rho, 0);
+      sf=jetScaleRes.GetRes(jetReco,genJet, jec_rho, 0);
     }else if(systname=="Jet_Res_Up"){
-      sf=jetScaleRes.GetRes(jetReco,genJet, rho, 1);
+      sf=jetScaleRes.GetRes(jetReco,genJet, jec_rho, 1);
     }else if(systname=="Jet_Res_Down"){
-      sf=jetScaleRes.GetRes(jetReco,genJet, rho, -1);
+      sf=jetScaleRes.GetRes(jetReco,genJet, jec_rho, -1);
     }else if(systname=="Jet_Scale_Up"){
       sf = jetScaleRes.GetScale(jetReco, false, +1.);
     }else if(systname=="Jet_Scale_Down"){
       sf = jetScaleRes.GetScale(jetReco, false, -1) ;
     }
     //cout<<systname<<"  "<<sf<<"  "<<jetReco.Pt()<<"  "<<genJet.Pt()<<std::endl;
+    // This will update the jet 4-momentum: see Systematics::shiftParticle. The nominal value 
     systematics.shiftParticle(jet, jetReco, sf, _MET->systdeltaMEx[syst], _MET->systdeltaMEy[syst], syst);
   }
 }

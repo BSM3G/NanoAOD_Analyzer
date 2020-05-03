@@ -43,7 +43,6 @@ struct CRTester;
 #include "JetMETCorrections/Modules/interface/JetResolution.h"
 #include "CondFormats/JetMETObjects/interface/JetResolutionObject.h"
 
-
 double normPhi(double phi);
 double absnormPhi(double phi);
 
@@ -199,7 +198,7 @@ public:
   
 
   Generated* _Gen;
-  GenHadronicTaus* _GenHadTau;
+  GenHadronicTau* _GenHadTau;
   Electron* _Electron;
   Muon* _Muon;
   Taus* _Tau;
@@ -283,7 +282,7 @@ public:
   BTagCalibrationReader btagsfreaderup;
   BTagCalibrationReader btagsfreaderdown;
 
-  double rho =20.;
+  Float_t jec_rho =20.;
 
   const static std::vector<CUTS> genCuts;
   const static std::vector<CUTS> jetCuts;

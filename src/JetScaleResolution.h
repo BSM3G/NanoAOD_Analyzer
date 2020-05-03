@@ -13,6 +13,12 @@
 #include <fstream>
 #include <cmath>
 #include <algorithm>
+// Include files from CMSSW
+#include "CondFormats/JetMETObjects/interface/JetResolution.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
+#include "JetMETCorrections/Modules/interface/JetResolution.h"
+#include "CondFormats/JetMETObjects/interface/JetResolutionObject.h"
 //#include "Particle.h"
 
 //using namespace std;
@@ -92,11 +98,27 @@ class JetScaleResolution{
         JetScaleResolution();
         JetScaleResolution(const std::string& scalefilename, const std::string& parttype, const std::string& resolutionfile, const std::string& sfresolutionfile);
         void InitScale(const std::string& filename, const std::string& type);
-        void InitResolution(const std::string& resolutionfile, const std::string& sffile);
+        void InitResolution(const std::string& resolutionfile, const std::string& sfuncertaintyfile);
         double GetRes(const TLorentzVector& jet,const TLorentzVector& genjet, double rho, double sigmares);
+        // double GetSmearValsPt(const TLorentzVector& recojet, TLorentzVector& genjet, double rho, double sigmares);           // AK4 jets
+        // double GetSmearValsM(const TLorentzVector& recojet, TLorentzVector& genjet, double SF, double SFdown, double SFup);  // AK8 jets
         double GetScale(const TLorentzVector& jet, bool isBjet, double sigmascale);
 
     private:
+        // These are needed for jet energy resolution initialization: come from CMSSW objects
+        /*
+        auto params_sf_and_uncertainty;
+        auto params_resolution;
+        auto jer;
+        auto jerSF_and_Uncertainty;
+        TRandom *rnd = new TRandom3(12345);
+        */
+        // These are need for jet energy scale initialization: come from CMSSW objects
+        /*
+        JetCorrectorParameters jetcorrectorparams;
+        JetCorrectionUncertainty jesUncertainty;
+        */
+
         TH1D* Heta = nullptr;
         std::vector<TH1D*> HptsP;
         std::vector<TH1D*> HptsM;

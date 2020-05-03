@@ -29,8 +29,8 @@ class Met {
 
 public:
   Met(){};
-  Met(TTree*, std::string, std::string, std::vector<std::string>){};
-  Met(TTree*, std::string, std::vector<std::string>, double);
+  Met(TTree*, std::string, std::string, std::vector<std::string>, std::string){};
+  Met(TTree*, std::string, std::vector<std::string>, double, std::string);
   virtual ~Met() {}
 
   virtual std::vector<CUTS> findExtraCuts(){return std::vector<CUTS>();}
@@ -49,6 +49,11 @@ public:
   TLorentzVector p4() const;
   TLorentzVector& p4();
 
+  /*
+  void propagateJER(TLorentzVector recoJet, double const& jer_sf_nom, double const& jer_sf_shift, int syst);
+  void propagateJES(TLorentzVector recoJet, double const& jer_sf_nom, double const& jes_delta, double const& jes_sigma, int syst);
+  */
+
   void addPtEtaPhiESyst(double, double, double, double, int);
   void addP4Syst(TLorentzVector, int);
   void setMT2Mass(double);
@@ -56,7 +61,7 @@ public:
   std::string getName() {return GenName;};
   void update(PartStats&, Jet&, int);
 
-  TLorentzVector Reco;
+  TLorentzVector RecoMet;
   TLorentzVector *cur_P;
 
   std::vector<TLorentzVector* > systVec;
@@ -75,8 +80,22 @@ protected:
   std::vector<std::string> syst_names;
   double MT2mass;
   
-  float m_pt;
-  float m_phi;
+  float met_pt;
+  float met_phi;
+  float met_px;
+  float met_py;
+  float met_px_nom;
+  float met_py_nom;
+  float met_pt_nom;
+  float met_phi_nom;
+  float met_px_jerShifted;
+  float met_py_jerShifted;
+  float met_px_jesShifted;
+  float met_py_jesShifted;
+  float finalmet_px_shifted;
+  float finalmet_py_shifted;
+
+  double jet_unclEnThreshold = 15.0; // energy threshold below which jets are considered as "unclustered energy" (cf. JetMETCorrections/Type1MET/python/correctionTermsPfMetType1Type2_cff.py )
   //note this is only for pt and phi
   double MetUnclUp[2] = {0, 0};
   double MetUnclDown[2] = {0, 0};
