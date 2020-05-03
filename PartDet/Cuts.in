@@ -34,7 +34,7 @@ NRecoMuon1	      0   -1
 NRecoMuon2	      0   -1
 NDiMuonCombinations	   0   -1
 METCut	      0   -1   ///met cut
-NRecoJet1	      0   -1   
+NRecoJet1	      1   -1   
 NRecoJet2	      0   -1   
 NDiJetCombinations    0   -1  
 NRecoBJet	      0   -1   

@@ -10,6 +10,10 @@ Tau_weight_Down      0
 
 MetUncl_Up           0
 MetUncl_Down         0
+Met_Jer_Up			 0
+Met_Jer_Down		 0
+Met_Jes_Up			 0
+Met_Jes_Down		 0
 Jet_Res_Up           0
 Jet_Res_Down         0
 Jet_Scale_Up         0
