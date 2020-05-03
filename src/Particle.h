@@ -168,6 +168,18 @@ int      genPartonFlavor[MAXINDEX];
 };
 
 /////////////////////////////////////////////////////////////////////////
+class GenFatJet : public Particle {
+
+public:
+  GenFatJet();
+  GenFatJet(TTree*, std::string, std::vector<std::string>);
+  
+UChar_t  genHadronFlavor[MAXINDEX];
+int      genPartonFlavor[MAXINDEX];
+  
+};
+
+/////////////////////////////////////////////////////////////////////////
 class Jet : public Particle {
 
 public:

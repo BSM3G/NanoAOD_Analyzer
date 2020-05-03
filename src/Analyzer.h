@@ -80,7 +80,7 @@ public:
   std::multimap<int,int> jsonlinedict;
   /*----------------------------------------------------*/
   void writeParticleDecayList(int); //01.16.19
-  void getGoodGenBJet(); //01.16.19
+  void getGoodGenBPartons(); //01.16.19
   std::vector<int>* getList(CUTS ePos) {return goodParts[ePos];}
   double getMet() {return _MET->pt();}
   double getHT() {return _MET->HT();}
@@ -129,6 +129,8 @@ public:
 
   void getGoodParticles(int);
   void getGoodGenHadronicTaus(const PartStats&);
+  void getGoodGenJets(const PartStats&);
+  void getGoodGenBJets(const PartStats&);
   void getGoodGenHadronicTauNeutrinos(const PartStats&);
   TLorentzVector getGenVisibleTau4Vector(int, int);
   void getGoodGen(const PartStats&);
@@ -199,6 +201,7 @@ public:
 
   Generated* _Gen;
   GenHadronicTau* _GenHadTau;
+  GenJet* _GenJet;
   Electron* _Electron;
   Muon* _Muon;
   Taus* _Tau;

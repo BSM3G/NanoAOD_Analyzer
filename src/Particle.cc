@@ -221,10 +221,23 @@ GenHadronicTau::GenHadronicTau(TTree* _BOOM, std::string filename, std::vector<s
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-GenJet::GenJet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Particle(_BOOM, "GenVisTau", filename, syst_names) {
+GenJet::GenJet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Particle(_BOOM, "GenJet", filename, syst_names) {
 
   SetBranch("GenJet_hadronFlavour", genHadronFlavor);
-  SetBranch("GenVisTau_status", genPartonFlavor);
+  SetBranch("GenJet_partonFlavour", genPartonFlavor);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////    GEN AK8 JETS   ////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+
+
+GenFatJet::GenFatJet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Particle(_BOOM, "GenJetAK8", filename, syst_names) {
+
+  SetBranch("GenJetAK8_hadronFlavour", genHadronFlavor);
+  SetBranch("GenJetAK8_partonFlavour", genPartonFlavor);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

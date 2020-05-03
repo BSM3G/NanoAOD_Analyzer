@@ -36,7 +36,9 @@ const std::string PUSPACE = "Pileup/";
 const std::vector<CUTS> Analyzer::genCuts = {
   CUTS::eGTau, CUTS::eGNuTau, CUTS::eGTop,
   CUTS::eGElec, CUTS::eGMuon, CUTS::eGZ,
-  CUTS::eGW, CUTS::eGHiggs, CUTS::eGJet, CUTS::eGBJet, CUTS::eGHadTau, CUTS::eGMatchedHadTau
+  CUTS::eGW, CUTS::eGHiggs, CUTS::eGJet, 
+  CUTS::eGBJet, CUTS::eGHadTau, CUTS::eGBParton,
+  CUTS::eGMatchedHadTau
 };
 
 const std::vector<CUTS> Analyzer::jetCuts = {
@@ -54,7 +56,7 @@ const std::unordered_map<std::string, CUTS> Analyzer::cut_num = {
   {"NGenZ", CUTS::eGZ},                                 {"NGenW", CUTS::eGW},
   {"NGenHiggs", CUTS::eGHiggs},                         {"NGenJet", CUTS::eGJet},
   {"NGenBJet", CUTS::eGBJet},                           {"NGenHadTau", CUTS::eGHadTau},
-  {"NMatchedGenHadTau", CUTS::eGMatchedHadTau},
+  {"NGenMatchedHadTau", CUTS::eGMatchedHadTau},         {"NGenBParton", CUTS::eGBParton},
   {"NRecoMuon1", CUTS::eRMuon1},                        {"NRecoMuon2", CUTS::eRMuon2},
   {"NRecoElectron1", CUTS::eRElec1},                    {"NRecoElectron2",CUTS::eRElec2},
   {"NRecoTau1", CUTS::eRTau1},                          {"NRecoTau2", CUTS::eRTau2},
@@ -186,7 +188,8 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
     _Gen = new Generated(BOOM, filespace + "Gen_info.in", syst_names);
     _GenHadTau = new GenHadronicTau(BOOM, filespace + "Gen_info.in", syst_names);
-    allParticles= {_Gen,_GenHadTau,_Electron,_Muon,_Tau,_Jet,_FatJet};
+    _GenJet = new GenJet(BOOM, filespace + "Gen_info.in", syst_names);
+    allParticles= {_Gen,_GenHadTau,_GenJet,_Electron,_Muon,_Tau,_Jet,_FatJet};
   } else {
     std::cout<<"This is Data if not, change the flag!"<<std::endl;
     allParticles= {_Electron,_Muon,_Tau,_Jet,_FatJet};
@@ -702,11 +705,15 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     // Initialize the lists of generator-level particles.
     _Gen->setOrigReco();
     _GenHadTau->setOrigReco();
+    _GenJet->setOrigReco();
 
     getGoodGen(_Gen->pstats["Gen"]);
     getGoodGenHadronicTaus(_GenHadTau->pstats["Gen"]);
+    getGoodGenJets(_GenJet->pstats["Gen"]);
+    getGoodGenBJets(_GenJet->pstats["Gen"]);
     getGoodGenHadronicTauNeutrinos(_Gen->pstats["Gen"]);
-    getGoodGenBJet(); //01.16.19
+    getGoodGenBPartons(); //01.16.19
+
 
   }
   else if(isData){
@@ -744,7 +751,8 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
      //////Smearing
     smearLepton(*_Electron, CUTS::eGElec, _Electron->pstats["Smear"], distats["Electron_systematics"], i);
     smearLepton(*_Muon, CUTS::eGMuon, _Muon->pstats["Smear"], distats["Muon_systematics"], i);
-    smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
+    // smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
+    smearLepton(*_Tau, CUTS::eGHadTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
 
     smearJet(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], i);
     smearJet(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], i);
@@ -759,7 +767,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     getGoodParticles(i);
   }
   active_part = &goodParts;
-  
+
   if( event < 10 || ( event < 100 && event % 10 == 0 ) ||
   ( event < 1000 && event % 100 == 0 ) ||
   ( event < 10000 && event % 1000 == 0 ) ||
@@ -1226,13 +1234,20 @@ void Analyzer::getTriggerBranchesList(std::string trigger){
 
 /////sets up other values needed for analysis that aren't particle specific
 void Analyzer::setupGeneral(std::string year) {
-
+  /*
   genMaper = {
     {5, new GenFill(2, CUTS::eGJet)},     {6,  new GenFill(2, CUTS::eGTop)},
     {11, new GenFill(1, CUTS::eGElec)},   {13, new GenFill(1, CUTS::eGMuon)},
     {15, new GenFill(2, CUTS::eGTau)},    {23, new GenFill(62, CUTS::eGZ)},
     {24, new GenFill(62, CUTS::eGW)},      {25, new GenFill(2, CUTS::eGHiggs)}, 
     {5, new GenFill(52, CUTS::eGBJet)}
+  };
+  */
+  genMaper = {
+    {6,  new GenFill(2, CUTS::eGTop)},    {11, new GenFill(1, CUTS::eGElec)},   
+    {13, new GenFill(1, CUTS::eGMuon)},   {15, new GenFill(2, CUTS::eGTau)},    
+    {23, new GenFill(62, CUTS::eGZ)},     {24, new GenFill(62, CUTS::eGW)},      
+    {25, new GenFill(2, CUTS::eGHiggs)}
   };
   
   isData=true;
@@ -1423,7 +1438,8 @@ void Analyzer::setCutNeeds() {
   }
 
   neededCuts.loadCuts(CUTS::eGHadTau);
-  neededCuts.loadCuts(CUTS::eGBJet); //01.16.19
+  neededCuts.loadCuts(CUTS::eGBParton); //01.16.19
+  neededCuts.loadCuts(CUTS::eGBJet); 
 
   neededCuts.loadCuts(_Jet->findExtraCuts());
   if(doSystematics) {
@@ -1656,7 +1672,18 @@ TLorentzVector Analyzer::matchTauToGen(const TLorentzVector& lvec, double lDelta
   return genVec;
 }
 
+////checks if reco object matchs a gen object.  If so, then reco object is for sure a correctly identified particle
+TLorentzVector Analyzer::matchJetToGen(const TLorentzVector& recoJet4Vector, const PartStats& stats, CUTS ePos) {
 
+  for(auto it : *active_part->at(ePos)) {
+    if(recoJet4Vector.DeltaR(_GenJet->p4(it)) > stats.dmap.at("GenMatchingDeltaR")) continue;
+    
+    return _GenJet->p4(it);
+  }
+  return TLorentzVector(0,0,0,0);
+}
+
+/*
 ////checks if reco object matchs a gen object.  If so, then reco object is for sure a correctly identified particle
 TLorentzVector Analyzer::matchJetToGen(const TLorentzVector& lvec, const PartStats& stats, CUTS ePos) {
   //for the future store gen jets
@@ -1669,7 +1696,7 @@ TLorentzVector Analyzer::matchJetToGen(const TLorentzVector& lvec, const PartSta
   }
   return TLorentzVector(0,0,0,0);
 }
-
+*/
 
 
 ////checks if reco object matchs a gen object.  If so, then reco object is for sure a correctly identified particle
@@ -1705,10 +1732,7 @@ void Analyzer::getGoodGen(const PartStats& stats) {
 
     particle_id = abs(_Gen->pdg_id[j]);
 
-    if( (particle_id < 5 || particle_id == 9 || particle_id == 21) && genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(5)->status){
-      active_part->at(genMaper.at(5)->ePos)->push_back(j);
-    }
-    else if(genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(particle_id)->status) {
+    if(genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(particle_id)->status) {
       // Cuts on gen-taus (before decaying)
       if(stats.bfind("DiscrTauByPtAndEta")){
         if(particle_id == 15 && (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
@@ -1729,13 +1753,55 @@ void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
 
   // Loop over all gen-level hadronic taus stored in the corresponding list to apply certain selections
   for(size_t i=0; i < _GenHadTau->size(); i++){
-
-    if(_GenHadTau->pt(i) < stats.pmap.at("HadTauPtCut").first || _GenHadTau->pt(i) > stats.pmap.at("HadTauPtCut").second || abs(_GenHadTau->eta(i)) > stats.dmap.at("HadTauEtaCut")) continue;
+    if(stats.bfind("DiscrHadTauByPtandEta")){
+      if(_GenHadTau->pt(i) < stats.pmap.at("HadTauPtCut").first || _GenHadTau->pt(i) > stats.pmap.at("HadTauPtCut").second || abs(_GenHadTau->eta(i)) > stats.dmap.at("HadTauEtaCut")) continue;
+    }
     else if( stats.bfind("DiscrByTauDecayMode") && (_GenHadTau->decayMode[i] < stats.pmap.at("TauDecayModes").first || _GenHadTau->decayMode[i] > stats.pmap.at("TauDecayModes").second)) continue;
 
     active_part->at(CUTS::eGHadTau)->push_back(i);
   } 
 }
+
+// --- Function that applies selections to jets at gen-level (stored in the GenJets list) --- //
+// The jet flavour is determined based on the "ghost" hadrons clustered inside a jet.
+// More information about Jet Parton Matching at https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideBTagMCTools
+
+void Analyzer::getGoodGenJets(const PartStats& stats){
+
+  // Loop over all gen-level jets from the GenJet collection to apply certain selections 
+  for(size_t i=0; i < _GenJet->size(); i++){
+    if(stats.bfind("DiscrJetByPtandEta")){
+      if(_GenJet->pt(i) < stats.pmap.at("JetPtCut").first || _GenJet->pt(i) > stats.pmap.at("JetPtCut").second || abs(_GenJet->eta(i)) > stats.dmap.at("JetEtaCut")) continue;
+    }
+    else if(stats.bfind("DiscrByPartonFlavor")){
+      int jetPartonFlavor = _GenJet->genPartonFlavor[i]; // b-jet: jetPartonFlavor = 5, c-jet: jetPartonFlavor = 4, light-jet: jetPartonFlavor = 1,2,3,21, undefined: jetPartonFlavor = 0
+
+      if(abs(jetPartonFlavor) < stats.pmap.at("PartonFlavorRange").first || abs(jetPartonFlavor) > stats.pmap.at("PartonFlavorRange").second) continue;
+    }
+    active_part->at(CUTS::eGJet)->push_back(i); 
+    // std::cout << "~~~~~~~~ Jet from _GenJet: pt = " << _GenJet->pt(i) << ", eta = " << _GenJet->eta(i) << std::endl;
+  }
+}
+
+// --- Function that applies selections to b-jets at gen-level (stored in the GenVisTau list) --- //
+void Analyzer::getGoodGenBJets(const PartStats& stats){
+
+  // Loop over all gen-level jets from the GenJet collection to apply certain selections 
+  for(size_t i=0; i < _GenJet->size(); i++){
+    int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[i]); // b-jet: jetFlavor = 5, c-jet: jetFlavor = 4, light-jet: jetFlavor = 0
+
+    // std::cout << "~~~~~~~~ _GenJet->genHadronFlavor(" << i << ") = " << static_cast<unsigned>(_GenJet->genHadronFlavor[i]) << std::endl;
+    // std::cout << "~~~~~~~~ _GenJet->genPartonFlavor(" << i << ") = " << _GenJet->genPartonFlavor[i] << std::endl;
+    // Only consider those jets that have parton/hadron flavor = 5
+    if(abs(_GenJet->genPartonFlavor[i]) != 5 || abs(jetHadronFlavor) != 5) continue;
+    else if(stats.bfind("DiscrBJetByPtandEta")){
+      if(_GenJet->pt(i) < stats.pmap.at("BJetPtCut").first || _GenJet->pt(i) > stats.pmap.at("BJetPtCut").second || abs(_GenJet->eta(i)) > stats.dmap.at("BJetEtaCut")) continue;
+    }
+    active_part->at(CUTS::eGBJet)->push_back(i); 
+    // std::cout << "~~~~~~~~ B-jet from _GenJet: pt = " << _GenJet->pt(i) << ", eta = " << _GenJet->eta(i) << std::endl;
+  }
+}
+
 
 // --- Function that gets the Lorentz vector of taus that decayed hadronically using the tagging method in Analyzer::getGenHadronicTauNeutrinos() --- //
 TLorentzVector Analyzer::getGenVisibleTau4Vector(int gentau_idx, int gentaunu_idx){
@@ -1794,18 +1860,20 @@ void Analyzer::getGoodGenHadronicTauNeutrinos(const PartStats& stats){
 
 }
 
-void Analyzer::getGoodGenBJet() { //01.16.19
+void Analyzer::getGoodGenBPartons(){ //01.16.19
   for (size_t j=0; j < _Gen->size(); j++){
     int id = abs(_Gen->pdg_id[j]);
     int motherid = abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]);
     int motherind = abs(_Gen->genPartIdxMother[j]);
-    if(id == 5 && motherid == 6)
-      {for(size_t k=0; k < _Gen->size(); k++){
-    if(abs(_Gen->pdg_id[k]) == 24 && _Gen->genPartIdxMother[k] == motherind)
-      {active_part->at(CUTS::eGBJet)->push_back(j);
+    if(id == 5 && motherid == 6){
+      for(size_t k=0; k < _Gen->size(); k++){
+        if(abs(_Gen->pdg_id[k]) == 24 && _Gen->genPartIdxMother[k] == motherind){
+          //active_part->at(CUTS::eGBJet)->push_back(j);
+          active_part->at(CUTS::eGBParton)->push_back(j);
+          // std::cout << "B-parton from _Gen: pt = " << _Gen->pt(j) << ", eta = " << _Gen->eta(j) << ", status = " << _Gen->status[j] <<  std::endl;
+        }
       }
-  }
-      }
+    }
   }
 }
 
@@ -2904,20 +2972,20 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(_GenHadTau->p4(*matchedgentauh_it).M(), "MatchedVisTauHMass");
         histAddVal(_GenHadTau->decayMode[*matchedgentauh_it], "MatchedVisTauHDecayMode");
     }
-    histAddVal(active_part->at(CUTS::eGHadTau)->size(), "NMatchedVisTauH");
+    histAddVal(active_part->at(CUTS::eGMatchedHadTau)->size(), "NMatchedVisTauH");
 
     int grbj = 0;
     TLorentzVector genVec2;
-    for(auto it : *active_part->at(CUTS::eGBJet)){
-    histAddVal(_Gen->pt(it), "BJPt");
-    histAddVal(_Gen->eta(it), "BJEta");
-    grbj = grbj + 1;
+    for(auto it : *active_part->at(CUTS::eGBParton)){
+      histAddVal(_Gen->pt(it), "BJPt");
+      histAddVal(_Gen->eta(it), "BJEta");
+      grbj = grbj + 1;
     }
 
     histAddVal(active_part->at(CUTS::eGTau)->size(), "NTau");
     histAddVal(nhadtau, "NHadTau");
 
-    histAddVal(active_part->at(CUTS::eGBJet)->size(), "NBJ");
+    histAddVal(active_part->at(CUTS::eGBParton)->size(), "NBJ");
 
     // Add these to the default histograms to perform quick checks if necessary.
     histAddVal(nTruePU, "PUNTrueInt");
