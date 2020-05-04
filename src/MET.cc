@@ -62,18 +62,12 @@ void Met::init(){
   //cleanup of the particles
   //keep this if there is any ever some need for a unchanged met
   RecoMet.SetPtEtaPhiM(met_pt,0,met_phi,met_pt);
-  /*
+  
   // Get the x and y components of the MET
   met_px = RecoMet.Px();
   met_py = RecoMet.Py();
-  // met_px_nom = met_px;
-  // met_py_nom = met_py;
-  met_px_jerShifted = met_px;
-  met_py_jerShifted = met_py;
-  met_px_jesShifted = met_px;
-  met_py_jesShifted = met_py;
-  */
 
+  // std::cout << "met_px init (1) = " << met_px << ". met_py init (1) = " << met_py << std::endl;
 
   for(int i=0; i < (int) syst_names.size(); i++) {
     
@@ -86,39 +80,64 @@ void Met::init(){
   }
   cur_P=&RecoMet;
 
+  // std::cout << "met_px init (2) = " << RecoMet.Px() << ". met_py init (2) = " << RecoMet.Py() << std::endl;
+
   // syst_HT[activeSystematic]=0.;
   // syst_MHT[activeSystematic]=0.;
   // syst_MHTphi[activeSystematic]=99.;
 }
 
-/*
+
 void Met::propagateJER(TLorentzVector recoJet, double const& jer_sf_nom, double const& jer_sf_shift, int syst){
   
   if(systVec.at(syst) == nullptr) return;
 
+  // update shifted values
+  met_px_jerShifted = systVec.at(syst)->Px();
+  met_py_jerShifted = systVec.at(syst)->Py();
+
+  // std::cout << "syst = " << syst << ", systVec.at(" << syst << ").Px() = " << systVec.at(syst)->Px() << ", py = " << systVec.at(syst)->Py() << ", pt = " << systVec.at(syst)->Pt() << std::endl;
+  // std::cout << "met_px_jerShifted = " << met_px_jerShifted << ". met_px = " << met_px << ", met_py_jerShifted = " << met_py_jerShifted << ", met_py = " << met_py << std::endl;
   double jet_pt_nom = jer_sf_nom * recoJet.Pt();
+  // make sure this is positive
+  if(jet_pt_nom < 0.0) jet_pt_nom *= -1.0;
+
   // Check that the jet pt is greater than the thrshold for unclustered energy in order to do the propagation
   if(jet_pt_nom <= jet_unclEnThreshold) return;
 
-  // update nominal values
   // met_px_nom = met_px_nom - (jet_pt_nom - recoJet.Pt()) * cos(recoJet.Phi());
   // met_px_nom = met_py_nom - (jet_pt_nom - recoJet.Pt()) * sin(recoJet.Phi());
 
   // update those values we want for the systematic calculated, this also includes the nominal value.
-  met_px_jerShifted = met_px_jerShifted - (jer_sf_shift * recoJet.Pt() - jet_pt_nom) * cos(recoJet.Phi());
-  met_py_jerShifted = met_py_jerShifted - (jer_sf_shift * recoJet.Pt() - jet_pt_nom) * sin(recoJet.Phi());
-
+  if(syst == 0){
+    met_px_jerShifted = met_px_jerShifted - (jet_pt_nom - recoJet.Pt()) * cos(recoJet.Phi());
+    met_py_jerShifted = met_py_jerShifted - (jet_pt_nom - recoJet.Pt()) * sin(recoJet.Phi());
+  }
+  else{
+    met_px_jerShifted = met_px_jerShifted - (jer_sf_shift * recoJet.Pt() - jet_pt_nom) * cos(recoJet.Phi());
+    met_py_jerShifted = met_py_jerShifted - (jer_sf_shift * recoJet.Pt() - jet_pt_nom) * sin(recoJet.Phi());
+  }
   // Add this to the systematics vector
-  systVec.at(syst)->SetPxPyPzE(met_px_jerShifted, met_py_jerShifted, systVec.at(syst)->Pz(), TMath::sqrt(pow(met_px_jerShifted,2) + pow(met_py_jerShifted,2)));
+  systVec.at(syst)->SetPxPyPzE(met_px_jerShifted, met_py_jerShifted, systVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_jerShifted,2) + pow(met_py_jerShifted,2)));
   
-}
-*/
 
-/*
+  // std::cout << "met_px_jerShifted = " << met_px_jerShifted - (jer_sf_shift * recoJet.Pt() - jet_pt_nom) * cos(recoJet.Phi()) << ". met_px = " << met_px << ", met_py_jerShifted = " << met_py_jerShifted - (jer_sf_shift * recoJet.Pt() - jet_pt_nom) * sin(recoJet.Phi()) << ", met_py = " << met_py << std::endl;
+  // std::cout << "syst = " << syst << ", systVec.at(" << syst << ").Px() = " << systVec.at(syst)->Px() << ", py = " << systVec.at(syst)->Py() << ", pt = " << systVec.at(syst)->Pt() << std::endl;
+
+}
+
+
+
 void Met::propagateJES(TLorentzVector recoJet, double const& jer_sf_nom, double const& jes_delta, double const& jes_sigma, int syst){
   
   if(systVec.at(syst) == nullptr) return;
+
+  met_px_jesShifted = systVec.at(syst)->Px();
+  met_py_jesShifted = systVec.at(syst)->Py();
+
   double jet_pt_nom = jer_sf_nom * recoJet.Pt();
+  if(jet_pt_nom < 0.0) jet_pt_nom *= -1.0;
+
   // Check that the jet pt is greater than the thrshold for unclustered energy in order to do the propagation
   if(jet_pt_nom <= jet_unclEnThreshold) return;
 
@@ -127,27 +146,36 @@ void Met::propagateJES(TLorentzVector recoJet, double const& jer_sf_nom, double 
   met_py_jesShifted = met_py_jesShifted - ( (jet_pt_nom * (1 + jes_sigma*jes_delta)) - jet_pt_nom) * sin(recoJet.Phi());
 
   // Add this to the systematics vector
-  systVec.at(syst)->SetPxPyPzE(met_px_jesShifted, met_py_jesShifted, systVec.at(syst)->Pz(), TMath::sqrt(pow(met_px_jesShifted,2) + pow(met_py_jesShifted,2)));
+  systVec.at(syst)->SetPxPyPzE(met_px_jesShifted, met_py_jesShifted, systVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_jesShifted,2) + pow(met_py_jesShifted,2)));
 
 }
-*/
+
 
 
 void Met::update(PartStats& stats, Jet& jet, int syst=0){
   ///Calculates met from values from each file plus smearing and treating muons as neutrinos
   if(systVec.at(syst) == nullptr) return;
 
-  /*
-    Final update of the MET: systVec.at(0) contains the met_nom
-    finalmet_px_shifted = systVect.at(syst)->Px() + (systVect.at(0)->Px() - met_px);
-    finalmet_py_shifted = systVect.at(syst)->Py() + (systVect.at(0)->Px() - met_py);
+  //Final update of the MET: systVec.at(0) contains the met_nom. If syst=0 then don't update any further this met.
+  if(syst ==0){
+    finalmet_px_shifted = systVec.at(0)->Px();
+    finalmet_py_shifted = systVec.at(0)->Py();
+  }
+  else{
+    finalmet_px_shifted = systVec.at(syst)->Px() + (systVec.at(0)->Px() - met_px);
+    finalmet_py_shifted = systVec.at(syst)->Py() + (systVec.at(0)->Py() - met_py);
+  }
+  // std::cout << "met_px (update 1) = " << met_px << ". met_py (update 2) = " << met_py << std::endl;
+  // std::cout << "systVec.at(" << syst << ")->Px() = " << systVec.at(syst)->Px() << ", systVec.at(" << syst << ")->Py() = " << systVec.at(syst)->Py() << std::endl;
+  // std::cout << "systVec.at(0)->Px() = " << systVec.at(0)->Px() << ", systVec.at(0)->Py() = " << systVec.at(0)->Py() << std::endl;
+  // std::cout << "finalmet_px_shifted = " << finalmet_px_shifted << ", finalmet_py_shifted = " << finalmet_py_shifted << std::endl;
 
-    // Set the vector of the current systematics with the final values
-    systVect.at(syst)->SetPxPyPzE(finalmet_px_shifted, finalmet_py_shifted, systVect.at(syst)->Pz(), TMath::sqrt(pow(met_px_jesShifted,2) + pow(met_py_jesShifted,2)));
+  // Set the vector of the current systematics with the final values
+  systVec.at(syst)->SetPxPyPzE(finalmet_px_shifted, finalmet_py_shifted, systVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_jesShifted,2) + pow(met_py_jesShifted,2)));
 
-  */
+  // std::cout << "2: ===== systVec.at(" << syst << ")->Px() = " << systVec.at(syst)->Px() << ", systVec.at(" << syst << ")->Py() = " << systVec.at(syst)->Py() << std::endl;
 
-
+/*
   double sumpxForMht=0;
   double sumpyForMht=0;
   double sumptForHt=0;
@@ -175,6 +203,7 @@ void Met::update(PartStats& stats, Jet& jet, int syst=0){
                                systVec.at(syst)->Pz(), 
                                TMath::Sqrt(pow(systVec.at(syst)->Px()+systdeltaMEx[syst],2) + pow(systVec.at(syst)->Py()+systdeltaMEy[syst],2)));
 
+*/
 }
 
 double Met::pt()const         {return cur_P->Pt();}

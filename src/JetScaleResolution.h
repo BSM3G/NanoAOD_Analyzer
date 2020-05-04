@@ -96,29 +96,31 @@ inline bool operator<(const Bin& A, const Bin& B)
 class JetScaleResolution{
     public:
         JetScaleResolution();
-        JetScaleResolution(const std::string& scalefilename, const std::string& parttype, const std::string& resolutionfile, const std::string& sfresolutionfile);
+        // JetScaleResolution(const std::string& scalefilename, const std::string& parttype, const std::string& resolutionfile, const std::string& sfresolutionfile);
+        //JetScaleResolution(const std::string& resolutionfilename, const std::string sfuncertaintyfilename, const std::string& uncertaintyfilename, const std::string& type);
+        JetScaleResolution(const std::string& scaleuncertfilename, const std::string& type, const std::string& resolutionfilename, const std::string& sfresuncertfilename);
         void InitScale(const std::string& filename, const std::string& type);
         void InitResolution(const std::string& resolutionfile, const std::string& sfuncertaintyfile);
         double GetRes(const TLorentzVector& jet,const TLorentzVector& genjet, double rho, double sigmares);
-        // double GetSmearValsPt(const TLorentzVector& recojet, TLorentzVector& genjet, double rho, double sigmares);           // AK4 jets
-        // double GetSmearValsM(const TLorentzVector& recojet, TLorentzVector& genjet, double SF, double SFdown, double SFup);  // AK8 jets
         double GetScale(const TLorentzVector& jet, bool isBjet, double sigmascale);
 
-    private:
-        // These are needed for jet energy resolution initialization: come from CMSSW objects
-        /*
-        auto params_sf_and_uncertainty;
-        auto params_resolution;
-        auto jer;
-        auto jerSF_and_Uncertainty;
-        TRandom *rnd = new TRandom3(12345);
-        */
-        // These are need for jet energy scale initialization: come from CMSSW objects
-        /*
-        JetCorrectorParameters jetcorrectorparams;
-        JetCorrectionUncertainty jesUncertainty;
-        */
+        void InitResolutionSF(const std::string& resolutionfile, const std::string sfuncertaintyfile);
+        void InitScaleDelta(const std::string& uncertaintyfilename, const std::string& type);
+        double GetSmearValsPt(const TLorentzVector& recojet, TLorentzVector& genjet, double rho, double sigmares);           // AK4 jets
+        double GetSmearValsM(const TLorentzVector& recojet, TLorentzVector& genjet, double SF, double SFdown, double SFup, double sigmares);  // AK8 jets
+        double GetScaleDelta(const TLorentzVector& recojet, double jer_sf_nom);
 
+        // These are need for jet energy scale initialization: come from CMSSW objects
+        JME::JetResolution jer;
+        JME::JetResolutionScaleFactor jerSF_and_Uncertainty;
+        JetCorrectorParameters jetcorrectorparams;
+
+
+
+    private:
+
+        TRandom *rnd = new TRandom3(12345);
+        
         TH1D* Heta = nullptr;
         std::vector<TH1D*> HptsP;
         std::vector<TH1D*> HptsM;

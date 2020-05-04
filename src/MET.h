@@ -49,10 +49,10 @@ public:
   TLorentzVector p4() const;
   TLorentzVector& p4();
 
-  /*
+  
   void propagateJER(TLorentzVector recoJet, double const& jer_sf_nom, double const& jer_sf_shift, int syst);
   void propagateJES(TLorentzVector recoJet, double const& jer_sf_nom, double const& jes_delta, double const& jes_sigma, int syst);
-  */
+  
 
   void addPtEtaPhiESyst(double, double, double, double, int);
   void addP4Syst(TLorentzVector, int);

@@ -23,8 +23,8 @@ public:
   void init();
 
   void shiftParticle(Particle& jet, TLorentzVector recJet, double const& ratio, double& dPx, double& dPy, int syst);
-  // void shiftParticleRes(Particle& jet, TLorentzVector recJet, double const& shiftSF, int syst);
-  // void shiftParticleScale(Particle& jet, TLorentzVector recoJet, double const& jer_sf_nom, double const& jes_delta, double const& sigma, int syst);
+  void shiftParticleRes(Particle& jet, TLorentzVector recJet, double const& shiftSF, int syst);
+  void shiftParticleScale(Particle& jet, TLorentzVector recoJet, double const& jer_sf_nom, double const& jes_delta, double const& sigma, int syst);
   void shiftLepton(Lepton& lepton, TLorentzVector recoLep, TLorentzVector genLep, double& dPx, double& dPy, int syst);
   void loadScaleRes(const PartStats& smear, const PartStats& syst, std::string syst_name);
 
