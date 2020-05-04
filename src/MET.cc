@@ -88,6 +88,41 @@ void Met::init(){
 }
 
 
+void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jer_sf_nom, double const& jec_param, std::string& systname, int syst){
+
+  if(systVec.at(syst) == nullptr) return;
+
+  // update shifted values
+  met_px_shifted = systVec.at(syst)->Px();
+  met_py_shifted = systVec.at(syst)->Py();
+
+  double jet_pt_nom = jer_sf_nom * recoJet.Pt();
+  // make sure this is positive
+  if(jet_pt_nom < 0.0) jet_pt_nom *= -1.0;
+
+  // Check that the jet pt is greater than the thrshold for unclustered energy in order to do the propagation
+  if(jet_pt_nom <= jet_unclEnThreshold) return;
+
+    // update those values we want for the systematic calculated, this also includes the nominal value.
+  if(syst == 0){
+    met_px_shifted = met_px_shifted - (jet_pt_nom - recoJet.Pt()) * cos(recoJet.Phi());
+    met_py_shifted = met_py_shifted - (jet_pt_nom - recoJet.Pt()) * sin(recoJet.Phi());
+  }
+  else if(systname.find("_Res_") != std::string::npos){ // in this case jec_param = jer_sf_shift
+  	met_px_shifted = met_px_shifted - (jec_param * recoJet.Pt() - jet_pt_nom) * cos(recoJet.Phi());
+    met_py_shifted = met_py_shifted - (jec_param * recoJet.Pt() - jet_pt_nom) * sin(recoJet.Phi());
+  }
+  else if(systname.find("_Scale_") != std::string::npos){ // in this case jec_param = + jes_delta
+  	met_px_shifted = met_px_shifted - ( (jet_pt_nom * (1 + jec_param)) - jet_pt_nom) * cos(recoJet.Phi());
+  	met_py_shifted = met_py_shifted - ( (jet_pt_nom * (1 + jec_param)) - jet_pt_nom) * sin(recoJet.Phi());
+  }
+
+  // Add this to the systematics vector
+  systVec.at(syst)->SetPxPyPzE(met_px_shifted, met_py_shifted, systVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_shifted,2) + pow(met_py_shifted,2)));
+
+}
+
+
 void Met::propagateJER(TLorentzVector recoJet, double const& jer_sf_nom, double const& jer_sf_shift, int syst){
   
   if(systVec.at(syst) == nullptr) return;

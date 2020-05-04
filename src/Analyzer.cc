@@ -518,7 +518,12 @@ Analyzer::~Analyzer() {
   delete _Muon;
   delete _Tau;
   delete _Jet;
-  if(!isData) delete _Gen;
+  if(!isData){
+    delete _Gen;
+    delete _GenJet;
+    delete _GenHadTau;
+  }
+
 
   for(auto fpair: fillInfo) {
     delete fpair.second;
@@ -752,42 +757,47 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   TriggerCuts(CUTS::eRTrig1);
 
   // Print met before it is updated
-  // for(size_t i=0; i< _Jet->size(); i++) {
-  //   std::cout << "Jet pt (raw) = " << _Jet->pt(i) << std::endl; 
-  // }
-  // std::cout << "Initial MET: px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << std::endl;
+  for(size_t i=0; i< _Jet->size(); i++) {
+     std::cout << "Jet pt (initial) = " << _Jet->pt(i) << std::endl; 
+  }
+  std::cout << "Initial MET: px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << std::endl;
 
-  ////check update met is ok
   for(size_t i=0; i < syst_names.size(); i++) {
      //////Smearing
     smearLepton(*_Electron, CUTS::eGElec, _Electron->pstats["Smear"], distats["Electron_systematics"], i);
     smearLepton(*_Muon, CUTS::eGMuon, _Muon->pstats["Smear"], distats["Muon_systematics"], i);
-    // smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
     smearLepton(*_Tau, CUTS::eGHadTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
 
     smearJet(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], i);
     smearJet(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], i);
-    updateMet(i);
+
+    // updateMet(i);
 
   }
 
-  // Here is where all corrections applied take effect.
   for(size_t i=0; i < syst_names.size(); i++) {
     std::string systname = syst_names.at(i);
+    // Here is where all corrections applied are loaded to the particle collections and MET.
     for( auto part: allParticles) part->setCurrentP(i);
     _MET->setCurrentP(i);
-    // std::cout << "Final MET: px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << std::endl;
+    /*
+    for(size_t i=0; i< _Jet->size(); i++) {
+      std::cout << "Jet pt (intermediate corrected) = " << _Jet->pt(i) << std::endl; 
+    }
+    std::cout << "Intermediate MET: px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << std::endl;
+    */
 
-    //if(i == 0){
-    //  for(size_t i=0; i< _Jet->size(); i++) {
-    //    std::cout << "Jet pt (corrected) = " << _Jet->pt(i) << std::endl; 
-    //  }
-    //  std::cout << " ----------- " << std::endl;
-    //}
+    // Here is where all cuts to particles and MET take place.
+    updateMet(i);
     getGoodParticles(i);
   }
 
+  for(size_t i=0; i< _Jet->size(); i++) {
+    std::cout << "Jet pt (final corrected) = " << _Jet->pt(i) << std::endl; 
+  }
 
+  std::cout << "Final MET: px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << std::endl;
+  std::cout << " ----------- " << std::endl;
 
   active_part = &goodParts;
 
@@ -1103,6 +1113,8 @@ double Analyzer::getTauDataMCScaleFactor(int updown){
 
 ///Calculates met from values from each file plus smearing and treating muons as neutrinos
 void Analyzer::updateMet(int syst) {
+  // _MET->setCurrentP(syst);
+  // Do a final update
   _MET->update(distats["Run"], *_Jet,  syst);
 
   // std::cout << "_MET->update()->px() = " << _MET->px() << "_MET->update()->py() = " << _MET->py() << std::endl;
@@ -1576,16 +1588,21 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
     
     TLorentzVector genJet = matchJetToGen(jetReco, jet.pstats["Smear"], eGenPos);
 
-    double jer_sf_nom = jetScaleRes.GetSmearValsPt(jetReco, genJet, jec_rho, 0);
+    double jec_param = 1.0;
+    double jer_sf_nom = jetScaleRes.GetSmearValsPt(jetReco, genJet, jec_rho, 0); 
+    /*
     double jer_sf_up = jetScaleRes.GetSmearValsPt(jetReco, genJet, jec_rho, 1);
     double jer_sf_down = jetScaleRes.GetSmearValsPt(jetReco, genJet, jec_rho, -1);
-    double jes_delta = jetScaleRes.GetScaleDelta(jetReco, jer_sf_nom); 
-  
+
     if(jer_sf_up < jer_sf_down){
-      double jer_sf_up_tmp = jer_sf_up;
-      jer_sf_up = jer_sf_down;
-      jer_sf_down = jer_sf_up_tmp;
+        double jer_sf_up_tmp = jer_sf_up;
+        jer_sf_up = jer_sf_down;
+        jer_sf_down = jer_sf_up_tmp;
+      }
     }
+    // double jes_delta = jetScaleRes.GetScaleDelta(jetReco, jer_sf_nom); 
+    */
+
 
     // std::cout << "jer_sf_nom = " << jer_sf_nom << std::endl;
     // std::cout << "jer_sf_up = " << jer_sf_up << std::endl;
@@ -1596,36 +1613,60 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
     //if(systname == "orig" && stats.bfind("SmearTheJet")){ 
       // We probably want to correct always for energy resolution to propagate this to the MET
     if(systname == "orig"){
-      systematics.shiftParticleRes(jet, jetReco, jer_sf_nom, syst);
-      _MET->propagateJER(origJetReco, jer_sf_nom, jer_sf_nom, syst);
+      // systematics.shiftParticleRes(jet, jetReco, jer_sf_nom, syst);
+      // _MET->propagateJER(origJetReco, jer_sf_nom, jer_sf_nom, syst);
+      jec_param = jer_sf_nom; 
       // std::cout << "Jet pt after nom JER correction = " << jet.RecoP4(i).Pt() << std::endl; 
       // std::cout << "MET after nom JER correction = " << _MET->pt() << std::endl;
     }
-    else if(systname == "Jet_Res_Up"){
-      systematics.shiftParticleRes(jet, jetReco, jer_sf_up, syst);
-      _MET->propagateJER(origJetReco, jer_sf_nom, jer_sf_up, syst);
-      // std::cout << "Jet pt after up JER correction = " << jet.RecoP4(i).Pt() << std::endl; 
-      // std::cout << "MET after up JER correction = " << _MET->pt() << std::endl;
-    }
-    else if(systname == "Jet_Res_Down"){
-      systematics.shiftParticleRes(jet, jetReco, jer_sf_down, syst);
-      _MET->propagateJER(origJetReco, jer_sf_nom, jer_sf_down, syst);
-      // std::cout << "Jet pt after down JER correction = " << jet.RecoP4(i).Pt()<< std::endl; 
-      // std::cout << "MET after down JER correction = " << _MET->pt() << std::endl;
+    else if(systname.find("_Res_") != std::string::npos){
+
+      double jer_sf_up = jetScaleRes.GetSmearValsPt(jetReco, genJet, jec_rho, 1);
+      double jer_sf_down = jetScaleRes.GetSmearValsPt(jetReco, genJet, jec_rho, -1);
+
+      if(jer_sf_up < jer_sf_down){
+        double jer_sf_up_tmp = jer_sf_up;
+        jer_sf_up = jer_sf_down;
+        jer_sf_down = jer_sf_up_tmp;
+      }
+
+      if(systname == "Jet_Res_Up"){
+        // systematics.shiftParticleRes(jet, jetReco, jer_sf_up, syst);
+        // _MET->propagateJER(origJetReco, jer_sf_nom, jer_sf_up, syst);
+        jec_param = jer_sf_up;
+        // std::cout << "Jet pt after up JER correction = " << jet.RecoP4(i).Pt() << std::endl; 
+        // std::cout << "MET after up JER correction = " << _MET->pt() << std::endl;
+      }
+      else if(systname == "Jet_Res_Down"){
+        // systematics.shiftParticleRes(jet, jetReco, jer_sf_down, syst);
+        jec_param = jer_sf_down;
+
+        // _MET->propagateJER(origJetReco, jer_sf_nom, jer_sf_down, syst);
+        // std::cout << "Jet pt after down JER correction = " << jet.RecoP4(i).Pt()<< std::endl; 
+        // std::cout << "MET after down JER correction = " << _MET->pt() << std::endl;
+      }
     }
     // JES applied only for systematics
     else if(systname == "Jet_Scale_Up"){
-      systematics.shiftParticleScale(jet, jetReco, jer_sf_nom, jes_delta, +1.0, syst);
-      _MET->propagateJES(origJetReco, jer_sf_nom, jes_delta, +1.0, syst);
+      jec_param = jetScaleRes.GetScaleDelta(jetReco, jer_sf_nom);
+      // systematics.shiftParticleScale(jet, jetReco, jer_sf_nom, jec_param, +1.0, syst);
+      //_MET->propagateJES(origJetReco, jer_sf_nom, jes_delta, +1.0, syst);
       // std::cout << "Jet pt after up JES correction = " << jet.RecoP4(i).Pt() << std::endl; 
       // std::cout << "MET after up JES correction = " << _MET->pt() << std::endl;
     }
     else if(systname == "Jet_Scale_Down"){
-      systematics.shiftParticleScale(jet, jetReco, jer_sf_nom, jes_delta, -1.0, syst);
-      _MET->propagateJES(origJetReco, jer_sf_nom, jes_delta, -1.0, syst);
+      jec_param = -1.0 * jetScaleRes.GetScaleDelta(jetReco, jer_sf_nom);
+      // systematics.shiftParticleScale(jet, jetReco, jer_sf_nom, jec_param, -1.0, syst);
+      // _MET->propagateJES(origJetReco, jer_sf_nom, jes_delta, -1.0, syst);
       // std::cout << "Jet pt after down JES correction = " << jet.RecoP4(i).Pt() << std::endl; 
       // std::cout << "MET after down JES correction = " << _MET->pt() << std::endl;
     }
+
+    // Correct the jet 4-momentum according to the systematic applied.
+    systematics.shiftParticle(jet, jetReco, jer_sf_nom, jec_param, systname, syst);
+    // Propagate this correction to the MET.
+    _MET->propagateJetEnergyCorr(jetReco, jer_sf_nom, jec_param, systname, syst);
+
     // std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ " << std::endl;
     /*
     double sf=1.;

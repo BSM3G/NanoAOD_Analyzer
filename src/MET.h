@@ -52,6 +52,7 @@ public:
   
   void propagateJER(TLorentzVector recoJet, double const& jer_sf_nom, double const& jer_sf_shift, int syst);
   void propagateJES(TLorentzVector recoJet, double const& jer_sf_nom, double const& jes_delta, double const& jes_sigma, int syst);
+  void propagateJetEnergyCorr(TLorentzVector recoJet, double const& jer_sf_nom, double const& jec_param, std::string& systname, int syst);
   
 
   void addPtEtaPhiESyst(double, double, double, double, int);
@@ -92,6 +93,8 @@ protected:
   float met_py_jerShifted;
   float met_px_jesShifted;
   float met_py_jesShifted;
+  float met_px_shifted;
+  float met_py_shifted;
   float finalmet_px_shifted;
   float finalmet_py_shifted;
 
