@@ -112,40 +112,10 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   // New variable to do special PU weight calculation (2017)
   specialPUcalculation = distats["Run"].bfind("SpecialMCPUCalculation");
   
-  // If specialPUcalculation is true, then take the name of the output file (when submitting jobs) 
-  // to retrieve the right MC nTruePU distribution to calculate the PU weights, otherwise, it will do
-  // the calculation as usual, having a single MC nTruePU histogram (MCHistos option).
-  // If you need to run the Analyzer interactively and use the specialPUcalculation option, make sure that you 
-  // include the name of the sample to analyze. For example, you can look at the names given to output files in past
-  // runs sumbitted as jobs and use those names instead. This will be improved later.
-  if(specialPUcalculation){
-	  
-	std::string outputname = outfile;
-
-	std::string delimitertune = "_Tune";
-	std::string delimiterenergy = "_13TeV";
-
-	bool istuneinname = outputname.find(delimitertune.c_str()) != std::string::npos;
-
-	std::string samplename;
-
-	if((samplename.length() == 0) && istuneinname){
-  		unsigned int pos = outputname.find(delimitertune.c_str());
-  		samplename = outputname.erase(pos, (outputname.substr(pos).length()));
-	}
-
-	if((samplename.length() == 0) && (!istuneinname)){
-  		unsigned int pos = outputname.find(delimiterenergy.c_str());
-  		samplename = outputname.erase(pos, (outputname.substr(pos).length()));
-	}
-
-    initializePileupInfo(distats["Run"].smap.at("SpecialMCPUHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"), samplename);
-  }
-  else{
-    // No special PU calculation.
-    initializePileupInfo(distats["Run"].smap.at("MCHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"),distats["Run"].smap.at("MCPUHistName") );
-  }
-  
+  // New! Initialize pileup information and take care of exceptions if histograms not found.
+  initializePileupInfo(specialPUcalculation, outfile);
+    
+    
   syst_names.push_back("orig");
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> tmp;
   syst_parts.push_back(tmp);
@@ -448,7 +418,10 @@ Analyzer::~Analyzer() {
   delete _Muon;
   delete _Tau;
   delete _Jet;
-  if(!isData) delete _Gen;
+  if(!isData){
+  	delete _Gen;
+  	delete _GenHadTau;
+  }
 
   for(auto fpair: fillInfo) {
     delete fpair.second;
@@ -3301,15 +3274,72 @@ void Analyzer::fill_Tree(){
   }
 }
 
-void Analyzer::initializePileupInfo(std::string MCHisto, std::string DataHisto, std::string DataHistoName, std::string MCHistoName) {
+void Analyzer::initializePileupInfo(const bool& specialPU, std::string outfilename){
+  // If specialPUcalculation is true, then take the name of the output file (when submitting jobs) 
+  // to retrieve the right MC nTruePU distribution to calculate the PU weights, otherwise, it will do
+  // the calculation as usual, having a single MC nTruePU histogram (MCHistos option).
+  // If you need to run the Analyzer interactively and use the specialPUcalculation option, make sure that you 
+  // include the name of the sample to analyze. For example, you can look at the names given to output files in past
+  // runs sumbitted as jobs and use those names instead. This will be improved later.
+
+  // try-catch block for initialize pileup info
+  try{
+
+    if(!specialPUcalculation){// No special PU calculation.
+  	   initializePileupWeights(distats["Run"].smap.at("MCHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"),distats["Run"].smap.at("MCPUHistName"));
+    }
+    else{ // Special PU calculation
+		std::string outputname = outfilename;
+
+		std::string delimitertune = "_Tune";
+		std::string delimiterenergy = "_13TeV";
+
+		bool istuneinname = outputname.find(delimitertune.c_str()) != std::string::npos;
+
+		std::string samplename;
+
+		if((samplename.length() == 0) && istuneinname){
+			unsigned int pos = outputname.find(delimitertune.c_str());
+			samplename = outputname.erase(pos, (outputname.substr(pos).length()));
+		}
+		else if((samplename.length() == 0) && (!istuneinname)){
+			unsigned int pos = outputname.find(delimiterenergy.c_str());
+			samplename = outputname.erase(pos, (outputname.substr(pos).length()));
+		}
+
+        initializePileupWeights(distats["Run"].smap.at("SpecialMCPUHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"), samplename);
+    }
+    
+  }// end of try block
+  catch(std::runtime_error& err){
+  	std::cerr << "ERROR in initializePileupInfo! " << std::endl;
+  	std::cerr << "\t" << err.what()  << std::endl;
+  	std::cout << "\tMake sure you are using the right file and the pileup histogram name is correct in Run_info.in." << std::endl;
+  	if(specialPUcalculation){
+  		std::cout << "\tWARNING: You are using SpecialPUCalculation. Check that the output filename (" << outfilename << ") contains the name of the analyzed MC sample." << std::endl;
+  	}
+  	std::cerr << "\tAborting Analyzer..." << std::endl;
+  	std::abort();
+  }
+  catch(...){
+  	std::cerr << "ERROR in initializePileupInfo! Unknown exception." << std::endl; 
+  	std::cerr << "\tAborting Analyzer..." << std::endl;
+  	std::abort();
+  } // end of catch blocks
+
+}
+
+
+void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHisto, std::string DataHistoName, std::string MCHistoName) {
 
   TFile *file1 = new TFile((PUSPACE+MCHisto).c_str());
   TH1D* histmc = (TH1D*)file1->FindObjectAny(MCHistoName.c_str());
-  if(!histmc) throw std::runtime_error("failed to extract histogram");
+  if(!histmc) throw std::runtime_error(("Failed to extract histogram "+MCHistoName+" from "+PUSPACE+MCHisto+"!").c_str());
 
   TFile* file2 = new TFile((PUSPACE+DataHisto).c_str());
   TH1D* histdata = (TH1D*)file2->FindObjectAny(DataHistoName.c_str());
-  if(!histdata) throw std::runtime_error("failed to extract histogram");
+  if(!histdata) throw std::runtime_error(("Failed to extract histogram "+DataHistoName+" from "+PUSPACE+DataHisto+"!").c_str());
+
   TH1D* histdata_up = (TH1D*)file2->FindObjectAny((DataHistoName+"Up").c_str());
   TH1D* histdata_down = (TH1D*)file2->FindObjectAny((DataHistoName+"Down").c_str());
 

@@ -95,7 +95,8 @@ public:
   void getInputs();
   void setupJob(std::string);
   bool specialPUcalculation = false;
-  void initializePileupInfo(std::string, std::string, std::string, std::string);
+  void initializePileupInfo(const bool&, std::string);
+  void initializePileupWeights(std::string, std::string, std::string, std::string);
   void initializeMCSelection(std::vector<std::string> infiles);
   void initializeWkfactor(std::vector<std::string> infiles);
 
