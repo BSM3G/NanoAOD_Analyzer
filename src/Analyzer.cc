@@ -761,11 +761,12 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
      std::cout << "Jet pt (initial) = " << _Jet->pt(i) << std::endl; 
   }
   std::cout << "Initial MET: px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << std::endl;
-
+  
   for(size_t i=0; i < syst_names.size(); i++) {
      //////Smearing
     smearLepton(*_Electron, CUTS::eGElec, _Electron->pstats["Smear"], distats["Electron_systematics"], i);
     smearLepton(*_Muon, CUTS::eGMuon, _Muon->pstats["Smear"], distats["Muon_systematics"], i);
+    // smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
     smearLepton(*_Tau, CUTS::eGHadTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
 
     smearJet(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], i);
