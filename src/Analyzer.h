@@ -157,7 +157,7 @@ public:
   double getWkfactor();
   double getZBoostWeight();
   double getTopBoostWeight(); //01.15.19
-  void setupBJetSFInfo(const PartStats&); // new function that sets up the b-tagging SF info
+  void setupBJetSFInfo(const PartStats&, std::string); // new function that sets up the b-tagging SF info
   double getBJetSF(CUTS, const PartStats&); //01.16.19
   double getBJetSFResUp(CUTS, const PartStats&); //01.16.19
   double getBJetSFResDown(CUTS, const PartStats&); //01.16.19
@@ -226,8 +226,6 @@ public:
   bool isVSample;
   bool isWSample;
 
-  std::string btagalgoname;
-
   std::vector<Particle*> allParticles;
   std::vector<std::string> syst_names;
   std::map<CUTS, Particle* >  particleCutMap;
@@ -270,10 +268,10 @@ public:
   //BTagCalibrationReader reader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
   
   // B-tagging scale factors - calibration + readers
-  BTagCalibration calib;
+  BTagCalibration btagcalib;
   BTagCalibrationReader btagsfreader;
-  BTagCalibrationReader btagsfreaderup;
-  BTagCalibrationReader btagsfreaderdown;
+  BTagEntry::JetFlavor bjetflavor;
+  BTagEntry::OperatingPoint b_workingpoint;
 
   double rho =20.;
 

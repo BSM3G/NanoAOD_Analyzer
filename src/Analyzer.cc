@@ -146,12 +146,13 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 
 	
   // B-tagging scale factor stuff
-  setupBJetSFInfo(_Jet->pstats["BJet"]); 	
+  setupBJetSFInfo(_Jet->pstats["BJet"], year); 	
   // Here the calibration module will be defined, which is then needed to define the readers below.
+  /*
   btagsfreader.load(calib, BTagEntry::FLAV_B, "comb");
   btagsfreaderup.load(calib, BTagEntry::FLAV_B, "comb");
   btagsfreaderdown.load(calib, BTagEntry::FLAV_B, "comb");
-	
+  */
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
     _Gen = new Generated(BOOM, filespace + "Gen_info.in", syst_names);
@@ -1927,63 +1928,90 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
 
 // The function below sets up the information from the right CSV file in the Pileup folder
 // to obtain the functions needed to apply b-tagging SF in an automatic way.
-void Analyzer::setupBJetSFInfo(const PartStats& stats){
+void Analyzer::setupBJetSFInfo(const PartStats& stats, std::string year){
 
-  std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
-  std::cout << "Setting up the b-jet scale factors... " << std::endl;
+  // Always check that the filenames are up to date!!
+  // https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation
+  static std::map<std::string, std::string> csvv2btagsfcsvfiles = {
+  	{"2016", "CSVv2_Moriond17_B_H.csv"},
+  	{"2017", "CSVv2_94XSF_WP_V2_B_F.csv"},
+  	{"2018", "none.csv"} // No CSVv2 available for 2018
+  }; 
+
+  static std::map<std::string, std::string> deepcsvbtagsfcsvfiles = {
+  	{"2016", "DeepCSV_2016LegacySF_WP_V1.csv"},
+  	{"2017", "DeepCSV_94XSF_WP_V4_B_F.csv"},
+  	{"2018", "DeepCSV_102XSF_WP_V1.csv"}
+  };
+
+  static std::map<std::string, std::string> deepflavbtagsfcsvfiles = {
+  	{"2016", "DeepJet_2016LegacySF_WP_V1.csv"},
+  	{"2017", "DeepFlavour_94XSF_WP_V3_B_F.csv"},
+  	{"2018", "DeepJet_102XSF_WP_V1.csv"}
+  };
+
+  // This will be the default.
+  std::string btagalgoname = "DeepCSV";
+  std::string btagsffilename = deepcsvbtagsfcsvfiles.begin()->second;
+
+  // std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+  // std::cout << "Setting up the b-jet scale factors... " << std::endl;
   // Get the b-tagging algorithm to use to initialize the appropriate csv file:
   
   for( auto cut: stats.bset) {
-
     if(cut == "ApplyJetBTaggingCSVv2"){
       btagalgoname = "CSVv2";
+      btagsffilename = csvv2btagsfcsvfiles[year];
       break;
     }
     else if(cut == "ApplyJetBTaggingDeepCSV"){
       btagalgoname = "DeepCSV";
+      btagsffilename = deepcsvbtagsfcsvfiles[year];
       break;
     }
     else if(cut == "ApplyJetBTaggingDeepFlav"){
       btagalgoname = "DeepFlav";
+      btagsffilename = deepflavbtagsfcsvfiles[year];
       break;
     }
   }
   
-  std::cout << "B-jet ID algorithm selected: " << btagalgoname << std::endl;
-  std::cout<< "Working point selected is: " << stats.smap.at("JetBTaggingWP") << std::endl;
-  
-  calib = BTagCalibration(btagalgoname, (PUSPACE+stats.smap.at("BtagSFCSVfile")).c_str());
+  std::cout << "Setting b-jet ID algorithm (" << btagalgoname << ")." << std::endl;
+  std::cout << "B-jet SF filename: " << (PUSPACE+"BJetDatabase/"+btagsffilename).c_str() << std::endl;
 
-  // Read the working point we are using:
-  if(stats.smap.at("JetBTaggingWP").compare("loose") == 0){ 
-    //std::cout << "working point is loose" << std::endl;
-    btagsfreader = BTagCalibrationReader(BTagEntry::OP_LOOSE, "central");
-    btagsfreaderup = BTagCalibrationReader(BTagEntry::OP_LOOSE, "up");
-    btagsfreaderdown = BTagCalibrationReader(BTagEntry::OP_LOOSE, "down");
-
+  try{
+  	btagcalib = BTagCalibration(btagalgoname, (PUSPACE+"BJetDatabase/"+btagsffilename).c_str());
   }
-  else if(stats.smap.at("JetBTaggingWP").compare("medium") == 0){
-    //std::cout << "working point is medium" << std::endl;
-    btagsfreader = BTagCalibrationReader(BTagEntry::OP_MEDIUM, "central");
-    btagsfreaderup = BTagCalibrationReader(BTagEntry::OP_MEDIUM, "up");
-    btagsfreaderdown = BTagCalibrationReader(BTagEntry::OP_MEDIUM, "down");
-  } 
-  else if(stats.smap.at("JetBTaggingWP").compare("tight") == 0){
-    //std::cout << "working point is tight" << std::endl;
-    btagsfreader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
-    btagsfreaderup = BTagCalibrationReader(BTagEntry::OP_TIGHT, "up");
-    btagsfreaderdown = BTagCalibrationReader(BTagEntry::OP_TIGHT, "down");
+  catch(std::exception& e){
+  	std::cerr << "ERROR in setupBJetSFInfo: " << e.what() << std::endl;
+  	std::cout << "Setting dummy b-tagging from " << (PUSPACE+"btagging.csv").c_str() << std::endl;
+  	btagcalib = BTagCalibration("DeepCSV", (PUSPACE+"btagging.csv").c_str());
   }
 
-  std::cout << "Done. " << std::endl;
+ // Check BTagCalibrationStandalone.h for more information
+
+  static std::map<std::string, int> bjetflavors = {
+  	{"bjet", 0}, {"cjet", 1}, {"lightjet", 2},
+  };
+
+  bjetflavor = (BTagEntry::JetFlavor) bjetflavors["bjet"];
+
+  static std::map<std::string, int> btagoperatingpoints = {
+  	{"loose", 0}, {"medium", 1}, {"tight", 2}, {"reshaping", 3}
+  };
+
+  b_workingpoint = (BTagEntry::OperatingPoint) btagoperatingpoints[stats.smap.at("JetBTaggingWP").c_str()];
   std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
-
 }
 
 double Analyzer::getBJetSF(CUTS ePos, const PartStats& stats) {
   double bjetSFall = 1.0, bjetSFtemp = 1.0; 
 
   if(!neededCuts.isPresent(ePos)) return bjetSFall;
+
+  // Load the info from the btaggin reader
+  btagsfreader = BTagCalibrationReader(b_workingpoint, "central");
+  btagsfreader.load(btagcalib, bjetflavor, "comb");
 
   if(!stats.bfind("UseBtagSF")){
     bjetSFtemp = 1.0;
@@ -1994,13 +2022,13 @@ double Analyzer::getBJetSF(CUTS ePos, const PartStats& stats) {
       bjetSFtemp = 1.0;
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 1){
-      bjetSFtemp = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("central", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 2){
       // Get the SF for the first b-jet
-      bjetSFtemp = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("central", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
       // Now multiply by the SF of the second b-jet
-      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
+      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("central", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
     }
 
   }
@@ -2016,6 +2044,10 @@ double Analyzer::getBJetSFResUp(CUTS ePos, const PartStats& stats) {
 
   if(!neededCuts.isPresent(ePos)) return bjetSFall;
 
+  // Load the info from the btaggin reader
+  btagsfreader = BTagCalibrationReader(b_workingpoint, "up");
+  btagsfreader.load(btagcalib, bjetflavor, "comb");
+
   if(!stats.bfind("UseBtagSF")){
     bjetSFtemp = 1.0;
   }
@@ -2025,13 +2057,13 @@ double Analyzer::getBJetSFResUp(CUTS ePos, const PartStats& stats) {
       bjetSFtemp = 1.0;
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 1){
-      bjetSFtemp = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("up", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 2){
       // Get the SF for the first b-jet
-      bjetSFtemp = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("up", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
       // Now multiply by the SF of the second b-jet
-      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
+      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("up", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
     }
 
   }
@@ -2047,6 +2079,10 @@ double Analyzer::getBJetSFResDown(CUTS ePos, const PartStats& stats) {
 
   if(!neededCuts.isPresent(ePos)) return bjetSFall;
 
+  // Load the info from the btaggin reader
+  btagsfreader = BTagCalibrationReader(b_workingpoint, "down");
+  btagsfreader.load(btagcalib, bjetflavor, "comb");
+
   if(!stats.bfind("UseBtagSF")){
     bjetSFtemp = 1.0;
   }
@@ -2055,13 +2091,13 @@ double Analyzer::getBJetSFResDown(CUTS ePos, const PartStats& stats) {
       bjetSFtemp = 1.0;
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 1){
-      bjetSFtemp = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("down", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 2){
       // Get the SF for the first b-jet
-      bjetSFtemp = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("down", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
       // Now multiply by the SF of the second b-jet
-      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
+      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("down", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
     }
   }
 
