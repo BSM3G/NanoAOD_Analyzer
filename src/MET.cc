@@ -8,8 +8,16 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
 
   if(year.compare("2017") == 0) GenName = (GenName+"FixEE2017").c_str();
 
+  // This refers to the met selected for the particular year
   SetBranch((GenName+"_pt").c_str(), met_pt);
   SetBranch((GenName+"_phi").c_str(), met_phi);
+  // Then we get the default met
+  SetBranch("MET_pt", def_met_pt);
+  SetBranch("MET_phi", def_met_phi);
+  // Then we get the raw met for Type-I corrections
+  SetBranch("RawMET_pt", raw_met_pt);
+  SetBranch("RawMET_phi", raw_met_phi);
+
   std::cout << "Name of the branch loaded for MET: " << (GenName+"_pt").c_str() << std::endl;
 
   systdeltaMEx.resize(syst_names.size());
@@ -62,10 +70,19 @@ void Met::init(){
   //cleanup of the particles
   //keep this if there is any ever some need for a unchanged met
   RecoMet.SetPtEtaPhiM(met_pt,0,met_phi,met_pt);
+  DefMet.SetPtEtaPhiM(def_met_pt,0,def_met_phi,def_met_pt);
+  RawMet.SetPtEtaPhiM(raw_met_pt,0,raw_met_phi,raw_met_pt);
   
-  // Get the x and y components of the MET
-  met_px = RecoMet.Px();
-  met_py = RecoMet.Py();
+  // Get the x and y components of the raw MET
+  met_px = RawMet.Px();
+  met_py = RawMet.Py();
+
+  met_px_nom = met_px;
+  met_py_nom = met_py;
+  met_px_jerShifted= met_px;
+  met_py_jerShifted= met_py;
+  met_px_jesShifted= met_px;
+  met_py_jesShifted= met_py;
 
   // std::cout << "met_px init (1) = " << met_px << ". met_py init (1) = " << met_py << std::endl;
 
@@ -91,6 +108,8 @@ void Met::init(){
 void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jer_sf_nom, double const& jec_param, std::string& systname, int syst){
 
   if(systVec.at(syst) == nullptr) return;
+
+  // Set the nominal values to the raw met
 
   // update shifted values
   met_px_shifted = systVec.at(syst)->Px();
@@ -122,7 +141,7 @@ void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jer_sf_no
 
 }
 
-
+/*
 void Met::propagateJER(TLorentzVector recoJet, double const& jer_sf_nom, double const& jer_sf_shift, int syst){
   
   if(systVec.at(syst) == nullptr) return;
@@ -184,7 +203,7 @@ void Met::propagateJES(TLorentzVector recoJet, double const& jer_sf_nom, double 
   systVec.at(syst)->SetPxPyPzE(met_px_jesShifted, met_py_jesShifted, systVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_jesShifted,2) + pow(met_py_jesShifted,2)));
 
 }
-
+*/
 
 
 void Met::update(PartStats& stats, Jet& jet, int syst=0){

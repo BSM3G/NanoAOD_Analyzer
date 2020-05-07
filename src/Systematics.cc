@@ -12,7 +12,18 @@ void Systematics::init(){
 
 }
 
+void Systematics::shiftParticle(Particle& jet, double const& corrJetPt, double& corrJetMass, std::string& syst_name, int syst){
 
+  TLorentzVector shiftedRecoJet;
+  // Set the new components of the 4-momentum
+  shiftedRecoJet.SetPtEtaPhiM(corrJetPt, recoJet.Eta(), recoJet.Phi(), corrJetMass);
+
+  jet.addP4Syst(shiftedRecoJet, syst);
+  return;
+
+}
+
+/*
 void Systematics::shiftParticleRes(Particle& jet, TLorentzVector recoJet, double const& shiftSF, int syst){
 
   // Recalculate pt and mass values:
@@ -56,42 +67,7 @@ void Systematics::shiftParticleScale(Particle& jet, TLorentzVector recoJet, doub
   return;
 
 }
-
-void Systematics::shiftParticle(Particle& jet, TLorentzVector recoJet, double const& jer_sf_nom, double& jec_param, std::string& syst_name, int syst){
-
-	TLorentzVector shiftedRecoJet;
-	double jet_pt_shifted = 0.0, jet_mass_shifted = 0.0;
-
-	// Calculate the nominal pt and mass values from JER correction
-	double jet_pt_nom = jer_sf_nom * recoJet.Pt();
-  	double jet_mass_nom = jer_sf_nom * recoJet.M();
-
-  	// Make sure they are positive
-  	if(jet_pt_nom < 0.0) jet_pt_nom *= -1.0;
-  	if(jet_mass_nom < 0.0) jet_mass_nom *= -1.0;
-
-  	// if syst = 0 (nominal) just apply the nominal JER correction
-  	if(syst == 0){
-  		jet_pt_shifted = jet_pt_nom;
-  		jet_mass_shifted = jet_mass_nom;
-  	}
-  	else if(syst_name.find("_Res_") != std::string::npos){ // Here, jec_param = jer_sf_shift
-  		// For resolution up and down, just multiply by the scale factor
-  		jet_pt_shifted = jec_param * recoJet.Pt();
-  		jet_mass_shifted = jec_param * recoJet.M();
-  	}
-  	else if(syst_name.find("_Scale_") != std::string::npos){ // Here, jec_param = jes_delta
-  		jet_pt_shifted = jet_pt_nom * (1.0 + jec_param);
-  		jet_mass_shifted = jet_mass_nom * (1.0 + jec_param);
-  	}
-
-	// Set the new components of the 4-momentum
-	shiftedRecoJet.SetPtEtaPhiM(jet_pt_shifted, recoJet.Eta(), recoJet.Phi(), jet_mass_shifted);
-
-	jet.addP4Syst(shiftedRecoJet, syst);
-	return;
-
-}
+*/
 
 /*
 void Systematics::shiftParticle(Particle& jet, TLorentzVector recJet, double const& ratio, double& dPx, double& dPy, int syst){

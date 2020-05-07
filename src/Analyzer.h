@@ -116,7 +116,7 @@ public:
   void setCutNeeds();
 
   void smearLepton(Lepton&, CUTS, const PartStats&, const PartStats&, int syst=0);
-  void smearJet(Particle&, CUTS, const PartStats&, int syst=0);
+  void smearJet(Particle&, CUTS, const PartStats&, std::string year,  int syst=0);
 
   bool JetMatchesLepton(const Lepton&, const TLorentzVector&, double, CUTS);
   TLorentzVector matchLeptonToGen(const TLorentzVector&, const PartStats&, CUTS);
@@ -178,7 +178,7 @@ public:
   void updateMet(int syst=0);
   bool passMetFilters(std::string, int);
   //  void treatMuons_Met(std::string syst="orig");
-  double getPileupWeight(float);
+  // double getPileupWeight(float);
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> getArray();
 
   double getCRVal(std::string);

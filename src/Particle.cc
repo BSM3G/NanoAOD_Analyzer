@@ -265,6 +265,9 @@ Jet::Jet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names
   
   SetBranch("Jet_puId", puID);
   SetBranch("Jet_area", area);
+  SetBranch("Jet_rawFactor", rawFactor); // JEC
+  SetBranch("Jet_muonIdx1", matchingMuonIdx1);
+  SetBranch("Jet_muonIdx2", matchingMuonIdx2);
   if(_BOOM->FindBranch("Jet_partonFlavour")!=0){
     SetBranch("Jet_partonFlavour", partonFlavour);
   }
@@ -479,6 +482,10 @@ Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
     SetBranch("Muon_pfRelIso03_chg"  , pfRelIso03_chg);
     SetBranch("Muon_pfRelIso04_all"  , pfRelIso04_all);
   }
+
+  SetBranch("Muon_isGlobal", isGlobal);
+  SetBranch("Muon_isPFcand", isPFCand);
+  SetBranch("Muon_isTracker", isTracker);
 }
 
 bool Muon::get_Iso(int index, double min, double max) const {

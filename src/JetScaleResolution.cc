@@ -33,17 +33,17 @@ void JetScaleResolution::InitScaleDelta(const std::string& uncertaintyfilename, 
     jetcorrectorparams = JetCorrectorParameters(uncertaintyfilename,type);
 }
 
-double JetScaleResolution::GetScaleDelta(const TLorentzVector& recojet, double jer_sf_nom){
-    if(!(recojet.Pt() > 0.0)){
-        return recojet.Pt();
+double JetScaleResolution::GetScaleDelta(double& recojetPt, double& recojetEta){
+    if(!(recojetPt > 0.0)){
+        return recojet;
     }
 
     JetCorrectionUncertainty jesUncertainty = JetCorrectionUncertainty(jetcorrectorparams);
 
     //Call jesuncertainty with Pt being that obtained after applying nominal jet energy resolution scale factor
     // jet_pt_nom = jer_sf_nom * recojet.Pt();
-    jesUncertainty.setJetPt(jer_sf_nom * recojet.Pt());
-    jesUncertainty.setJetEta(recojet.Eta());
+    jesUncertainty.setJetPt(recojetPt);
+    jesUncertainty.setJetEta(recojetEta);
 
     double delta = jesUncertainty.getUncertainty(true);    
 

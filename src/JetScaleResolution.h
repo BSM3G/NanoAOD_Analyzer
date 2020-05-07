@@ -108,7 +108,7 @@ class JetScaleResolution{
         void InitScaleDelta(const std::string& uncertaintyfilename, const std::string& type);
         double GetSmearValsPt(const TLorentzVector& recojet, TLorentzVector& genjet, double rho, double sigmares);           // AK4 jets
         double GetSmearValsM(const TLorentzVector& recojet, TLorentzVector& genjet, double SF, double SFdown, double SFup, double sigmares);  // AK8 jets
-        double GetScaleDelta(const TLorentzVector& recojet, double jer_sf_nom);
+        double GetScaleDelta(double& recojetPt, double& recojetEta);
 
         // These are need for jet energy scale initialization: come from CMSSW objects
         JME::JetResolution jer;
