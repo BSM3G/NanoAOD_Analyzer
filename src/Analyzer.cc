@@ -111,11 +111,16 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   CalculatePUSystematics = distats["Run"].bfind("CalculatePUSystematics");
   // New variable to do special PU weight calculation (2017)
   specialPUcalculation = distats["Run"].bfind("SpecialMCPUCalculation");
+
+  // If data, always set specialcalculation to false
+  if(isData){ 
+  	specialPUcalculation = false;
+  	std::cout << "This is Data!! Setting SpecialMCPUCalculation to False." << std::endl;
+  }
   
   // New! Initialize pileup information and take care of exceptions if histograms not found.
   initializePileupInfo(specialPUcalculation, outfile);
-    
-    
+     
   syst_names.push_back("orig");
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> tmp;
   syst_parts.push_back(tmp);
@@ -507,14 +512,28 @@ void Analyzer::setupEventGeneral(int nevent){
   pu_weight = (!isData && CalculatePUSystematics) ? hPU[(int)(nTruePU+1)] : 1.0;
 
   // Get the trigger decision vector.
-  triggerDecision = false; // Reset the decision flag for each event.
+  // triggerDecision = false; // Reset the decision flag for each event.
 
   for(std::string triggname : triggerBranchesList){
-    SetBranch(triggname.c_str(), triggerDecision);
+  	// std::cout << "Trigger name: " << triggname << std::endl;
+  	
+  	TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
+  	triggerBranch->SetStatus(1);
+  	triggerBranch->SetAddress(&triggerDecision);
+
+    // SetBranch(triggname.c_str(), triggerDecision);
     BOOM->GetEntry(nevent);
-    //std::cout << "Trigger name: " << triggname << ", decision = " << triggerDecision << std::endl;
-    triggernamedecisions.push_back(&triggerDecision);
+
+    // std::cout << "Decision = " << triggerDecision << std::endl;
+    triggernamedecisions.push_back(triggerDecision);
+    triggerBranch->ResetAddress();
   }
+
+  //int i = 0;
+  //for(bool decision : triggernamedecisions){
+  //  std::cout << "Trigger decision " << i << " = " << decision << std::endl;
+  //  i++;
+  //}
 
 }
 
@@ -1121,14 +1140,26 @@ void Analyzer::branchException(std::string branch){
   }
 }
 
-void Analyzer::getTriggerBranchesList(std::string trigger){
+void Analyzer::getTriggerBranchesList(std::string trigger, bool usewildcard){
+  if(usewildcard){
+    for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+      std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+      // Look for branches that contain the trigger name
+      if(branch_name.find(trigger.c_str()) == std::string::npos) continue;
+      //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+      triggerBranchesList.push_back(branch_name);
+    }
+  }
+  else{
 
-  for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+    for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+      std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+      // Look for branches that match exactly the trigger name
+      if(branch_name.compare(trigger.c_str()) != 0) continue;
+      //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+      triggerBranchesList.push_back(branch_name);
+    }
 
-    std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
-    if(branch_name.find(trigger) == std::string::npos) continue;
-    //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
-    triggerBranchesList.push_back(branch_name);
   }
 
   if(triggerBranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.";
@@ -1170,7 +1201,7 @@ void Analyzer::setupGeneral(std::string year) {
   for(std::string trigger : inputTriggerNames){
 
     try{
-      getTriggerBranchesList(trigger);
+      getTriggerBranchesList(trigger, distats["Run"].bfind("UseTriggerWildcard"));
     }
     catch(const char* msg){
       std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
@@ -2183,8 +2214,10 @@ void Analyzer::TriggerCuts(CUTS ePos) {
 	if(! neededCuts.isPresent(ePos)) return;
 
 	// Loop over all elements of the trigger decisions vector
-	for(bool* decision : triggernamedecisions){
-		if(*decision){
+	//for(bool* decision : triggernamedecisions){
+	for(bool decision: triggernamedecisions){
+		//if(*decision){
+		if(decision){
 			// If one element is true (1), then store back the event in the triggers vector
 			active_part->at(ePos)->push_back(0);
 			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
@@ -3321,7 +3354,7 @@ void Analyzer::initializePileupInfo(const bool& specialPU, std::string outfilena
   // try-catch block for initialize pileup info
   try{
 
-    if(!specialPUcalculation){// No special PU calculation.
+    if(!specialPU){// No special PU calculation.
   	   initializePileupWeights(distats["Run"].smap.at("MCHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"),distats["Run"].smap.at("MCPUHistName"));
     }
     else{ // Special PU calculation
@@ -3351,8 +3384,18 @@ void Analyzer::initializePileupInfo(const bool& specialPU, std::string outfilena
   	std::cerr << "ERROR in initializePileupInfo! " << std::endl;
   	std::cerr << "\t" << err.what()  << std::endl;
   	std::cout << "\tMake sure you are using the right file and the pileup histogram name is correct in Run_info.in." << std::endl;
-  	if(specialPUcalculation){
+  	if(specialPU){
   		std::cout << "\tWARNING: You are using SpecialPUCalculation. Check that the output filename (" << outfilename << ") contains the name of the analyzed MC sample." << std::endl;
+  	}
+  	std::cerr << "\tAborting Analyzer..." << std::endl;
+  	std::abort();
+  }
+  catch(std::out_of_range& err){
+  	std::cerr << "ERROR in initializePileupInfo! " << std::endl;
+  	std::cerr << "\t" << err.what()  << std::endl;
+  	if(specialPU){
+  		std::cout << "\tYou are using SpecialPUCalculation. Name of the MC sample was not found in the output filename (" << outfilename << ")." << std::endl;
+  		std::cout << "\tTry with a different name that contains the name of your MC sample followed by _Tune or _13TeV (e.g. DYJetsToLL_M-50_TuneCP5.root)." << std::endl;
   	}
   	std::cerr << "\tAborting Analyzer..." << std::endl;
   	std::abort();
