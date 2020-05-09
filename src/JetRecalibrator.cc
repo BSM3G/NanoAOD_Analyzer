@@ -8,64 +8,92 @@
 
 JetRecalibrator::JetRecalibrator(){};
 
-JetRecalibrator::JetRecalibrator(const std::string& globalTag, const std::string& jetFlavor, bool& doResidualJECs, const std::string& jecPathFile, const std::string& jecPathFile, int& upToLevel, 
-			bool& calculateSeparateCorrections, bool& calculateTypeIMETCorr, double& jetPtThreshold, double& skipEMfractionThreshold, 
-			bool& skipMuons){
+JetRecalibrator::JetRecalibrator(const std::string path, const std::string globalTag, const std::string jetFlavor, bool doResidualJECs, int upToLevel, 
+			bool calculateSeparateCorrections, bool calculateTypeIMETCorr){
+
+	path_str = path;
+	globalTag_str = globalTag;
+	jetFlavor_str = jetFlavor;
+	doResJECs = doResidualJECs;
+	corrLevel = upToLevel;
+	separateCorr = calculateSeparateCorrections;
+	calcT1MetCorr = calculateTypeIMETCorr;
+
+
+};
+
+float JetRecalibrator::getCorrection(TLorentzVector jet4vec, float jet_area, float jet_rawFactor, float rho, float delta){
 
 	// Create a corrector object that applies the L1,L2,L3 and possibly the residual corrections to the jets.
 	// If configured to do so, it will also compute the type1 MET corrections
 
+	FactorizedJetCorrector jetcorrector;
+	JetCorrectionUncertainty jetuncertainty;
+
+	JetCorrectorParameters L1JetParameters;
+	JetCorrectorParameters L2JetParameters;
+	JetCorrectorParameters L3JetParameters;
+	JetCorrectorParameters ResidualJetParameters;
+
+	std::vector <JetCorrectorParameters> vPar;
+	std::vector <JetCorrectorParameters> vParL1;
+	std::vector <JetCorrectorParameters> vParL2;
+	std::vector <JetCorrectorParameters> vParL3;
+	std::vector <JetCorrectorParameters> vParL3Residuals;
+
+	std::map<std::string, FactorizedJetCorrector> separateJetCorrectors;
+
 	// Make base corrections
-	L1JetParameters = JetCorrectorParameters((path+"/"+globalTag+"_L1FastJet_"+jetFlavor+".txt").c_str(), "");
-	L2JetParameters = JetCorrectorParameters((path+"/"+globalTag+"_L2Relative_"+jetFlavor+".txt").c_str(), "");
-	L3JetParameters = JetCorrectorParameters((path+"/"+globalTag+"_L3Absolute_"+jetFlavor+".txt").c_str(), "");
+	L1JetParameters = JetCorrectorParameters((path_str+globalTag_str+"_L1FastJet_"+jetFlavor_str+".txt").c_str(), "");
+	L2JetParameters = JetCorrectorParameters((path_str+globalTag_str+"_L2Relative_"+jetFlavor_str+".txt").c_str(), "");
+	L3JetParameters = JetCorrectorParameters((path_str+globalTag_str+"_L3Absolute_"+jetFlavor_str+".txt").c_str(), "");
 
 	vPar.push_back(L1JetParameters);
 
-	if(upToLevel >= 2) vPar.push_back(L2JetParameters);
-	if(upToLevel >= 3) vPar.push_back(L3JetParameters);
+	if(corrLevel >= 2) vPar.push_back(L2JetParameters);
+	if(corrLevel >= 3) vPar.push_back(L3JetParameters);
 
 	// Add residuals if needed
-	if(doResidualJECs){
-		ResidualJetParameters = JetCorrectorParameters((path+"/"+globalTag+"_L2L3Residual_"+jetFlavor+".txt").c_str());
+	if(doResJECs){
+		ResidualJetParameters = JetCorrectorParameters((path_str+globalTag_str+"_L2L3Residual_"+jetFlavor_str+".txt").c_str());
 		vPar.push_back(ResidualJetParameters);
 	}
 
 	// Construct a FactorizedJetCorrector object
-	JetCorrector = FactorizedJetCorrector(vPar);
+	FactorizedJetCorrector* jetcorrector = new FactorizedJetCorrector(vPar);
 
-	std::ifstream uncty(path+"/"+globalTag+"_Uncertainty_"+jetFlavor+".txt");
-	std::ifstream unctyfake(path+"/Uncertainty_FAKE.txt");
+	std::ifstream uncty(path_str+globalTag_str+"_Uncertainty_"+jetFlavor_str+".txt");
+	std::ifstream unctyfake(path_str+"Uncertainty_FAKE.txt");
 	if(uncty.good()) {
-		JetUncertainty = JetCorrectionUncertainty(path+"/"+globalTag+"_Uncertainty_"+jetFlavor+".txt");
+		jetuncertainty = JetCorrectionUncertainty(path_str+globalTag_str+"_Uncertainty_"+jetFlavor_str+".txt");
 	}
 	else if (unctyfake.good()){
-		JetUncertainty = JetCorrectionUncertainty(path+"/Uncertainty_FAKE.txt");
+		jetuncertainty = JetCorrectionUncertainty(path_str+"/Uncertainty_FAKE.txt");
 	}
 	else{
-		std::cout << "Missing JEC uncertainty file " << path << "/" << globalTag << "_Uncertainty_" << jetFlavor << ".txt, so jet energy uncertainties will not be available." << std::endl;
+		std::cout << "Missing JEC uncertainty file " << (path_str+globalTag_str).c_str() << "_Uncertainty_" << jetFlavor_str << ".txt, so jet energy uncertainties will not be available." << std::endl;
 		nouncertainty = true;
 	}
 
-	if(calculateSeparateCorrections || calculateTypeIMETCorr){
+	if(separateCorr || calcT1MetCorr){
 
 		vParL1.push_back(L1JetParameters);
 		separateJetCorrectors["L1"] = FactorizedJetCorrector(vParL1);
 
-		if(upToLevel >= 2 && calculateSeparateCorrections){
+		if(corrLevel >= 2 && separateCorr){
 			vParL2.push_back(L1JetParameters);
 			vParL2.push_back(L2JetParameters);
 
 			separateJetCorrectors["L1L2"] = FactorizedJetCorrector(vParL2);
 		}
-		if(upToLevel >= 3 && calculateSeparateCorrections){
+		if(corrLevel >= 3 && separateCorr){
 			vParL3.push_back(L1JetParameters);
 			vParL3.push_back(L2JetParameters);
 			vParL3.push_back(L3JetParameters);
 
 			separateJetCorrectors["L1L2L3"] = FactorizedJetCorrector(vParL3);
 		}
-		if(doResidualJECs && calculateSeparateCorrections){
+		if(doResJECs && separateCorr){
 			vParL3Residuals.push_back(L1JetParameters);
 			vParL3Residuals.push_back(L2JetParameters);
 			vParL3Residuals.push_back(L3JetParameters);
@@ -75,16 +103,12 @@ JetRecalibrator::JetRecalibrator(const std::string& globalTag, const std::string
 		}
 	}
 
-};
+	jetcorrector.setJetEta(jet4vec.Eta());
+	jetcorrector.setJetPt(jet4vec.Pt() * (1 - jet_rawFactor));
+	jetcorrector.setJetA(jet_area);
+	jetcorrector.setRho(rho);
 
-float JetRecalibrator::getCorrection(TLorentzVector& jet4vec, float& jet_area, float& jet_rawFactor, float& rho, float& delta){
-
-	JetCorrector.setJetEta(jet4vec.Eta());
-	JetCorrector.setJetPt(jet4vec.Pt() * (1 - jet_rawFactor));
-	JetCorrector.setJetA(jet_area);
-	JetCorrector.setRho(rho);
-
-	float corr = JetCorrector.getCorrection();
+	float corr = jetcorrector.getCorrection();
 	float jetEnergyCorrUncertainty = 1.0;
 
 	if(delta != 0){
@@ -92,11 +116,11 @@ float JetRecalibrator::getCorrection(TLorentzVector& jet4vec, float& jet_area, f
 			std::cout << "Jet energy scale uncertainty shifts requested, but not available." << std::endl;
 		}
 		else{
-			JetUncertainty.setJetEta(jet4vec.Eta());
-			JetUncertainty.setJetPt(corr * jet4vec.Pt() * jet_rawFactor);
+			jetuncertainty.setJetEta(jet4vec.Eta());
+			jetuncertainty.setJetPt(corr * jet4vec.Pt() * jet_rawFactor);
 
 			try{
-				jetEnergyCorrUncertainty = JetUncertainty.getUncertainty(true);
+				jetEnergyCorrUncertainty = jetuncertainty.getUncertainty(true);
 			}
 			catch(std::runtime_error& err){
 				std::cout << "Caught " << err.what() << " when getting uncertainty for jet of pt = %.1f" << corr * jet4vec.Pt() * jet_rawFactor << ", eta = %.2f" << jet4vec.Eta() << std::endl;
@@ -109,7 +133,7 @@ float JetRecalibrator::getCorrection(TLorentzVector& jet4vec, float& jet_area, f
 	return corr;
 }
 
-TLorentzVector JetRecalibrator::correctedP4(TLorentzVector& jet4vec, float& corr_factor, float& jet_rawFactor){
+TLorentzVector JetRecalibrator::correctedP4(TLorentzVector jet4vec, float corr_factor, float jet_rawFactor){
 
 	double raw = 1.0 - jet_rawFactor;
 	if(corr_factor <= 0.0) return jet4vec;

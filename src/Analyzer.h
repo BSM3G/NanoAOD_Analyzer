@@ -37,6 +37,7 @@ struct CRTester;
 #include "Systematics.h"
 #include "DepGraph.h"
 #include "JetScaleResolution.h"
+#include "JetRecalibrator.h"
 #include "CondFormats/JetMETObjects/interface/JetResolution.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
@@ -165,6 +166,7 @@ public:
   double getZBoostWeight();
   double getTopBoostWeight(); //01.15.19
   void setupBJetSFInfo(const PartStats&); // new function that sets up the b-tagging SF info
+  void setupJetCorrections(std::string, std::string);
   double getBJetSF(CUTS, const PartStats&); //01.16.19
   double getBJetSFResUp(CUTS, const PartStats&); //01.16.19
   double getBJetSFResDown(CUTS, const PartStats&); //01.16.19
@@ -216,6 +218,7 @@ public:
   // ------------  Systematics --------------- //
   Systematics systematics;
   JetScaleResolution jetScaleRes;
+  JetRecalibrator jetRecalibL1;
   JetResolution jer;
   PartStats genStat;
 

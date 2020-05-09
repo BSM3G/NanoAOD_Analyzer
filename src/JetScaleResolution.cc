@@ -35,7 +35,7 @@ void JetScaleResolution::InitScaleDelta(const std::string& uncertaintyfilename, 
 
 double JetScaleResolution::GetScaleDelta(double& recojetPt, double& recojetEta){
     if(!(recojetPt > 0.0)){
-        return recojet;
+        return recojetPt;
     }
 
     JetCorrectionUncertainty jesUncertainty = JetCorrectionUncertainty(jetcorrectorparams);

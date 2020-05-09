@@ -237,75 +237,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     syst_histo=Histogramer(1, filespace+"Hist_syst_entries.in", filespace+"Cuts.in", outfile, isData, cr_variables,syst_names);
   
   systematics = Systematics(distats);
-  // jetScaleRes = JetScaleResolution("Pileup/Summer16_23Sep2016V4_MC_Uncertainty_AK4PFchs.txt", "",  "Pileup/Spring16_25nsV6_MC_PtResolution_AK4PFchs.txt", "Pileup/Spring16_25nsV6_MC_SF_AK4PFchs.txt");
-  //jetScaleRes = JetScaleResolution("Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_PtResolution_AK8PFPuppi.txt", "Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_SF_AK8PFPuppi.txt", "Pileup/JetResDatabase/textFiles/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PFchs.txt", "Total");
-
-  // ------------------------ NEW: Jet Energy Scale and Resolution corrections initialization ------------------- //
-  static std::map<std::string, std::string> jecTagsMC = {
-    {"2016" , "Summer16_07Aug2017_V11_MC"}, 
-    {"2017" , "Fall17_17Nov2017_V32_MC"}, 
-    {"2018" , "Autumn18_V19_MC"}
-  };
-
-  static std::map<std::string, std::string> jecTagsFastSim = {
-    {"2016" , "Summer16_FastSimV1_MC"},
-    {"2017" , "Fall17_FastSimV1_MC"},
-    {"2018" , "Autumn18_FastSimV1_MC"}
-  };
-
-  static std::map<std::string, std::string>archiveTagsDATA = {
-    {"2016" , "Summer16_07Aug2017_V11_DATA"}, 
-    {"2017" , "Fall17_17Nov2017_V32_DATA"}, 
-    {"2018" , "Autumn18_V19_DATA"}
-  };
-
-  static std::map<std::string, std::string> jecTagsDATA = { 
-    {"2016B" , "Summer16_07Aug2017BCD_V11_DATA"}, 
-    {"2016C" , "Summer16_07Aug2017BCD_V11_DATA"}, 
-    {"2016D" , "Summer16_07Aug2017BCD_V11_DATA"}, 
-    {"2016E" , "Summer16_07Aug2017EF_V11_DATA"}, 
-    {"2016F" , "Summer16_07Aug2017EF_V11_DATA"}, 
-    {"2016G" , "Summer16_07Aug2017GH_V11_DATA"}, 
-    {"2016H" , "Summer16_07Aug2017GH_V11_DATA"}, 
-    {"2017B" , "Fall17_17Nov2017B_V32_DATA"}, 
-    {"2017C" , "Fall17_17Nov2017C_V32_DATA"}, 
-    {"2017D" , "Fall17_17Nov2017DE_V32_DATA"}, 
-    {"2017E" , "Fall17_17Nov2017DE_V32_DATA"}, 
-    {"2017F" , "Fall17_17Nov2017F_V32_DATA"}, 
-    {"2018A" , "Autumn18_RunA_V19_DATA"},
-    {"2018B" , "Autumn18_RunB_V19_DATA"},
-    {"2018C" , "Autumn18_RunC_V19_DATA"},
-    {"2018D" , "Autumn18_RunD_V19_DATA"}
-  };
-
-  static std::map<std::string, std::string> jerTagsMC = {
-    {"2016" , "Summer16_25nsV1_MC"},
-    {"2017" , "Fall17_V3_MC"},
-    {"2018" , "Autumn18_V7_MC"}
-  };
-
-  std::string jertag=jerTagsMC.begin()->second;
-  //std::cout << "jertag (1) = " << jertag << std::endl;
-  if(!isData){
-    jertag=jerTagsMC[year];
-  }
-
-  jetScaleRes = JetScaleResolution("Pileup/JetResDatabase/textFiles/Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.txt","Total", "Pileup/JetResDatabase/textFiles/Fall17_V3_MC_PtResolution_AK4PFchs.txt", "Pileup/JetResDatabase/textFiles/Fall17_V3_MC_SF_AK4PFchs.txt");
-
-  //std::cout << "jertag (2) = " << jertag << std::endl;
-
-  // auto jetcorrectorparams = JetCorrectorParameters("Pileup/JetResDatabase/textFiles/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PFchs.txt","Total");
-  // auto jesUncertainty = JetCorrectionUncertainty(jetcorrectorparams);
-  
-  /*
-  JetCorrectorParameters jetcorrectorparams = JetCorrectorParameters("Pileup/JetResDatabase/textFiles/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PFchs.txt","Total");
-  JetCorrectionUncertainty jesUncertainty = JetCorrectionUncertainty(jetcorrectorparams);
-  auto params_sf_and_uncertainty = JME::JetParameters();
-  auto params_resolution = JME::JetParameters();
-  auto jer = JME::JetResolution("Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_PtResolution_AK8PFPuppi.txt");
-  auto jerSF_and_Uncertainty = JME::JetResolutionScaleFactor("Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_SF_AK8PFPuppi.txt");
-  */
-  // ------------------------------------------------------------------------------------------------------- //
+  setupJetCorrections(year, outfile);
 
   ///this can be done nicer
   //put the variables that you use here:
@@ -769,8 +701,9 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     // smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
     smearLepton(*_Tau, CUTS::eGHadTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
 
-    smearJet(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], i);
-    smearJet(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], i);
+    smearJet(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], year,  i);
+    smearJet(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], year, i);
+
 
     // updateMet(i);
 
@@ -1114,9 +1047,10 @@ double Analyzer::getTauDataMCScaleFactor(int updown){
 
 ///Calculates met from values from each file plus smearing and treating muons as neutrinos
 void Analyzer::updateMet(int syst) {
-  // _MET->setCurrentP(syst);
-  // Do a final update
-  _MET->update(distats["Run"], *_Jet,  syst);
+  // Do a final update after jet smearing
+  _MET->setCurrentP(syst);
+
+  // _MET->update(distats["Run"], *_Jet,  syst);
 
   // std::cout << "_MET->update()->px() = " << _MET->px() << "_MET->update()->py() = " << _MET->py() << std::endl;
 
@@ -1555,6 +1489,82 @@ void Analyzer::smearLepton(Lepton& lep, CUTS eGenPos, const PartStats& stats, co
   }
 }
 
+void Analyzer::setupJetCorrections(std::string year, std::string outputfilename){
+
+  // jetScaleRes = JetScaleResolution("Pileup/Summer16_23Sep2016V4_MC_Uncertainty_AK4PFchs.txt", "",  "Pileup/Spring16_25nsV6_MC_PtResolution_AK4PFchs.txt", "Pileup/Spring16_25nsV6_MC_SF_AK4PFchs.txt");
+  //jetScaleRes = JetScaleResolution("Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_PtResolution_AK8PFPuppi.txt", "Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_SF_AK8PFPuppi.txt", "Pileup/JetResDatabase/textFiles/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PFchs.txt", "Total");
+
+  // ------------------------ NEW: Jet Energy Scale and Resolution corrections initialization ------------------- //
+  static std::map<std::string, std::string> jecTagsMC = {
+    {"2016" , "Summer16_07Aug2017_V11_MC"}, 
+    {"2017" , "Fall17_17Nov2017_V32_MC"}, 
+    {"2018" , "Autumn18_V19_MC"}
+  };
+
+  static std::map<std::string, std::string> jecTagsFastSim = {
+    {"2016" , "Summer16_FastSimV1_MC"},
+    {"2017" , "Fall17_FastSimV1_MC"},
+    {"2018" , "Autumn18_FastSimV1_MC"}
+  };
+
+  static std::map<std::string, std::string> archiveTagsDATA = {
+    {"2016" , "Summer16_07Aug2017_V11_DATA"}, 
+    {"2017" , "Fall17_17Nov2017_V32_DATA"}, 
+    {"2018" , "Autumn18_V19_DATA"}
+  };
+
+  static std::map<std::string, std::string> jecTagsDATA = { 
+    {"2016B" , "Summer16_07Aug2017BCD_V11_DATA"}, 
+    {"2016C" , "Summer16_07Aug2017BCD_V11_DATA"}, 
+    {"2016D" , "Summer16_07Aug2017BCD_V11_DATA"}, 
+    {"2016E" , "Summer16_07Aug2017EF_V11_DATA"}, 
+    {"2016F" , "Summer16_07Aug2017EF_V11_DATA"}, 
+    {"2016G" , "Summer16_07Aug2017GH_V11_DATA"}, 
+    {"2016H" , "Summer16_07Aug2017GH_V11_DATA"}, 
+    {"2017B" , "Fall17_17Nov2017B_V32_DATA"}, 
+    {"2017C" , "Fall17_17Nov2017C_V32_DATA"}, 
+    {"2017D" , "Fall17_17Nov2017DE_V32_DATA"}, 
+    {"2017E" , "Fall17_17Nov2017DE_V32_DATA"}, 
+    {"2017F" , "Fall17_17Nov2017F_V32_DATA"}, 
+    {"2018A" , "Autumn18_RunA_V19_DATA"},
+    {"2018B" , "Autumn18_RunB_V19_DATA"},
+    {"2018C" , "Autumn18_RunC_V19_DATA"},
+    {"2018D" , "Autumn18_RunD_V19_DATA"}
+  };
+
+  static std::map<std::string, std::string> jerTagsMC = {
+    {"2016" , "Summer16_25nsV1_MC"},
+    {"2017" , "Fall17_V3_MC"},
+    {"2018" , "Autumn18_V7_MC"}
+  };
+
+  std::string jertag = jerTagsMC.begin()->second;
+  std::string jectag = jecTagsMC.begin()->second;
+  std::string jectagfastsim = jecTagsFastSim.begin()->second;
+  std::string archivetag = archiveTagsDATA.begin()->second;
+
+
+  if(isData){
+
+    std::string delimiter = ("_Run"+year).c_str();
+    unsigned int pos = outputfilename.find(delimiter.c_str()) + delimiter.length();
+    std::string runera = (year+outputfilename.substr(pos,1)).c_str(); 
+
+    jectag = jecTagsDATA[runera];
+    archivetag = archiveTagsDATA[year];
+  }
+  else{
+    jertag = jerTagsMC[year];
+    jectag = jecTagsMC[year];
+    jectagfastsim = jecTagsFastSim[year];
+  }
+
+  jetScaleRes = JetScaleResolution((PUSPACE+"JetResDatabase/textFiles/"+jectag+"_UncertaintySources_AK4PFchs.txt").c_str(),"Total",(PUSPACE+"JetResDatabase/textFiles/"+jectag+"_PtResolution_AK4PFchs.txt").c_str(), (PUSPACE+"JetResDatabase/textFiles/"+jectag+"_SF_AK4PFchs.txt").c_str());
+
+  jetRecalibL1 = JetRecalibrator((PUSPACE+"JetResDatabase/textFiles/").c_str(), jectag, "AK4PFchs", false, 1, true); 
+}
+
+
 ///Same as smearlepton, just jet specific
 void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stats, std::string year, int syst) {
 
@@ -1564,6 +1574,11 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
 
   std::string systname = syst_names.at(syst);
 
+  if(jet.type != PType::Jet ){
+    //|| !stats.bfind("SmearTheJet")
+    jet.setOrigReco();
+    return;
+  }
  /* 
   //at the moment
   if(isData || jet.type != PType::Jet ){
@@ -1572,6 +1587,8 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
     return;
   }
 */
+
+  double delta_x_T1Jet = 0.0, delta_y_T1Jet = 0.0, delta_x_rawJet = 0.0, delta_y_rawJet = 0.0;
 
   double unclEnThreshold = 15.0;
   for(size_t i=0; i< jet.size(); i++){
@@ -1678,6 +1695,7 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
       if(systname == "orig" && stats.bfind("SmearTheJet")){
         
         jer_sf_nom = jetScaleRes.GetSmearValsPt(jetReco, genJet, jec_rho, 0);
+        jer_shift = jer_sf_nom;
         // if smearing, update jet_pt_nom and jet_mass_nom
         jet_pt_nom = origJetReco.Pt() * jer_sf_nom > 0 ? origJetReco.Pt() * jer_sf_nom : -1.0 * origJetReco.Pt() * jer_sf_nom; 
         jet_mass_nom = origJetReco.M() * jer_sf_nom > 0 ? origJetReco.M() * jer_sf_nom : -1.0 * origJetReco.M() * jer_sf_nom;
@@ -1700,10 +1718,8 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
       }
 
       // Correct the jet 4-momentum according to the systematic applied for JER
-      systematics.shiftParticle(jet, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
+      systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
     }
-
-    double delta_x_T1Jet = 0.0, delta_y_T1Jet = 0.0, delta_x_rawJet = 0.0, delta_y_rawJet = 0.0;
 
     if(year.compare("2017") == 0){
     
@@ -1720,41 +1736,74 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
       } 
     }
 
+    if(systname == "orig" && stats.bfind("SmearTheJet")){
+      jet.setCurrentP(syst); // This will update the nominal value of the jer smeared jet, needed for jes calculations
+    }
+
     double jet_pt_jesShifted = 0.0, jet_mass_jesShifted = 0.0, jet_pt_jesShiftedT1 = 0.0;
-    double jes_delta = jetScaleRes.GetScaleDelta(jet_pt_nom, origJetReco.Eta());
-    double jes_delta_t1 = jetScaleRes.GetScaleDelta(jet_pt_L1L2L3, origJetReco.Eta());
+    double jes_delta = 1.0;
+    double jes_delta_t1 = 1.0;
 
-    // JES applied for systematics both in data and MC.
-    if(systname == "Jet_Scale_Up"){
-      jet_pt_jesShifted = jet_pt_nom * (1.0 + jes_delta);
-      jet_mass_jesShifted = jet_mass_nom * (1.0 + jes_delta);
-      // Redo JES variations for T1 MET
-      jet_pt_jesShiftedT1 = jet_pt_L1L2L3 * (1.0 + jes_delta_t1);
-    }
-    else if(systname == "Jet_Scale_Down"){
-      jet_pt_jesShifted = jet_pt_nom * (1.0 - jes_delta);
-      jet_mass_jesShifted = jet_mass_nom * (1.0 - jes_delta);
-      // Redo JES variations for T1 MET
-      jet_pt_jesShiftedT1 = jet_pt_L1L2L3 * (1.0 - jes_delta_t1);
-    }
+    if(!isData){
 
-    // Correct the jet 4-momentum according to the systematic applied for JES.
-    systematics.shiftParticle(jet, jet_pt_jesShifted, jet_mass_jesShifted, systname, syst);
+      jet_pt_nom = jet.p4(i).Pt();
+      jet_mass_nom = jet.p4(i).M();
+
+      jes_delta = jetScaleRes.GetScaleDelta(jet_pt_nom, origJetReco.Eta());
+      jes_delta_t1 = jetScaleRes.GetScaleDelta(jet_pt_L1L2L3, origJetReco.Eta());
+
+      // JES applied for systematics both in data and MC.
+      if(systname == "Jet_Scale_Up"){
+        jet_pt_jesShifted = jet_pt_nom * (1.0 + jes_delta);
+        jet_mass_jesShifted = jet_mass_nom * (1.0 + jes_delta);
+        // Redo JES variations for T1 MET
+        jet_pt_jesShiftedT1 = jet_pt_L1L2L3 * (1.0 + jes_delta_t1);
+      }
+      else if(systname == "Jet_Scale_Down"){
+        jet_pt_jesShifted = jet_pt_nom * (1.0 - jes_delta);
+        jet_mass_jesShifted = jet_mass_nom * (1.0 - jes_delta);
+        // Redo JES variations for T1 MET
+        jet_pt_jesShiftedT1 = jet_pt_L1L2L3 * (1.0 - jes_delta_t1);
+      }
+      // Correct the jet 4-momentum according to the systematic applied for JES.
+      systematics.shiftParticle(jet, origJetReco, jet_pt_jesShifted, jet_mass_jesShifted, systname, syst);
+    }
 
     double jetTotalEmEF = jet.neutralEmEmEnergyFraction(i) + jet.chargedEmEnergyFraction(i);
     
     // Propagate this correction to the MET.
     if(jet_pt_L1L2L3 > unclEnThreshold && jetTotalEmEF < 0.9){
       if(!(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_rawPt < 50.0)){
+        _MET->propagateJetEnergyCorr(origJetReco, jet_pt_L1L2L3, jet_pt_L1, systname, syst);
 
+        if(!isData){
+          if(stats.bfind["SmearTheJet"] || systname.find("_Res_") != std::string::npos){
+            _MET->propagateJetEnergyCorr(origJetReco, jet_pt_L1L2L3 * jer_shift, jet_pt_L1, systname, syst);
+          }
+          else if(systname.find("_Scale_") != std::string::npos){
+            _MET->propagateJetEnergyCorr(origJetReco, jet_pt_jesShiftedT1, jet_pt_L1, systname, syst);            
+          }
+        }
 
       }
-
     }
-    _MET->propagateJetEnergyCorr(jet_pt_L1L2L3, unclEnThreshold, jetTotalEmEF, origJetReco, jet_RawFactor)
-    _MET->propagateJetEnergyCorr(jetReco, jer_sf_nom, jec_param, systname, syst);
 
+    // Update the MET after propagating the corrections for each jet
+    _MET->setCurrentP(syst);
+  
   }
+
+  // Propagate "unclustered energy" uncertainty to MET
+  if(year.compare("2017") != 0){
+    // Remove the L1L2L3-L1 corrected jets in the EE region from the default MET branch
+    _MET->propagateUnclEnergyUnctyEE(delta_x_T1Jet, delta_y_T1Jet, delta_x_rawJet, delta_y_rawJet, systname, syst);
+    _MET->setCurrentP(syst);
+  }
+
+  if(!isData){
+    _MET->propagateUnclEnergyUncty(systname,syst);
+  }
+
 }
 
 

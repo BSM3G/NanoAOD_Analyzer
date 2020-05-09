@@ -14,6 +14,7 @@
 #include <algorithm>
 
 // Include files from CMSSW
+#include "CondFormats/JetMETObjects/interface/FactorizedJetCorrectorCalculator.h"
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/SimpleJetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/Utilities.h"
@@ -27,30 +28,25 @@ class JetRecalibrator {
 
 	public:
 		JetRecalibrator();
-		JetRecalibrator(const std::string& path, const std::string& globalTag, const std::string& jetFlavor, bool& doResidualJECs, const std::string& jecPathFile, int& upToLevel=3, 
-			bool& calculateSeparateCorrections=false, bool& calculateTypeIMETCorr=false, double& jetPtThreshold=15.0, double& skipEMfractionThreshold=0.9, 
-			bool& skipMuons=true);
+		JetRecalibrator(const std::string path, const std::string globalTag, const std::string jetFlavor, bool doResidualJECs, int upToLevel=3, 
+			bool calculateSeparateCorrections=false, bool calculateTypeIMETCorr=false);
 
-		float getCorrection(TLorentzVector& jet4vec, float& jet_area, float& jet_rawFactor, float& rho, float& delta = 0.0);
-		TLorentzVector correctedP4(TLorentzVector& jet4vec, float& corr_factor, float& jet_rawFactor);
+		float getCorrection(TLorentzVector jet4vec, float jet_area, float jet_rawFactor, float rho, float delta = 0.0);
+		TLorentzVector correctedP4(TLorentzVector jet4vec, float corr_factor, float jet_rawFactor);
 
-		FactorizedJetCorrector JetCorrector;
-		JetCorrectionUncertainty JetUncertainty;
 		bool nouncertainty = false;
 
+
+		std::string path_str;
+		std::string globalTag_str;
+		std::string jetFlavor_str;
+		bool doResJECs;
+		int corrLevel;
+		bool separateCorr;
+		bool calcT1MetCorr;
+
 	private:
-		JetCorrectorParameters L1JetParameters;
-		JetCorrectorParameters L2JetParameters;
-		JetCorrectorParameters L3JetParameters;
-		JetCorrectorParameters ResidualJetParameters;
 
-		std::vector <JetCorrectorParameters> vPar;
-		std::vector <JetCorrectorParameters> vParL1;
-		std::vector <JetCorrectorParameters> vParL2;
-		std::vector <JetCorrectorParameters> vParL3;
-		std::vector <JetCorrectorParameters> vParL3Residuals;
-
-		std::map<std::string, FactorizedJetCorrector> separateJetCorrectors;
 
 };
 

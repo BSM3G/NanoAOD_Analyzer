@@ -74,18 +74,26 @@ void Met::init(){
   RawMet.SetPtEtaPhiM(raw_met_pt,0,raw_met_phi,raw_met_pt);
   
   // Get the x and y components of the raw MET
+
   met_px = RawMet.Px();
   met_py = RawMet.Py();
-
+  /*
   met_px_nom = met_px;
   met_py_nom = met_py;
+  met_px_jer = met_px;
+  met_py_jer = met_py;
   met_px_jerShifted= met_px;
   met_py_jerShifted= met_py;
   met_px_jesShifted= met_px;
   met_py_jesShifted= met_py;
+  */
+  def_met_px = DefMet.Px();
+  def_met_py = DefMet.Py();
+  t1met_px = RecoMet.Px();
+  t1met_py = RecoMet.Py();
 
   // std::cout << "met_px init (1) = " << met_px << ". met_py init (1) = " << met_py << std::endl;
-
+  /*
   for(int i=0; i < (int) syst_names.size(); i++) {
     
     if(i == Unclup) systVec.at(i)->SetPxPyPzE(MetUnclUp[0]+RecoMet.Px(),MetUnclUp[1]+RecoMet.Py(),0,sqrt(pow(MetUnclUp[0]+RecoMet.Px(),2)+pow(MetUnclUp[1]+RecoMet.Py(),2)));
@@ -95,7 +103,9 @@ void Met::init(){
     fill(systdeltaMEx.begin(), systdeltaMEx.end(), 0);
     fill(systdeltaMEy.begin(), systdeltaMEy.end(), 0);
   }
-  cur_P=&RecoMet;
+  */
+  // cur_P=&RecoMet; //ORIGINAL STATEMENT MAY 8, 2020
+  cur_P=&RawMet;
 
   // std::cout << "met_px init (2) = " << RecoMet.Px() << ". met_py init (2) = " << RecoMet.Py() << std::endl;
 
@@ -105,16 +115,26 @@ void Met::init(){
 }
 
 
-void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jer_sf_nom, double const& jec_param, std::string& systname, int syst){
+void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jet_pt_up, double const& jet_pt_down, std::string& systname, int syst){
 
   if(systVec.at(syst) == nullptr) return;
 
-  // Set the nominal values to the raw met
+  double jet_cosPhi = cos(recoJet.Phi());
+  double jet_sinPhi = sin(recoJet.Phi());
 
-  // update shifted values
+  // Update the nominal values:
   met_px_shifted = systVec.at(syst)->Px();
   met_py_shifted = systVec.at(syst)->Py();
 
+  // update shifted values
+  met_px_shifted = met_px_shifted - (jet_pt_up - jet_pt_down) * jet_cosPhi;
+  met_py_shifted = met_py_shifted - (jet_pt_up - jet_pt_down) * jet_sinPhi;
+
+  // Add this to the systematics vector
+  systVec.at(syst)->SetPxPyPzE(met_px_shifted, met_py_shifted, systVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_shifted,2) + pow(met_py_shifted,2)));
+
+
+/*
   double jet_pt_nom = jer_sf_nom * recoJet.Pt();
   // make sure this is positive
   if(jet_pt_nom < 0.0) jet_pt_nom *= -1.0;
@@ -135,9 +155,56 @@ void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jer_sf_no
   	met_px_shifted = met_px_shifted - ( (jet_pt_nom * (1 + jec_param)) - jet_pt_nom) * cos(recoJet.Phi());
   	met_py_shifted = met_py_shifted - ( (jet_pt_nom * (1 + jec_param)) - jet_pt_nom) * sin(recoJet.Phi());
   }
+*/
+}
 
-  // Add this to the systematics vector
-  systVec.at(syst)->SetPxPyPzE(met_px_shifted, met_py_shifted, systVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_shifted,2) + pow(met_py_shifted,2)));
+// This is only used for 2017 data/MC for the EE noise 
+void Met::propagateUnclEnergyUnctyEE(double const& delta_x_T1Jet, double const& delta_y_T1Jet, double const& delta_x_rawJet, double const& delta_y_rawJet, std::string& systname, int syst){
+
+	if(systVec.at(syst) == nullptr) return;
+
+	// Remove the L1L2L3 - L1 corrected jets in the EE region from the default MET branch
+	def_met_px = def_met_px + delta_x_T1Jet;
+	def_met_py = def_met_py + delta_y_T1Jet;
+
+	// Get the unclustered energy part that is removed in the v2 recipe
+	double met_unclEE_x = def_met_px - t1met_px;
+	double met_unclEE_y = def_met_py - t1met_py;
+
+	// Finalize the v2 recipe for the rawMET by removing the unclustered part in the EE region
+	double met_px_unclshift = systVec.at(syst)->Px();
+	double met_py_unclshift = systVec.at(syst)->Py();
+
+	met_px_unclshift = met_px_unclshift + delta_x_rawJet - met_unclEE_x;
+	met_py_unclshift = met_py_unclshift + delta_y_rawJet - met_unclEE_y;
+
+	// Add this to the systematics vector
+  	systVec.at(syst)->SetPxPyPzE(met_px_unclshift, met_py_unclshift, systVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_unclshift,2) + pow(met_py_unclshift,2)));
+
+}
+
+void Met::propagateUnclEnergyUncty(std::string& systname, int syst){
+
+	if(systVec.at(syst) == nullptr) return;
+
+	if(systname.find("MetUncl") == std::string::npos) return;
+
+	// This will only apply for the MetUncl uncertainty in MC
+	double met_px_unclEnshift = systVec.at(0)->Px(); // 0 refers to the nominal value, which at this point should already have all corrections applied
+	double met_py_unclEnshift = systVec.at(0)->Py();
+	
+	if(systname.find("_Up") != std::string::npos){
+
+		met_px_unclEnshift = met_px_unclEnshift + MetUnclUp[0];
+		met_py_unclEnshift = met_py_unclEnshift + MetUnclUp[1];
+		}
+		else if(systname.find("_Down") != std::string::npos){
+
+		met_px_unclEnshift = met_px_unclEnshift + MetUnclDown[0];
+		met_py_unclEnshift = met_py_unclEnshift + MetUnclDown[1];
+	}
+
+	systVec.at(syst)->SetPxPyPzE(met_px_unclEnshift, met_py_unclEnshift, systVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_unclEnshift,2) + pow(met_py_unclEnshift,2)));
 
 }
 
@@ -210,6 +277,7 @@ void Met::update(PartStats& stats, Jet& jet, int syst=0){
   ///Calculates met from values from each file plus smearing and treating muons as neutrinos
   if(systVec.at(syst) == nullptr) return;
 
+/*
   //Final update of the MET: systVec.at(0) contains the met_nom. If syst=0 then don't update any further this met.
   if(syst ==0){
     finalmet_px_shifted = systVec.at(0)->Px();
@@ -228,8 +296,8 @@ void Met::update(PartStats& stats, Jet& jet, int syst=0){
   systVec.at(syst)->SetPxPyPzE(finalmet_px_shifted, finalmet_py_shifted, systVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_jesShifted,2) + pow(met_py_jesShifted,2)));
 
   // std::cout << "2: ===== systVec.at(" << syst << ")->Px() = " << systVec.at(syst)->Px() << ", systVec.at(" << syst << ")->Py() = " << systVec.at(syst)->Py() << std::endl;
+*/
 
-/*
   double sumpxForMht=0;
   double sumpyForMht=0;
   double sumptForHt=0;
@@ -257,7 +325,7 @@ void Met::update(PartStats& stats, Jet& jet, int syst=0){
                                systVec.at(syst)->Pz(), 
                                TMath::Sqrt(pow(systVec.at(syst)->Px()+systdeltaMEx[syst],2) + pow(systVec.at(syst)->Py()+systdeltaMEy[syst],2)));
 
-*/
+
 }
 
 double Met::pt()const         {return cur_P->Pt();}

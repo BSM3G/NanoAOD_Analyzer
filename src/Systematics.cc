@@ -12,7 +12,7 @@ void Systematics::init(){
 
 }
 
-void Systematics::shiftParticle(Particle& jet, double const& corrJetPt, double& corrJetMass, std::string& syst_name, int syst){
+void Systematics::shiftParticle(Particle& jet, TLorentzVector recoJet, double const& corrJetPt, double& corrJetMass, std::string& syst_name, int syst){
 
   TLorentzVector shiftedRecoJet;
   // Set the new components of the 4-momentum
