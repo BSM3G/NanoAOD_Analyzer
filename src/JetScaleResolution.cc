@@ -15,28 +15,32 @@ JetScaleResolution::JetScaleResolution(const std::string& scalefilename, const s
 
 
 JetScaleResolution::JetScaleResolution(const std::string& scaleuncertfilename, const std::string& type, const std::string& resolutionfilename, const std::string& sfresuncertfilename){
-    InitResolutionSF(resolutionfilename, sfresuncertfilename);
-    InitScaleDelta(scaleuncertfilename, type);
+    // InitResolutionSF(resolutionfilename, sfresuncertfilename);
+    // InitScaleDelta(scaleuncertfilename, type);
+
+    resfilename = resolutionfilename;
+    resfunctyfilename = sfresuncertfilename;
+    scaleunctyfilename = scaleuncertfilename;
+    type_name = type;
 }
 
 
 void JetScaleResolution::InitResolutionSF(const std::string& resolutionfile, const std::string sfuncertaintyfile){
-
-    jer = JME::JetResolution(resolutionfile);
-    jerSF_and_Uncertainty = JME::JetResolutionScaleFactor(sfuncertaintyfile);
 
 }
 
 
 
 void JetScaleResolution::InitScaleDelta(const std::string& uncertaintyfilename, const std::string& type){
-    jetcorrectorparams = JetCorrectorParameters(uncertaintyfilename,type);
+    
 }
 
-double JetScaleResolution::GetScaleDelta(double& recojetPt, double& recojetEta){
+double JetScaleResolution::GetScaleDelta(const double& recojetPt, const double& recojetEta){
     if(!(recojetPt > 0.0)){
         return recojetPt;
     }
+
+    jetcorrectorparams = JetCorrectorParameters(scaleunctyfilename,type_name);
 
     JetCorrectionUncertainty jesUncertainty = JetCorrectionUncertainty(jetcorrectorparams);
 
@@ -54,6 +58,9 @@ double JetScaleResolution::GetSmearValsPt(const TLorentzVector& recojet, TLorent
     if(!(recojet.Pt() > 0.0)){
         return recojet.Pt();
     }
+
+    jer = JME::JetResolution(resfilename);
+    jerSF_and_Uncertainty = JME::JetResolutionScaleFactor(resfunctyfilename);
 
     auto params_sf_and_uncertainty = JME::JetParameters();
     auto params_resolution = JME::JetParameters();

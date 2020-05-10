@@ -237,7 +237,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     syst_histo=Histogramer(1, filespace+"Hist_syst_entries.in", filespace+"Cuts.in", outfile, isData, cr_variables,syst_names);
   
   systematics = Systematics(distats);
-  setupJetCorrections(year, outfile);
+  // setupJetCorrections(year, outfile);
 
   ///this can be done nicer
   //put the variables that you use here:
@@ -611,12 +611,15 @@ bool Analyzer::checkGoodRunsAndLumis(int event){
 ///Function that does most of the work.  Calculates the number of each particle
 void Analyzer::preprocess(int event, std::string year){ // This function no longer needs to get the JSON dictionary as input.
 
+  std::cout << " preprocess initiated " << std::endl;
   int test= BOOM->GetEntry(event);
   if(test<0){
     std::cout << "Could not read the event from the following file: "<<BOOM->GetFile()->GetNewUrl().Data() << std::endl;
   }
-
+  int i = 0;
   for(Particle* ipart: allParticles){
+    std::cout << "Particle item " << i << std::endl;
+    i++;
     ipart->init();
   }
   _MET->init();
@@ -701,8 +704,8 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     // smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
     smearLepton(*_Tau, CUTS::eGHadTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
 
-    smearJet(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], year,  i);
-    smearJet(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], year, i);
+    // smearJet(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], year,  i);
+    // smearJet(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], year, i);
 
 
     // updateMet(i);
@@ -742,6 +745,9 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     std::cout << std::setprecision(2)<<event << " Events analyzed "<< static_cast<double>(event)/nentries*100. <<"% done"<<std::endl;
     std::cout << std::setprecision(5);
   }
+
+  std::cout << "preprocess finished " << std::endl;
+
 }
 
 
@@ -807,6 +813,8 @@ void Analyzer::getGoodParticles(int syst){
 
   ////Dijet cuts
   getGoodDiJets(distats["DiJet"],syst);
+
+
 
 }
 
@@ -1048,9 +1056,9 @@ double Analyzer::getTauDataMCScaleFactor(int updown){
 ///Calculates met from values from each file plus smearing and treating muons as neutrinos
 void Analyzer::updateMet(int syst) {
   // Do a final update after jet smearing
-  _MET->setCurrentP(syst);
+  // _MET->setCurrentP(syst);
 
-  // _MET->update(distats["Run"], *_Jet,  syst);
+  _MET->update(distats["Run"], *_Jet,  syst);
 
   // std::cout << "_MET->update()->px() = " << _MET->px() << "_MET->update()->py() = " << _MET->py() << std::endl;
 
@@ -1551,6 +1559,7 @@ void Analyzer::setupJetCorrections(std::string year, std::string outputfilename)
     std::string runera = (year+outputfilename.substr(pos,1)).c_str(); 
 
     jectag = jecTagsDATA[runera];
+    jertag = jerTagsMC[year];
     archivetag = archiveTagsDATA[year];
   }
   else{
@@ -1559,15 +1568,41 @@ void Analyzer::setupJetCorrections(std::string year, std::string outputfilename)
     jectagfastsim = jecTagsFastSim[year];
   }
 
-  jetScaleRes = JetScaleResolution((PUSPACE+"JetResDatabase/textFiles/"+jectag+"_UncertaintySources_AK4PFchs.txt").c_str(),"Total",(PUSPACE+"JetResDatabase/textFiles/"+jectag+"_PtResolution_AK4PFchs.txt").c_str(), (PUSPACE+"JetResDatabase/textFiles/"+jectag+"_SF_AK4PFchs.txt").c_str());
+  try{
+    jetScaleRes = JetScaleResolution((PUSPACE+"JetResDatabase/textFiles/"+jectag+"_Uncertainty_AK4PFchs.txt").c_str(),"Total",(PUSPACE+"JetResDatabase/textFiles/"+jertag+"_PtResolution_AK4PFchs.txt").c_str(), (PUSPACE+"JetResDatabase/textFiles/"+jertag+"_SF_AK4PFchs.txt").c_str());
+  }
+  catch(edm::Exception &err){
+    std::cerr << "Error in setupJetCorrections (JetScaleResolution): " << err.what() << std::endl;
+    std::cerr << "\tAborting Analyzer..." << std::endl;
+    std::abort();
+  }
+  catch(...){
+    std::cerr << "Error in setupJetCorrections (JetScaleResolution): unknown Exception" << std::endl;
+    std::cerr << "\tAborting Analyzer..." << std::endl;
+    std::abort();
+   }
 
-  jetRecalibL1 = JetRecalibrator((PUSPACE+"JetResDatabase/textFiles/").c_str(), jectag, "AK4PFchs", false, 1, true); 
+  try{
+    jetRecalibL1 = JetRecalibrator((PUSPACE+"JetResDatabase/textFiles/").c_str(), jectag, "AK4PFchs", "Total", false, 1, true); 
+  }
+  catch(std::runtime_error& err){
+    std::cerr << "Error in setupJetCorrections (JetRecalibrator): " << err.what() << std::endl;
+    std::cerr << "\tAborting Analyzer..." << std::endl;
+    std::abort();
+
+  }
+  catch(...){
+    std::cerr << "Error in setupJetCorrections (JetRecalibrator): unknown Exception" << std::endl;
+    std::cerr << "\tAborting Analyzer..." << std::endl;
+    std::abort();
+  }
+
 }
 
 
 ///Same as smearlepton, just jet specific
 void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stats, std::string year, int syst) {
-
+// void Analyzer::smearJet(Jet& jet, const CUTS eGenPos, const PartStats& stats, std::string year, int syst) {
   if(!jet.needSyst(syst)){
     return;
   }
@@ -1595,14 +1630,14 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
 
     const TLorentzVector origJetReco = jet.RecoP4(i);
     TLorentzVector jetReco = jet.RecoP4(i);
-    TLorentzVector genJet = new TLorentzVector();
+    TLorentzVector genJet(0,0,0,0);
 
     double jet_Pt = origJetReco.Pt();
-    double jet_mass = origJetReco.M();
-    double jet_RawFactor = jet.rawFactor(i);
+    // double jet_mass = origJetReco.M();
+    double jet_RawFactor = _Jet->rawFactor[i];
 
-    double jet_rawPt = jet_pt * (1.0 - jet_RawFactor);
-    double jet_rawMass = jet_mass * (1.0 - jet_RawFactor);
+    double jet_rawPt = jet_Pt * (1.0 - jet_RawFactor);
+    // double jet_rawMass = jet_mass * (1.0 - jet_RawFactor);
 
     // ---------- Re-do JECs if desired ---------- //
     // https://github.com/cms-nanoAOD/nanoAOD-tools/blob/master/python/postprocessing/modules/jme/jetmetUncertainties.py#L263
@@ -1630,27 +1665,26 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
     //  }
 
     // I need to define somewhere else the L1 recalibrator
-    double jecL1 = jetRecalibL1.getCorrection(origJetReco, jet.area(i), rawFactor, rho);
+    double jecL1 = jetRecalibL1.getCorrection(origJetReco, _Jet->area[i], jet_RawFactor, jec_rho);
     // double jet_pt_l1 =  jetRecalibL1.correctedP4(origJetReco, jecL1, rawFactor).Pt();
 
 
-
     // Get the jet for type-I MET
-    TLorentzVector newjetP4 = new TLorentzVector();
-    newjetP4.SetPtEtaPhiM(origJetReco.Pt() * (1.0 - rawFactor), origJetReco.Eta(), origJetReco.Phi(), origJetReco.M());
+    TLorentzVector newjetP4(0,0,0,0);
+    newjetP4.SetPtEtaPhiM(origJetReco.Pt() * (1.0 - jet_RawFactor), origJetReco.Eta(), origJetReco.Phi(), origJetReco.M());
     double muon_pt = 0.0;
 
-    if(jet.matchingMuonIdx1(i) > -1){
-      if(_Muon->isGlobal[jet.matchingMuonIdx1(i)] == true){
-        newjetP4 = newjetP4 - _Muon->p4(jet.matchingMuonIdx1(i));
-        muon_pt += _Muon->pt(jet.matchingMuonIdx1(i));
+    if(_Jet->matchingMuonIdx1[i] > -1){
+      if(_Muon->isGlobal[_Jet->matchingMuonIdx1[i]] == true){
+        newjetP4 = newjetP4 - _Muon->p4(_Jet->matchingMuonIdx1[i]);
+        muon_pt += _Muon->pt(_Jet->matchingMuonIdx1[i]);
       }
     }
 
-    if(jet.matchingMuonIdx2(i) > -1){
-      if(_Muon->isGlobal[jet.matchingMuonIdx2(i)] == true){
-        newjetP4 = newjetP4 - _Muon->p4(jet.matchingMuonIdx2(i));
-        muon_pt += _Muon->pt(jet.matchingMuonIdx2(i));
+    if(_Jet->matchingMuonIdx2[i] > -1){
+      if(_Muon->isGlobal[_Jet->matchingMuonIdx2[i]] == true){
+        newjetP4 = newjetP4 - _Muon->p4(_Jet->matchingMuonIdx2[i]);
+        muon_pt += _Muon->pt(_Jet->matchingMuonIdx2[i]);
       }
     }
 
@@ -1769,7 +1803,7 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
       systematics.shiftParticle(jet, origJetReco, jet_pt_jesShifted, jet_mass_jesShifted, systname, syst);
     }
 
-    double jetTotalEmEF = jet.neutralEmEmEnergyFraction(i) + jet.chargedEmEnergyFraction(i);
+    double jetTotalEmEF = _Jet->neutralEmEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
     
     // Propagate this correction to the MET.
     if(jet_pt_L1L2L3 > unclEnThreshold && jetTotalEmEF < 0.9){
@@ -1777,7 +1811,7 @@ void Analyzer::smearJet(Particle& jet, const CUTS eGenPos, const PartStats& stat
         _MET->propagateJetEnergyCorr(origJetReco, jet_pt_L1L2L3, jet_pt_L1, systname, syst);
 
         if(!isData){
-          if(stats.bfind["SmearTheJet"] || systname.find("_Res_") != std::string::npos){
+          if(stats.bfind("SmearTheJet") || systname.find("_Res_") != std::string::npos){
             _MET->propagateJetEnergyCorr(origJetReco, jet_pt_L1L2L3 * jer_shift, jet_pt_L1, systname, syst);
           }
           else if(systname.find("_Scale_") != std::string::npos){
