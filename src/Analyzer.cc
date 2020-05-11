@@ -528,13 +528,13 @@ void Analyzer::setupEventGeneral(int nevent){
     triggernamedecisions.push_back(triggerDecision);
     triggerBranch->ResetAddress();
   }
-
-  //int i = 0;
-  //for(bool decision : triggernamedecisions){
-  //  std::cout << "Trigger decision " << i << " = " << decision << std::endl;
-  //  i++;
-  //}
-
+  /*
+  int i = 0;
+  for(bool decision : triggernamedecisions){
+    std::cout << "Trigger decision " << i << " = " << decision << std::endl;
+    i++;
+  }
+  */
 }
 
 bool Analyzer::passGenHTFilter(float genhtvalue){
