@@ -102,7 +102,7 @@ public:
   void read_info(std::string);
   void setupGeneral(std::string);
   void setupEventGeneral(int);
-  void getTriggerBranchesList(std::string);
+  void getTriggerBranchesList(std::string, bool);
   bool passGenHTFilter(float);
   bool checkGoodRunsAndLumis(int);
   void branchException(std::string);
@@ -239,7 +239,7 @@ public:
   std::vector<std::string> triggerBranchesList;
   bool triggerDecision = false;
   std::vector<std::string> inputTriggerNames; // Brenda: This will take the triggers from the configuration file Run_info.in
-  std::vector<bool*> triggernamedecisions; // Brenda
+  std::vector<bool> triggernamedecisions; // Brenda
   std::vector<int> cuts_per, cuts_cumul;
 
   std::unordered_map< std::string,float > zBoostTree;
