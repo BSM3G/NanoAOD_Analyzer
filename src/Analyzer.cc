@@ -536,10 +536,18 @@ void Analyzer::setupEventGeneral(int nevent){
   triggerDecision = false; // Reset the decision flag for each event.
 
   for(std::string triggname : triggerBranchesList){
-    SetBranch(triggname.c_str(), triggerDecision);
+    // std::cout << "Trigger name: " << triggname << std::endl;
+    
+    TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
+    triggerBranch->SetStatus(1);
+    triggerBranch->SetAddress(&triggerDecision);
+
+    // SetBranch(triggname.c_str(), triggerDecision);
     BOOM->GetEntry(nevent);
-    //std::cout << "Trigger name: " << triggname << ", decision = " << triggerDecision << std::endl;
+
+    // std::cout << "Decision = " << triggerDecision << std::endl;
     triggernamedecisions.push_back(triggerDecision);
+    triggerBranch->ResetAddress();
   }
 
   /*
