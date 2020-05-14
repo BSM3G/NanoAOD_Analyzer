@@ -105,7 +105,7 @@ public:
   void setupEventGeneral(int);
   void getTriggerBranchesList(std::string, bool);
   bool passGenHTFilter(float);
-  bool passGenMassFilter(float mass_lowbound, float mass_upbound);
+  bool passGenMassFilterZ(float mass_lowbound, float mass_upbound);
   bool checkGoodRunsAndLumis(int);
   void branchException(std::string);
   void initializeTrigger();
@@ -225,6 +225,7 @@ public:
   TH1D* k_tau_h;
 
   bool isVSample;
+  bool isZsample;
   bool isWSample;
 
   std::string btagalgoname;

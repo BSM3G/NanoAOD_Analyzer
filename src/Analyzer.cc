@@ -210,7 +210,9 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   histo = Histogramer(1, filespace+"Hist_entries.in", filespace+"Cuts.in", outfile, isData, cr_variables);
   if(doSystematics)
     syst_histo=Histogramer(1, filespace+"Hist_syst_entries.in", filespace+"Cuts.in", outfile, isData, cr_variables,syst_names);
+  
   systematics = Systematics(distats);
+  
   jetScaleRes = JetScaleResolution("Pileup/Summer16_23Sep2016V4_MC_Uncertainty_AK4PFchs.txt", "",  "Pileup/Spring16_25nsV6_MC_PtResolution_AK4PFchs.txt", "Pileup/Spring16_25nsV6_MC_SF_AK4PFchs.txt");
 
 
@@ -261,10 +263,19 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     }
   }
 
+  if(distats["Run"].bfind("DiscrByGenDileptonMass")){
+    // If the gen-dilepton mass filter is on, check that the sample is DY. Otherwise, the filter won't be applied.
+    isZsample = infiles[0].find("DY") != std::string::npos; 
+    // if(isZsample){std::cout << "This is a DY sample " << std::endl;}
+    // else{std::cout << "Not a DY sample " << std::endl;}
+  }
+
   if(distats["Run"].bfind("InitializeMCSelection")){
-     std::cout << "MC selection initialized." << std::endl;
+     // std::cout << "MC selection initialized." << std::endl;
      initializeMCSelection(infiles);
   }
+
+
   initializeWkfactor(infiles);
   setCutNeeds();
   
@@ -552,7 +563,9 @@ bool Analyzer::passGenHTFilter(float genhtvalue){
 
 }
 
-bool Analyzer::passGenMassFilter(float mass_lowbound, float mass_upbound){
+bool Analyzer::passGenMassFilterZ(float mass_lowbound, float mass_upbound){
+
+  if(!isZsample) return true;
 
    std::vector<uint> genleptonindices;
    int genpart_id = 0, genmotherpart_idx = 0, genmotherpart_id = 0;
@@ -701,7 +714,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
     //--- filtering inclusive HT-binned samples: must be done after  _Gen->setOrigReco() --- // 
      if(distats["Run"].bfind("DiscrByGenDileptonMass")){
-       if(passGenMassFilter(distats["Run"].pmap.at("GenDilepMassRange").first, distats["Run"].pmap.at("GenDilepMassRange").second) == false){
+       if(passGenMassFilterZ(distats["Run"].pmap.at("GenDilepMassRange").first, distats["Run"].pmap.at("GenDilepMassRange").second) == false){
          clear_values();
          return;
        }
