@@ -29,8 +29,9 @@ DiscrByGenHT false
 LowerGenHtCut 0.0
 UpperGenHtCut 100.0
 
-/// --- MC selection --- ///
-InitializeMCSelection false
+/// --- dilepton mass filter --- ///
+DiscrByGenDileptonMass true
+GenDilepMassRange 80.0 100.0
 
 /// ------ Triggers ----- ///
 
@@ -61,4 +62,5 @@ JetPtForMhtAndHt 30.0
 JetEtaForMhtAndHt 5.0        
 ApplyJetLooseIDforMhtAndHt true
 
-
+/// --- MC selection --- ///
+InitializeMCSelection false

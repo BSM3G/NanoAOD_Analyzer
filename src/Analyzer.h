@@ -105,6 +105,7 @@ public:
   void setupEventGeneral(int);
   void getTriggerBranchesList(std::string, bool);
   bool passGenHTFilter(float);
+  bool passGenMassFilter(float mass_lowbound, float mass_upbound);
   bool checkGoodRunsAndLumis(int);
   void branchException(std::string);
   void initializeTrigger();
@@ -253,6 +254,7 @@ public:
   int bestVertices = 0;
   float gen_weight = 0;
   float generatorht = 0;
+  float gendilepmass = 0;
   
   // Met filters' variables
   bool applymetfilters = false;
