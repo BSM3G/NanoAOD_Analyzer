@@ -536,11 +536,25 @@ void Analyzer::setupEventGeneral(int nevent){
   triggerDecision = false; // Reset the decision flag for each event.
 
   for(std::string triggname : triggerBranchesList){
-    SetBranch(triggname.c_str(), triggerDecision);
+    // std::cout << "Trigger name: " << triggname << std::endl;
+    
+    TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
+    triggerBranch->SetStatus(1);
+    triggerBranch->SetAddress(&triggerDecision);
+
+    // SetBranch(triggname.c_str(), triggerDecision);
     BOOM->GetEntry(nevent);
-    //std::cout << "Trigger name: " << triggname << ", decision = " << triggerDecision << std::endl;
-    triggernamedecisions.push_back(&triggerDecision);
+
+    // std::cout << "Decision = " << triggerDecision << std::endl;
+    triggernamedecisions.push_back(triggerDecision);
+    triggerBranch->ResetAddress();
   }
+
+  /*
+  for(size_t i=0; i < triggernamedecisions.size(); i++){
+    std::cout << "Trigger decision #" << i << " = " << triggernamedecisions.at(i) << std::endl; 
+  }
+  */
 
 }
 
@@ -1147,8 +1161,9 @@ void Analyzer::branchException(std::string branch){
   }
 }
 
-void Analyzer::getTriggerBranchesList(std::string trigger){
+void Analyzer::getTriggerBranchesList(std::string trigger, bool usewildcard){
 
+ if(usewildcard){
   for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
 
     std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
@@ -1156,6 +1171,16 @@ void Analyzer::getTriggerBranchesList(std::string trigger){
     //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
     triggerBranchesList.push_back(branch_name);
   }
+ }
+ else{
+    for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+       std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+       // Look for branches that match exactly the trigger name
+       if(branch_name.compare(trigger.c_str()) != 0) continue;
+       // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+       triggerBranchesList.push_back(branch_name);
+ }
+}
 
   if(triggerBranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.";
 }
@@ -1196,7 +1221,7 @@ void Analyzer::setupGeneral(std::string year) {
   for(std::string trigger : inputTriggerNames){
 
     try{
-      getTriggerBranchesList(trigger);
+      getTriggerBranchesList(trigger, distats["Run"].bfind("UseTriggerWildcard"));
     }
     catch(const char* msg){
       std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
@@ -2174,8 +2199,8 @@ void Analyzer::TriggerCuts(CUTS ePos) {
 	if(! neededCuts.isPresent(ePos)) return;
 
 	// Loop over all elements of the trigger decisions vector
-	for(bool* decision : triggernamedecisions){
-		if(*decision){
+	for(bool decision : triggernamedecisions){
+		if(decision){
 			// If one element is true (1), then store back the event in the triggers vector
 			active_part->at(ePos)->push_back(0);
 			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
