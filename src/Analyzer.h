@@ -95,7 +95,8 @@ public:
   void getInputs();
   void setupJob(std::string);
   bool specialPUcalculation = false;
-  void initializePileupInfo(std::string, std::string, std::string, std::string);
+  void initializePileupInfo(const bool&, std::string);
+  void initializePileupWeights(std::string, std::string, std::string, std::string);
   void initializeMCSelection(std::vector<std::string> infiles);
   void initializeWkfactor(std::vector<std::string> infiles);
 
@@ -156,7 +157,7 @@ public:
   double getWkfactor();
   double getZBoostWeight();
   double getTopBoostWeight(); //01.15.19
-  void setupBJetSFInfo(const PartStats&); // new function that sets up the b-tagging SF info
+  void setupBJetSFInfo(const PartStats&, std::string); // new function that sets up the b-tagging SF info
   double getBJetSF(CUTS, const PartStats&); //01.16.19
   double getBJetSFResUp(CUTS, const PartStats&); //01.16.19
   double getBJetSFResDown(CUTS, const PartStats&); //01.16.19
@@ -269,10 +270,10 @@ public:
   //BTagCalibrationReader reader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
   
   // B-tagging scale factors - calibration + readers
-  BTagCalibration calib;
+  BTagCalibration btagcalib;
   BTagCalibrationReader btagsfreader;
-  BTagCalibrationReader btagsfreaderup;
-  BTagCalibrationReader btagsfreaderdown;
+  BTagEntry::JetFlavor bjetflavor;
+  BTagEntry::OperatingPoint b_workingpoint;
 
   double rho =20.;
 
