@@ -112,39 +112,15 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   // New variable to do special PU weight calculation (2017)
   specialPUcalculation = distats["Run"].bfind("SpecialMCPUCalculation");
   
-  // If specialPUcalculation is true, then take the name of the output file (when submitting jobs) 
-  // to retrieve the right MC nTruePU distribution to calculate the PU weights, otherwise, it will do
-  // the calculation as usual, having a single MC nTruePU histogram (MCHistos option).
-  // If you need to run the Analyzer interactively and use the specialPUcalculation option, make sure that you 
-  // include the name of the sample to analyze. For example, you can look at the names given to output files in past
-  // runs sumbitted as jobs and use those names instead. This will be improved later.
-  if(specialPUcalculation){
-	  
-	std::string outputname = outfile;
-
-	std::string delimitertune = "_Tune";
-	std::string delimiterenergy = "_13TeV";
-
-	bool istuneinname = outputname.find(delimitertune.c_str()) != std::string::npos;
-
-	std::string samplename;
-
-	if((samplename.length() == 0) && istuneinname){
-  		unsigned int pos = outputname.find(delimitertune.c_str());
-  		samplename = outputname.erase(pos, (outputname.substr(pos).length()));
-	}
-
-	if((samplename.length() == 0) && (!istuneinname)){
-  		unsigned int pos = outputname.find(delimiterenergy.c_str());
-  		samplename = outputname.erase(pos, (outputname.substr(pos).length()));
-	}
-
-    initializePileupInfo(distats["Run"].smap.at("SpecialMCPUHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"), samplename);
+  // If data, always set specialcalculation to false
+  if(isData){ 
+    specialPUcalculation = false;
+    std::cout << "This is Data!! Setting SpecialMCPUCalculation to False." << std::endl;
   }
-  else{
-    // No special PU calculation.
-    initializePileupInfo(distats["Run"].smap.at("MCHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"),distats["Run"].smap.at("MCPUHistName") );
-  }
+
+  // New! Initialize pileup information and take care of exceptions if histograms not found.
+  initializePileupInfo(specialPUcalculation, outfile);
+
   
   syst_names.push_back("orig");
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> tmp;
@@ -176,12 +152,14 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 
 	
   // B-tagging scale factor stuff
-  setupBJetSFInfo(_Jet->pstats["BJet"]); 	
+  setupBJetSFInfo(_Jet->pstats["BJet"], year);  
   // Here the calibration module will be defined, which is then needed to define the readers below.
+/*
   btagsfreader.load(calib, BTagEntry::FLAV_B, "comb");
   btagsfreaderup.load(calib, BTagEntry::FLAV_B, "comb");
   btagsfreaderdown.load(calib, BTagEntry::FLAV_B, "comb");
-	
+*/
+
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
     _Gen = new Generated(BOOM, filespace + "Gen_info.in", syst_names);
@@ -448,7 +426,10 @@ Analyzer::~Analyzer() {
   delete _Muon;
   delete _Tau;
   delete _Jet;
-  if(!isData) delete _Gen;
+  if(!isData){
+    delete _Gen;
+    delete _GenHadTau;
+  }
 
   for(auto fpair: fillInfo) {
     delete fpair.second;
@@ -1979,56 +1960,80 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
 
 // The function below sets up the information from the right CSV file in the Pileup folder
 // to obtain the functions needed to apply b-tagging SF in an automatic way.
-void Analyzer::setupBJetSFInfo(const PartStats& stats){
+void Analyzer::setupBJetSFInfo(const PartStats& stats, std::string year){
 
-  std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
-  std::cout << "Setting up the b-jet scale factors... " << std::endl;
+   // Always check that the filenames are up to date!!
+   // https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation
+   static std::map<std::string, std::string> csvv2btagsfcsvfiles = {
+    {"2016", "CSVv2_Moriond17_B_H.csv"},
+    {"2017", "CSVv2_94XSF_WP_V2_B_F.csv"},
+    {"2018", "none.csv"} // No CSVv2 available for 2018
+   }; 
+
+   static std::map<std::string, std::string> deepcsvbtagsfcsvfiles = {
+    {"2016", "DeepCSV_2016LegacySF_WP_V1.csv"},
+    {"2017", "DeepCSV_94XSF_WP_V4_B_F.csv"},
+    {"2018", "DeepCSV_102XSF_WP_V1.csv"}
+   };
+
+  static std::map<std::string, std::string> deepflavbtagsfcsvfiles = {
+    {"2016", "DeepJet_2016LegacySF_WP_V1.csv"},
+    {"2017", "DeepFlavour_94XSF_WP_V3_B_F.csv"},
+    {"2018", "DeepJet_102XSF_WP_V1.csv"}
+  };
+
+   // This will be the default.
+  std::string btagalgoname = "DeepCSV";
+  std::string btagsffilename = deepcsvbtagsfcsvfiles.begin()->second;
+  
+  // std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+  // std::cout << "Setting up the b-jet scale factors... " << std::endl;
   // Get the b-tagging algorithm to use to initialize the appropriate csv file:
-  
-  for( auto cut: stats.bset) {
-
-    if(cut == "ApplyJetBTaggingCSVv2"){
-      btagalgoname = "CSVv2";
-      break;
-    }
-    else if(cut == "ApplyJetBTaggingDeepCSV"){
-      btagalgoname = "DeepCSV";
-      break;
-    }
-    else if(cut == "ApplyJetBTaggingDeepFlav"){
-      btagalgoname = "DeepFlav";
-      break;
-    }
+  if(stats.bfind("ApplyJetBTaggingCSVv2")){
+    btagalgoname = "CSVv2"; 
+    btagsffilename = csvv2btagsfcsvfiles[year]; 
   }
-  
-  std::cout << "B-jet ID algorithm selected: " << btagalgoname << std::endl;
-  std::cout<< "Working point selected is: " << stats.smap.at("JetBTaggingWP") << std::endl;
-  
-  calib = BTagCalibration(btagalgoname, (PUSPACE+stats.smap.at("BtagSFCSVfile")).c_str());
-
-  // Read the working point we are using:
-  if(stats.smap.at("JetBTaggingWP").compare("loose") == 0){ 
-    //std::cout << "working point is loose" << std::endl;
-    btagsfreader = BTagCalibrationReader(BTagEntry::OP_LOOSE, "central");
-    btagsfreaderup = BTagCalibrationReader(BTagEntry::OP_LOOSE, "up");
-    btagsfreaderdown = BTagCalibrationReader(BTagEntry::OP_LOOSE, "down");
+  else if(stats.bfind("ApplyJetBTaggingDeepCSV")){
+    btagalgoname = "DeepCSV";
+    btagsffilename = deepcsvbtagsfcsvfiles[year];
 
   }
-  else if(stats.smap.at("JetBTaggingWP").compare("medium") == 0){
-    //std::cout << "working point is medium" << std::endl;
-    btagsfreader = BTagCalibrationReader(BTagEntry::OP_MEDIUM, "central");
-    btagsfreaderup = BTagCalibrationReader(BTagEntry::OP_MEDIUM, "up");
-    btagsfreaderdown = BTagCalibrationReader(BTagEntry::OP_MEDIUM, "down");
-  } 
-  else if(stats.smap.at("JetBTaggingWP").compare("tight") == 0){
-    //std::cout << "working point is tight" << std::endl;
-    btagsfreader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
-    btagsfreaderup = BTagCalibrationReader(BTagEntry::OP_TIGHT, "up");
-    btagsfreaderdown = BTagCalibrationReader(BTagEntry::OP_TIGHT, "down");
+  else if(stats.bfind("ApplyJetBTaggingDeepFlav")){
+    btagalgoname = "DeepFlav";
+    btagsffilename = deepflavbtagsfcsvfiles[year];
   }
 
-  std::cout << "Done. " << std::endl;
-  std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+  try{
+    btagcalib = BTagCalibration(btagalgoname, (PUSPACE+"BJetDatabase/"+btagsffilename).c_str());
+
+    if(stats.bfind("UseBtagSF")){  
+      std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+      std::cout << "Setting up the b-jet scale factors... " << std::endl;
+      std::cout << "B-jet ID algorithm selected: " << btagalgoname << std::endl;
+      std::cout << "Selected working point: " << stats.smap.at("JetBTaggingWP") << std::endl;
+      std::cout << "B-tagging SF csv file: " << btagsffilename << std::endl;
+      std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+    }
+  }
+  catch(std::exception& e){
+    std::cerr << "ERROR in setupBJetSFInfo: " << e.what() << std::endl;
+    std::cout << "\t Setting dummy b-tagging from " << (PUSPACE+"btagging.csv").c_str() << std::endl;
+    btagcalib = BTagCalibration("DeepCSV", (PUSPACE+"btagging.csv").c_str());   
+  }
+
+ // Check BTagCalibrationStandalone.h for more information
+
+   static std::map<std::string, int> bjetflavors = {
+    {"bjet", 0}, {"cjet", 1}, {"lightjet", 2},
+   };
+
+   bjetflavor = (BTagEntry::JetFlavor) bjetflavors["bjet"];
+
+   static std::map<std::string, int> btagoperatingpoints = {
+    {"loose", 0}, {"medium", 1}, {"tight", 2}, {"reshaping", 3}
+   };
+
+   b_workingpoint = (BTagEntry::OperatingPoint) btagoperatingpoints[stats.smap.at("JetBTaggingWP").c_str()];
 
 }
 
@@ -2036,6 +2041,10 @@ double Analyzer::getBJetSF(CUTS ePos, const PartStats& stats) {
   double bjetSFall = 1.0, bjetSFtemp = 1.0; 
 
   if(!neededCuts.isPresent(ePos)) return bjetSFall;
+
+  // Load the info from the btaggin reader
+  btagsfreader = BTagCalibrationReader(b_workingpoint, "central");
+  btagsfreader.load(btagcalib, bjetflavor, "comb");
 
   if(!stats.bfind("UseBtagSF")){
     bjetSFtemp = 1.0;
@@ -2046,13 +2055,13 @@ double Analyzer::getBJetSF(CUTS ePos, const PartStats& stats) {
       bjetSFtemp = 1.0;
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 1){
-      bjetSFtemp = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("central", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 2){
       // Get the SF for the first b-jet
-      bjetSFtemp = btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("central", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
       // Now multiply by the SF of the second b-jet
-      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("central", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
+      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("central", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
     }
 
   }
@@ -2068,6 +2077,10 @@ double Analyzer::getBJetSFResUp(CUTS ePos, const PartStats& stats) {
 
   if(!neededCuts.isPresent(ePos)) return bjetSFall;
 
+  // Load the info from the btaggin reader
+  btagsfreader = BTagCalibrationReader(b_workingpoint, "up");
+  btagsfreader.load(btagcalib, bjetflavor, "comb");
+
   if(!stats.bfind("UseBtagSF")){
     bjetSFtemp = 1.0;
   }
@@ -2077,13 +2090,13 @@ double Analyzer::getBJetSFResUp(CUTS ePos, const PartStats& stats) {
       bjetSFtemp = 1.0;
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 1){
-      bjetSFtemp = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("up", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 2){
       // Get the SF for the first b-jet
-      bjetSFtemp = btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("up", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
       // Now multiply by the SF of the second b-jet
-      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("up", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
+      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("up", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
     }
 
   }
@@ -2099,6 +2112,9 @@ double Analyzer::getBJetSFResDown(CUTS ePos, const PartStats& stats) {
 
   if(!neededCuts.isPresent(ePos)) return bjetSFall;
 
+  btagsfreader = BTagCalibrationReader(b_workingpoint, "down");
+  btagsfreader.load(btagcalib, bjetflavor, "comb");
+
   if(!stats.bfind("UseBtagSF")){
     bjetSFtemp = 1.0;
   }
@@ -2107,13 +2123,13 @@ double Analyzer::getBJetSFResDown(CUTS ePos, const PartStats& stats) {
       bjetSFtemp = 1.0;
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 1){
-      bjetSFtemp = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("down", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
     }
     else if(active_part->at(CUTS::eRBJet)->size() == 2){
       // Get the SF for the first b-jet
-      bjetSFtemp = btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
+      bjetSFtemp = btagsfreader.eval_auto_bounds("down", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(0))).Pt());
       // Now multiply by the SF of the second b-jet
-      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("down", BTagEntry::FLAV_B, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
+      bjetSFtemp = bjetSFtemp * btagsfreader.eval_auto_bounds("down", bjetflavor, (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Eta(), (_Jet->p4(active_part->at(CUTS::eRBJet)->at(1))).Pt());
     }
   }
 
@@ -3326,15 +3342,81 @@ void Analyzer::fill_Tree(){
   }
 }
 
-void Analyzer::initializePileupInfo(std::string MCHisto, std::string DataHisto, std::string DataHistoName, std::string MCHistoName) {
+void Analyzer::initializePileupInfo(const bool& specialPU, std::string outfilename){
+   // If specialPUcalculation is true, then take the name of the output file (when submitting jobs) 
+   // to retrieve the right MC nTruePU distribution to calculate the PU weights, otherwise, it will do
+   // the calculation as usual, having a single MC nTruePU histogram (MCHistos option).
+   // If you need to run the Analyzer interactively and use the specialPUcalculation option, make sure that you 
+   // include the name of the sample to analyze. For example, you can look at the names given to output files in past
+   // runs sumbitted as jobs and use those names instead. This will be improved later.
+
+   // try-catch block for initialize pileup info
+   try{
+
+     if(!specialPU){// No special PU calculation.
+       initializePileupWeights(distats["Run"].smap.at("MCHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"),distats["Run"].smap.at("MCPUHistName"));
+     }
+     else{ // Special PU calculation
+    std::string outputname = outfilename;
+
+    std::string delimitertune = "_Tune";
+    std::string delimiterenergy = "_13TeV";
+
+    bool istuneinname = outputname.find(delimitertune.c_str()) != std::string::npos;
+
+    std::string samplename;
+
+    if((samplename.length() == 0) && istuneinname){
+      unsigned int pos = outputname.find(delimitertune.c_str());
+      samplename = outputname.erase(pos, (outputname.substr(pos).length()));
+    }
+    else if((samplename.length() == 0) && (!istuneinname)){
+      unsigned int pos = outputname.find(delimiterenergy.c_str());
+      samplename = outputname.erase(pos, (outputname.substr(pos).length()));
+    }
+
+         initializePileupWeights(distats["Run"].smap.at("SpecialMCPUHistos"),distats["Run"].smap.at("DataHistos"),distats["Run"].smap.at("DataPUHistName"), samplename);
+     }
+   }// end of try block
+   catch(std::runtime_error& err){
+    std::cerr << "ERROR in initializePileupInfo! " << std::endl;
+    std::cerr << "\t" << err.what()  << std::endl;
+    std::cout << "\tMake sure you are using the right file and the pileup histogram name is correct in Run_info.in." << std::endl;
+    if(specialPUcalculation){
+      std::cerr << "\tWARNING: You are using SpecialPUCalculation. Check that the output filename (" << outfilename << ") contains the name of the analyzed MC sample." << std::endl;
+    }
+    std::cerr << "\tAborting Analyzer..." << std::endl;
+    std::abort();
+   }
+    catch(std::out_of_range& err){
+    std::cerr << "ERROR in initializePileupInfo! " << std::endl;
+    std::cerr << "\t" << err.what()  << std::endl;
+    if(specialPU){
+      std::cerr << "\tYou are using SpecialPUCalculation. Name of the MC sample was not found in the output filename (" << outfilename << ")." << std::endl;
+      std::cerr << "\tTry with a different name that contains the name of your MC sample followed by _Tune or _13TeV (e.g. DYJetsToLL_M-50_TuneCP5.root)." << std::endl;
+    }
+    std::cerr << "\tAborting Analyzer..." << std::endl;
+    std::abort();
+   }
+   catch(...){
+    std::cerr << "ERROR in initializePileupInfo! Unknown exception." << std::endl; 
+    std::cerr << "\tAborting Analyzer..." << std::endl;
+    std::abort();
+   } // end of catch blocks
+
+ }
+
+
+void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHisto, std::string DataHistoName, std::string MCHistoName) {
 
   TFile *file1 = new TFile((PUSPACE+MCHisto).c_str());
   TH1D* histmc = (TH1D*)file1->FindObjectAny(MCHistoName.c_str());
-  if(!histmc) throw std::runtime_error("failed to extract histogram");
+  if(!histmc) throw std::runtime_error(("Failed to extract histogram "+MCHistoName+" from "+PUSPACE+MCHisto+"!").c_str());
 
   TFile* file2 = new TFile((PUSPACE+DataHisto).c_str());
   TH1D* histdata = (TH1D*)file2->FindObjectAny(DataHistoName.c_str());
-  if(!histdata) throw std::runtime_error("failed to extract histogram");
+  if(!histdata) throw std::runtime_error(("Failed to extract histogram "+DataHistoName+" from "+PUSPACE+DataHisto+"!").c_str());
+
   TH1D* histdata_up = (TH1D*)file2->FindObjectAny((DataHistoName+"Up").c_str());
   TH1D* histdata_down = (TH1D*)file2->FindObjectAny((DataHistoName+"Down").c_str());
 
