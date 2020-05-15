@@ -492,6 +492,10 @@ Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
   // Check this has either mva or deeptau. Otherwise, go back to MVA for compatibility purposes.
   try{
 
+    if(_BOOM->FindBranch("Tau_idDeepTau2017v2p1VSjet") == 0){
+       throw std::invalid_argument("DeepTau branches not found in this sample");
+    }
+
     if(pstats["TauID"].smap.at("TauIDAlgorithm").find("DeepTau") == std::string::npos){
       throw "Setting MVA-based tau ID algorithm (MVAoldDM2017v2).";
     }
@@ -507,7 +511,7 @@ Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
   }
   catch(const char* msg){
 
-    std::cout << "WARNING! " << msg << std::endl; 
+    std::cerr << "WARNING! " << msg << std::endl; 
     // --------- Anti-particle discriminators --------- //
     if(year.compare("2018") == 0){
       SetBranch("Tau_idAntiEle2018", againstElectron);
@@ -520,8 +524,22 @@ Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
     // --------- Tau isolation --------- //
     SetBranch("Tau_idMVAoldDM2017v2", TauIdDiscr);
   }
+  catch(std::invalid_argument& err){
+     std::cerr << "Error setting up tau ID algorithm: " << err.what() << ". Setting MVA-based tau ID algorithm (MVAoldDM2017v2) by default." << std::endl;
+     if(year.compare("2018") == 0){
+       SetBranch("Tau_idAntiEle2018", againstElectron);
+     }
+     else{
+       SetBranch("Tau_idAntiEle", againstElectron);
+     }
+     SetBranch("Tau_idAntiMu", againstMuon);
+
+     // --------- Tau isolation --------- //
+     SetBranch("Tau_idMVAoldDM2017v2", TauIdDiscr);
+
+  } 
   catch(...){
-    std::cout << "ERROR! Tau ID algorithm is not set up in your config file. Setting MVA-based tau ID algorithm (MVAoldDM2017v2). " << std::endl;
+    std::cerr << "ERROR setting up tau ID algorithm. Setting MVA-based tau ID algorithm (MVAoldDM2017v2) by default. " << std::endl;
 
     if(year.compare("2018") == 0){
       SetBranch("Tau_idAntiEle2018", againstElectron);
