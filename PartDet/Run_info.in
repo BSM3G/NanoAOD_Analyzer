@@ -38,7 +38,7 @@ GenDilepMassRange 80.0 100.0
 
 Trigger1FirstRequirement HLT_IsoMu24
 Trigger1SecondRequirement HLT_IsoMu27
-
+UseTriggerWildcard false
 
 /// Trigger2FirstRequirement HLT_DoubleMediumIsoPFTau35_Trk1_eta2p1_Reg
 /// Trigger2SecondRequirement HLT_DoubleMediumIsoPFTau40_Trk1_eta2p1_Reg
