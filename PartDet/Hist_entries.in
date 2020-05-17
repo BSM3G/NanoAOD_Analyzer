@@ -275,7 +275,7 @@ Muon1MetDeltaPhiVsDiMuonCosDphi   72  0   +3.15  220    -1.1    1.1
 
 //------------------------------------------------//
 
-FillDiTau 0
+FillDiTau 1
 
 DiTau_Tau1DiJetDeltaPhi          72     0    +3.15
 DiTau_Tau2DiJetDeltaPhi          72     0    +3.15
@@ -287,6 +287,7 @@ DiTau_Tau2MetMt                 100     0   500
 DiTauOSLS                        20   -10    10
 DiTauCosDphi                    220    -1.1   1.1
 DiTauCosDphi_DeltaPtAndMet      220    -1.1      1.1
+DiTauRecoAbsCosDphiPtLeadLepandMet 440 -1.1 1.1
 DiTau_Tau1MetDeltaPhi            72     0    +3.15
 DiTau_Tau2MetDeltaPhi            72     0    +3.15
 DiTauPZeta                      200  -100   100

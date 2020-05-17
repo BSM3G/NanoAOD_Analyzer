@@ -2399,6 +2399,10 @@ bool Analyzer::passCutRange(double value, const std::pair<double, double>& cuts)
   return (value > cuts.first && value < cuts.second);
 }
 
+bool Analyzer::passCutRangeAbs(double value, const std::pair<double, double>& cuts) {
+  return ((value > cuts.first && value < cuts.second) || (value > (cuts.second * -1) && value < (cuts.first * -1)));
+}
+
 //-----Calculate lepton+met transverse mass
 double Analyzer::calculateLeptonMetMt(const TLorentzVector& Tobj) {
   double px = Tobj.Px() + _MET->px();
@@ -2510,6 +2514,16 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
 	  double CosDPhiLead = cos(absnormPhi(llep.Phi() - _MET->phi()));
 	  passCuts = passCuts && passCutRange(CosDPhiLead, stats.pmap.at("CosDphiLeadPtAndMetCut"));
 	}
+  else if (cut == "DiscrByAbsCosDphiLeadPtandMet"){
+    if (part1.Pt() > part2.Pt()){
+      llep = part1;
+    }
+    else{
+      llep = part2;
+    }
+    double CosDPhiLead_forabs = cos(absnormPhi(llep.Phi() - _MET->phi()));
+    passCuts = passCuts && passCutRangeAbs(CosDPhiLead_forabs, stats.pmap.at("AbsCosDphiLeadPtAndMetCut"));
+  }
 	else if(cut == "DiscrByMtLeadPtAndMet"){
 	   if(part1.Pt() > part2.Pt()){
 	     llep = part1;
@@ -3266,6 +3280,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
     TLorentzVector part1;
     TLorentzVector part2;
+    TLorentzVector llep;
 
     for(auto it : *active_part->at(ePos)) {
 
@@ -3274,6 +3289,9 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
       part1 = lep1->p4(p1);
       part2 = lep2->p4(p2);
+
+      if(part1.Pt() > part2.Pt()) llep = lep1->p4(p1);
+      else if(part1.Pt() < part2.Pt()) llep = lep2->p4(p2);
 
       histAddVal2(part1.Pt(),part2.Pt(), "Part1PtVsPart2Pt");
       histAddVal(part1.DeltaR(part2), "DeltaR");
@@ -3307,6 +3325,9 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 	    
       double InvMass = diParticleMass(part1,part2, "InvariantMass");
       histAddVal(InvMass, "InvariantMass");
+
+      double AbscosDphiLeadLepMet = cos(absnormPhi(llep.Phi() - _MET->phi()));                                                                                                                                    
+      histAddVal(AbscosDphiLeadLepMet, "RecoAbsCosDphiPtLeadLepandMet"); 
 
       double ptSum = part1.Pt() + part2.Pt();
       histAddVal(ptSum, "SumOfPt");
