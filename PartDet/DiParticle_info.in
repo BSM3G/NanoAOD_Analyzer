@@ -23,6 +23,9 @@ DeltaPtDivSumPtCutValue    0.4  1.0
 DiscrByDeltaPt 		   false
 DeltaPtCutValue 	   50.0   1000.0
 
+DiscrByAbsCosDphiLeadPtandMet   true
+AbsCosDphiLeadPtAndMetCut       -1.00   -0.90
+
 ######################################
                DiMuon
 #####################################

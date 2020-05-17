@@ -144,6 +144,8 @@ public:
   void fastTriggerCuts(CUTS);
   void TriggerCuts(CUTS);
 
+  inline bool passCutRangeAbs(std::string, double, const PartStats&);
+  bool passCutRangeAbs(double, const std::pair<double, double>&);
 
   double calculateLeptonMetMt(const TLorentzVector&);
   double diParticleMass(const TLorentzVector&, const TLorentzVector&, std::string);
