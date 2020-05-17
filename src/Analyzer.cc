@@ -667,6 +667,30 @@ bool Analyzer::checkGoodRunsAndLumis(int event){
 
 }
 
+bool Analyzer::passHEMveto2018(){
+
+  bool hasJetinHEM = false;
+  // Loop over all jets in the reco Jet collection before applying any selections.
+  for(size_t index = 0; index < _Jet->size(); index++){
+    // Get the 4-momentum of the jet:
+    TLorentzVector jetP4 = _Jet->p4(index);
+
+    //std::cout << "Jet #" << index << ": pt = " << jetP4.Pt() << ", eta = " << jetP4.Eta() << ", phi = " << jetP4.Phi() << std::endl;
+
+    // Check if jet is in the HEM region
+    if(jetP4.Pt() >= 30.0 && jetP4.Eta() >= -3.0 && jetP4.Eta() <= -1.3 && jetP4.Phi() >= -1.57 && jetP4.Phi() <= -0.87){
+      //std::cout << "....... This jet is in the HEM region" << std::endl;
+      hasJetinHEM = true;
+      break;
+    }
+  }
+
+  if(hasJetinHEM == true) return false;
+
+  return true;
+
+}
+
 ///Function that does most of the work.  Calculates the number of each particle
 void Analyzer::preprocess(int event, std::string year){ // This function no longer needs to get the JSON dictionary as input.
 
@@ -727,6 +751,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   	// SingleMuon data sets need to be filtered. SingleElectron does not (?).
   	if(distats["Run"].bfind("FilterDataByGoldenJSON")){
 	    if(checkGoodRunsAndLumis(event) == false){
+        //std::cout << "Thrown away by JSON filter" << std::endl;
 	    	clear_values();
 	    	return;
 	    }
@@ -739,11 +764,23 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   if(applymetfilters){
   	passedmetfilters = passMetFilters(year, event);	
   	if(!passedmetfilters){
+      // std::cout << "Thrown away by MET filter" << std::endl;
   		clear_values();
   		return;
   	}
   }
 
+  // Apply HEM veto for 2018 if the flag is on.
+  bool checkHEM = distats["Run"].bfind("ApplyHEMVeto2018");
+  if(checkHEM == 1 || checkHEM == true){
+    if(passHEMveto2018() == false){
+      // std::cout << "This event didn't pass the HEM veto... throwing it away." << std::endl;
+      clear_values();
+      return;
+    }
+  }
+
+  // std::cout << "------------" << std::endl;
 
   // ------- Number of primary vertices requirement -------- // 
   active_part->at(CUTS::eRVertex)->resize(bestVertices);

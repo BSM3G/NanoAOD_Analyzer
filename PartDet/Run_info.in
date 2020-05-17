@@ -22,6 +22,7 @@ ApplyGenWeight  true
 
 /// ------ Data-specific cuts ------///
 FilterDataByGoldenJSON true
+ApplyHEMVeto2018 false
 
 /// ------ MC Gen-level cuts ------///
 /// --- HT filter --- ///
@@ -30,7 +31,7 @@ LowerGenHtCut 0.0
 UpperGenHtCut 100.0
 
 /// --- dilepton mass filter --- ///
-DiscrByGenDileptonMass true
+DiscrByGenDileptonMass false
 GenDilepMassRange 80.0 100.0
 
 /// ------ Triggers ----- ///
