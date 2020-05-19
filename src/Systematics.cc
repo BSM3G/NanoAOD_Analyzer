@@ -12,7 +12,20 @@ void Systematics::init(){
 
 }
 
+void Systematics::shiftParticle(Particle& jet, TLorentzVector recoJet, double const& corrJetPt, double& corrJetMass, std::string& syst_name, int syst){
 
+  TLorentzVector shiftedRecoJet;
+  // Set the new components of the 4-momentum
+  shiftedRecoJet.SetPtEtaPhiM(corrJetPt, recoJet.Eta(), recoJet.Phi(), corrJetMass);
+
+  // std::cout << "I get here in shift particle" << std::endl;
+
+  jet.addP4Syst(shiftedRecoJet, syst);
+  return;
+
+}
+
+/*
 void Systematics::shiftParticle(Particle& jet, TLorentzVector recJet, double const& ratio, double& dPx, double& dPy, int syst){
 
    //add the shifted part up
@@ -23,6 +36,7 @@ void Systematics::shiftParticle(Particle& jet, TLorentzVector recJet, double con
    jet.addP4Syst(recJet, syst);
    return;
 }
+*/
 
 void Systematics::shiftLepton(Lepton& lepton, TLorentzVector recoLep, TLorentzVector genLep, double& dPx, double& dPy, int syst){
   if (genLep == TLorentzVector(0,0,0,0)) {
