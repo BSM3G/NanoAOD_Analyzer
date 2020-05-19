@@ -2,7 +2,7 @@
 	        Smear
 #######################################
 
-SmearTheJet 0
+SmearTheJet 1
 JetEnergyScaleOffset 0.3
 
 GenMatchingDeltaR 0.4
