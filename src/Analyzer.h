@@ -118,7 +118,6 @@ public:
   void setCutNeeds();
 
   bool passHEMveto2018();
-  bool passJetVetoEEnoise2017(int);
 
   void smearLepton(Lepton&, CUTS, const PartStats&, const PartStats&, int syst=0);
   //void smearJet(Particle&, CUTS, const PartStats&, int syst=0);

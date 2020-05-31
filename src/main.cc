@@ -132,8 +132,8 @@ int main (int argc, char* argv[]) {
 
   size_t Nentries=testing.nentries;
   if(testRun){
-    Nentries=1000;
-    testing.nentries=1000;
+    Nentries=10;
+    testing.nentries=10;
   }
     
   // std::multimap<int,int> json_line_dict = testing.readinJSON(); //05.28.19

@@ -769,7 +769,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 	    	clear_values();
 	    	return;
 	    }
-  	}
+	}
   }
 	
   // Call the new function passMetFilters
@@ -804,11 +804,13 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
   //std::cout << std::endl << "------------------- Event #" << event << " ----------------------" << std::endl;
 
+  //size_t jetsize = _Jet->size();
+
   ////check update met is ok
   for(size_t i=0; i < syst_names.size(); i++) {
     //for(size_t i=0; i < _Jet->size(); i++) {
-      //if(i % jetsize == 0) std::cout << std::endl;
-      //std::cout << "Jet (before updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
+    //  if(i % jetsize == 0) std::cout << std::endl;
+    //  std::cout << "Jet (before updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
     //}
 
     //std::cout << "Met value (before updating): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << std::endl;
@@ -824,14 +826,15 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     //updateMet(i);
 
   }
-  
+
   for(size_t i=0; i < syst_names.size(); i++) {
     std::string systname = syst_names.at(i);
     for( auto part: allParticles) part->setCurrentP(i);
     _MET->setCurrentP(i);
+
     //for(size_t i=0; i < _Jet->size(); i++) {
     //  if(i % jetsize == 0) std::cout << std::endl;
-      //std::cout << "Jet (after updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
+    //  std::cout << "Jet (after updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
     //}
 
     // std::cout << "Met value (after updating): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << ", raw pt = " << _MET->RawMet.Pt() << std::endl;
@@ -1743,19 +1746,18 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     //jet.setCurrentP(syst);
   //}
   
-  //for(size_t i=0; i < _Jet->size(); i++) {
+  for(size_t i=0; i < _Jet->size(); i++) {
     // std::cout << "Reco jet (after loop): pt = " << _Jet->RecoP4(i).Pt() << ", mass = " << _Jet->RecoP4(i).M() << ", eta = " << _Jet->RecoP4(i).Eta() << ", phi = " << _Jet->RecoP4(i).Phi() << std::endl; 
     // std::cout << "Jet (before loop): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
     //std::cout << "Reco jet (before loop): pt = " << _Jet->pt(i) << ", mass = " << _Jet->mass(i) << ", eta = " << _Jet->eta(i) << ", phi = " << _Jet->phi(i) << std::endl; 
-  //}
+  }
   // std::cout << "--------" << std::endl;
-  // int badeejets = 0;
+  
   // Loop over all jets
   for(size_t i = 0; i < jet.size(); i++){
 
     // std::cout << std::endl << "~~~~ Jet #" << i << " ~~~~" << std::endl;
-    //std::cout << "Jet (in correction loop): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << ", raw pt = " << _Jet->p4(i).Pt() * (1.0 - _Jet->rawFactor[i]) << std::endl;
-    // if(passJetVetoEEnoise2017(i) == false) badeejets++;
+
     // Get the reconstruced 4-vector (original vector straight from the corresponding branches)
     const TLorentzVector origJetReco = jet.RecoP4(i);
     //TLorentzVector genJet(0,0,0,0);
@@ -1887,6 +1889,8 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
           jet_mass_jerShifted = jet_mass_nom;
 
           // std::cout << "jer_shift = " << jer_shift << ", jet_pt_jerShifted = " << jet_pt_jerShifted << ", jet_mass_jerShifted = " << jet_mass_jerShifted << std::endl;
+          // Correct the jet 4-momentum according to the systematic applied for JER
+          systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
 
         }else if(systname.find("_Res_") != std::string::npos){
 
@@ -1900,19 +1904,14 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
           jet_mass_jerShifted = jer_shift * origJetReco.M();
 
           // std::cout << "jer_shift = " << jer_shift << ", jet_pt_jerShifted = " << jet_pt_jerShifted << ", jet_mass_jerShifted = " << jet_mass_jerShifted << std::endl;
+          // Correct the jet 4-momentum according to the systematic applied for JER
+          systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
 
         } 
-        // Correct the jet 4-momentum according to the systematic applied for JER
-        systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
+
         // std::cout << "Reco jet (right before shifting): pt = " << jet.RecoP4(i).Pt() << ", mass = " << jet.RecoP4(i).M() << ", eta = " << jet.RecoP4(i).Eta() << ", phi = " << jet.RecoP4(i).Phi() << std::endl; 
       }
     }
-    else if(isData){
-      // Here, jet_pt_jerShifted and jet_mass_jerShifted are unchanged w.r.t. the original values. We need to do this in order to keep these jets in the _Jet vector.
-      systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
-    }
-
-    //std::cout << "jer_shift = " << jer_shift << ", jet_pt_jerShifted = " << jet_pt_jerShifted << ", jet_mass_jerShifted = " << jet_mass_jerShifted << std::endl;    
 
     jet_pt_L1L2L3 = jet_pt_noMuL1L2L3 + muon_pt;
     jet_pt_L1 = jet_pt_noMuL1 + muon_pt;
@@ -1937,7 +1936,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
       } 
     }
 
-    //std::cout << "delta_x_T1Jet = " << delta_x_T1Jet << ", delta_y_T1Jet = " << delta_y_T1Jet << ", delta_x_rawJet = " << delta_x_rawJet << ", delta_y_rawJet = " << delta_y_rawJet << std::endl;
+    // std::cout << "delta_x_T1Jet = " << delta_x_T1Jet << ", delta_y_T1Jet = " << delta_y_T1Jet << ", delta_x_rawJet = " << delta_x_rawJet << ", delta_y_rawJet = " << delta_y_rawJet << std::endl;
 
 
     // Apply jet energy scale corrections only to MC 
@@ -2022,7 +2021,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     //std::cout << "Reco jet (before loop): pt = " << _Jet->pt(i) << ", mass = " << _Jet->mass(i) << ", eta = " << _Jet->eta(i) << ", phi = " << _Jet->phi(i) << std::endl; 
    //}
   // std::cout << "--------" << std::endl;
-  // std::cout << "Number of bad EE jets = " << badeejets << std::endl;
+  
 
 }
 
@@ -2528,22 +2527,6 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
   return;
 }
 
-bool Analyzer::passJetVetoEEnoise2017(int jet_index){
-   // Get the jet pT and raw factors to calculate the raw jet pt:
-   TLorentzVector jet_RecoP4 = _Jet->RecoP4(jet_index);
-   double jet_rawFactor = _Jet->rawFactor[jet_index];
-
-   double jet_rawPt = jet_RecoP4.Pt() * (1.0 - jet_rawFactor);
-
-   // Check if this jet is in the problematic pt-eta region: if yes, then jet does not pass the veto requirement
-   if(jet_rawPt < 50.0 && (abs(jet_RecoP4.Eta()) > 2.65 && abs(jet_RecoP4.Eta()) < 3.139)){
-    //std::cout << "Jet in the EE noisy region, throwing it out." << std::endl;
-    return false;
-   }
-   // Otherwise, return true (passes the veto)
-   return true;
- }
-
 ////Jet specific function for finding the number of jets that pass the cuts.
 //used to find the nubmer of good jet1, jet2, central jet, 1st and 2nd leading jets and bjet.
 void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst) {
@@ -2559,7 +2542,6 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
   int i=0;
 
   for(auto lvec: *_Jet) {
-
     if(ePos == CUTS::eR1stJet || ePos == CUTS::eR2ndJet){
       break;
     }
@@ -2571,7 +2553,7 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
 
     for( auto cut: stats.bset) {
       if(!passCuts) break;
-      else if(cut == "Apply2017EEnoiseVeto") passCuts = passCuts && passJetVetoEEnoise2017(i);
+
     /// BJet specific
       // else if(cut == "ApplyJetBTagging") passCuts = passCuts && (_Jet->bDiscriminator[i] > stats.dmap.at("JetBTaggingCut")); // original	
       else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
@@ -2641,8 +2623,8 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
 
     for( auto cut: stats.bset) {
       if(!passCuts) break;
-      else if(cut == "Apply2017EEnoiseVeto") passCuts = passCuts && passJetVetoEEnoise2017(i);
-      /// BJet specific
+
+    /// BJet specific
       //else if(cut == "ApplyJetBTagging") passCuts = passCuts && (_Jet->bDiscriminator[i] > stats.dmap.at("JetBTaggingCut")); //original
       else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
