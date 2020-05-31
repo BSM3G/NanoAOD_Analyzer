@@ -56,10 +56,19 @@ public:
   std::string getName() {return GenName;};
   void update(PartStats&, Jet&, int);
 
+  void propagateJetEnergyCorr(TLorentzVector recoJet, double const& jer_sf_nom, double const& jec_param, std::string& systname, int syst);  
+  void propagateUnclEnergyUnctyEE(double const& delta_x_T1Jet, double const& delta_y_T1Jet, double const& delta_x_rawJet, double const& delta_y_rawJet, std::string& systname, int syst);
+  void propagateUnclEnergyUncty(std::string& systname, int syst);
+
   TLorentzVector Reco;
+  TLorentzVector RawMet;
+  TLorentzVector DefMet;
+  TLorentzVector T1Met;
   TLorentzVector *cur_P;
 
   std::vector<TLorentzVector* > systVec;
+  std::vector<TLorentzVector* > systRawMetVec;
+
   std::vector<double> systdeltaMEx;
   std::vector<double> systdeltaMEy;
   std::vector<double> syst_HT;
@@ -75,8 +84,23 @@ protected:
   std::vector<std::string> syst_names;
   double MT2mass;
   
-  float m_pt;
-  float m_phi;
+  bool samedeft1met = true;
+  float met_pt;
+  float met_phi;
+  float def_met_pt;
+  float def_met_phi;
+  float raw_met_pt;
+  float raw_met_phi;
+
+  float met_px;
+  float met_py;
+  float met_px_shifted;
+  float met_py_shifted;
+  float def_met_px;
+  float def_met_py;
+  float t1met_px;
+  float t1met_py;
+
   //note this is only for pt and phi
   double MetUnclUp[2] = {0, 0};
   double MetUnclDown[2] = {0, 0};
