@@ -2,9 +2,10 @@
 	        Smear
 #######################################
 
-SmearTheJet 0
+SmearTheJet 1
 JetEnergyScaleOffset 0.3
 
+GenMatchingDeltaR 0.4
 MuonMatchingDeltaR  0.3
 ElectronMatchingDeltaR  0.3
 TauMatchingDeltaR  0.3
@@ -18,8 +19,8 @@ TauMatchingDeltaR  0.3
 EtaCut 0. 5.0
 PtCut 30.0
 
-ApplyLooseID 1
-ApplyTightID 0
+ApplyLooseID 0
+ApplyTightID 1
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 0
@@ -38,6 +39,8 @@ Tau2MatchingDeltaR 0.3
 
 RemoveOverlapWithBs 1
 BJMatchingDeltaR 0.3
+
+Apply2017EEnoiseVeto true
 
 ########################################
 	        Jet2
@@ -46,8 +49,8 @@ BJMatchingDeltaR 0.3
 EtaCut 0. 5.0
 PtCut 30.0
 
-ApplyLooseID 1
-ApplyTightID 0
+ApplyLooseID 0
+ApplyTightID 1
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 0
@@ -67,14 +70,16 @@ Tau2MatchingDeltaR 0.3
 RemoveOverlapWithBs 1
 BJMatchingDeltaR 0.3
 
+Apply2017EEnoiseVeto true
+
 ####################################
           CentralJet
 ###################################
 
 PtCut 30.0
 
-ApplyLooseID 1
-ApplyTightID 0
+ApplyLooseID 0
+ApplyTightID 1
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 0
@@ -100,8 +105,8 @@ DoDiscrByThisJet 1
 EtaCut 0.0 5.0
 PtCut 30.0
 
-ApplyLooseID 1
-ApplyTightID 0
+ApplyLooseID 0
+ApplyTightID 1
 
 RemoveOverlapWithMuon1s 1 
 RemoveOverlapWithMuon2s 0
@@ -118,6 +123,8 @@ RemoveOverlapWithTau2s 0
 Tau1MatchingDeltaR 0.3
 Tau2MatchingDeltaR 0.3
 
+Apply2017EEnoiseVeto true
+
 ####################################
 	 SecondLeadingJet
 ###################################
@@ -127,8 +134,8 @@ DoDiscrByThisJet 1
 EtaCut 0.0 5.0
 PtCut 30.0
 
-ApplyLooseID 1
-ApplyTightID 0
+ApplyLooseID 0
+ApplyTightID 1
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 0
@@ -144,6 +151,8 @@ RemoveOverlapWithTau1s 0
 RemoveOverlapWithTau2s 0
 Tau1MatchingDeltaR 0.3
 Tau2MatchingDeltaR 0.3
+
+Apply2017EEnoiseVeto true
 
 ###################################
     	     BJet
@@ -167,6 +176,8 @@ RemoveOverlapWithTau2s 0
 Tau1MatchingDeltaR 0.3
 Tau2MatchingDeltaR 0.3
 
+Apply2017EEnoiseVeto true
+
 ApplyJetBTaggingCSVv2 0 
 ApplyJetBTaggingDeepCSV 1
 ApplyJetBTaggingDeepFlav 0
@@ -176,4 +187,3 @@ JetBTaggingCut  0.6321
 MatchBToGen     0
 UseBtagSF       1
 RemoveBJetsFromJets 0
-

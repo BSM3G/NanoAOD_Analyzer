@@ -12,6 +12,16 @@ HadTauEtaCut  2.4
 DiscrByTauDecayMode false
 TauDecayModes		0    15          
 
+DiscrJetByPtandEta false
+JetPtCut 0.0  9999.9
+JetEtaCut 5.0
+DiscrByPartonFlavor  false
+PartonFlavorRange  0    22
+
+DiscrBJetByPtandEta  false
+BJetPtCut 0.0 9999.9
+BJetEtaCut 5.0 
+
 DiscrLightLepByMotherID 0
 LightLepMotherIDs 23. 24.
 
