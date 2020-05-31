@@ -275,10 +275,6 @@ public:
   float gen_weight = 0;
   float generatorht = 0;
   float gendilepmass = 0;
-  float def_met = 0.0;
-  float t1_met = 0.0;
-  float raw_met = 0.0;
-  float updatedraw_met = 0.0;
 
   // Met filters' variables
   bool applymetfilters = false;
