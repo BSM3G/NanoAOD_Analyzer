@@ -5,7 +5,6 @@
 SmearTheJet 0
 JetEnergyScaleOffset 0.3
 
-GenMatchingDeltaR 0.4
 MuonMatchingDeltaR  0.3
 ElectronMatchingDeltaR  0.3
 TauMatchingDeltaR  0.3

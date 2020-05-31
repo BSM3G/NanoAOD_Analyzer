@@ -14,12 +14,6 @@
 #include <cmath>
 #include <algorithm>
 //#include "Particle.h"
-// Include files from CMSSW
-#include "CondFormats/JetMETObjects/interface/JetResolution.h"
-#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
-#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
-#include "JetMETCorrections/Modules/interface/JetResolution.h"
-#include "CondFormats/JetMETObjects/interface/JetResolutionObject.h"
 
 //using namespace std;
 
@@ -97,30 +91,12 @@ class JetScaleResolution{
     public:
         JetScaleResolution();
         JetScaleResolution(const std::string& scalefilename, const std::string& parttype, const std::string& resolutionfile, const std::string& sfresolutionfile);
-        // void InitScale(const std::string& filename, const std::string& type);
-        // void InitResolution(const std::string& resolutionfile, const std::string& sffile);
         void InitScale(const std::string& filename, const std::string& type);
-        void InitResolution(const std::string& resolutionfile, const std::string& sfuncertaintyfile);
-
+        void InitResolution(const std::string& resolutionfile, const std::string& sffile);
         double GetRes(const TLorentzVector& jet,const TLorentzVector& genjet, double rho, double sigmares);
         double GetScale(const TLorentzVector& jet, bool isBjet, double sigmascale);
 
-        double GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho, double sigmares);
-        double GetScaleDelta(const double& recojetPt, const double& recojetEta);
-
-        JME::JetResolution jer;
-        JME::JetResolutionScaleFactor jerSF_and_Uncertainty;
-        JetCorrectorParameters jetcorrectorparams;
-
     private:
-
-        std::string resfilename;
-        std::string resfunctyfilename;
-        std::string scaleunctyfilename;
-        std::string type_name;
-
-        TRandom *rnd = new TRandom3(12345);
-
         TH1D* Heta = nullptr;
         std::vector<TH1D*> HptsP;
         std::vector<TH1D*> HptsM;

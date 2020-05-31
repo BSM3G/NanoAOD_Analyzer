@@ -34,14 +34,8 @@ struct CRTester;
 #include "FillInfo.h"
 #include "CRTest.h"
 #include "Systematics.h"
-#include "DepGraph.h"
 #include "JetScaleResolution.h"
-#include "JetRecalibrator.h"
-#include "CondFormats/JetMETObjects/interface/JetResolution.h"
-#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
-#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
-#include "JetMETCorrections/Modules/interface/JetResolution.h"
-#include "CondFormats/JetMETObjects/interface/JetResolutionObject.h"
+#include "DepGraph.h"
 
 double normPhi(double phi);
 double absnormPhi(double phi);
@@ -120,22 +114,19 @@ public:
   bool passHEMveto2018();
 
   void smearLepton(Lepton&, CUTS, const PartStats&, const PartStats&, int syst=0);
-  //void smearJet(Particle&, CUTS, const PartStats&, int syst=0);
-  void smearJetRes(Particle&, CUTS, const PartStats&, int syst=0);
+  void smearJet(Particle&, CUTS, const PartStats&, int syst=0);
 
   bool JetMatchesLepton(const Lepton&, const TLorentzVector&, double, CUTS);
   TLorentzVector matchLeptonToGen(const TLorentzVector&, const PartStats&, CUTS);
   TLorentzVector matchTauToGen(const TLorentzVector&, double);
   TLorentzVector matchHadTauToGen(const TLorentzVector&, double);
-  TLorentzVector matchJetToGen(const TLorentzVector&, const double&, CUTS);
+  TLorentzVector matchJetToGen(const TLorentzVector&, const PartStats&, CUTS);
 
   int matchToGenPdg(const TLorentzVector& lvec, double minDR);
 
 
   void getGoodParticles(int);
   void getGoodGenHadronicTaus(const PartStats&);
-  void getGoodGenJets(const PartStats&);
-  void getGoodGenBJets(const PartStats&);
   void getGoodGenHadronicTauNeutrinos(const PartStats&);
   TLorentzVector getGenVisibleTau4Vector(int, int);
   void getGoodGen(const PartStats&);
@@ -178,9 +169,6 @@ public:
   std::pair<double, double> getPZeta(const TLorentzVector&, const TLorentzVector&);
   void create_fillInfo();
 
-  void setupJetCorrections(std::string, std::string);
-  void applyJetEnergyCorrections(Particle&, CUTS, const PartStats&, std::string, int syst=0);
-
   inline bool passCutRange(std::string, double, const PartStats&);
   bool passCutRange(double, const std::pair<double, double>&);
   bool findCut(const std::vector<std::string>&, std::string);
@@ -211,7 +199,6 @@ public:
 
   Generated* _Gen;
   GenHadronicTaus* _GenHadTau;
-  GenJets* _GenJet;
   Electron* _Electron;
   Muon* _Muon;
   Taus* _Tau;
@@ -224,8 +211,6 @@ public:
   static const std::unordered_map<std::string, CUTS> cut_num;
 
   Systematics systematics;
-  JetRecalibrator jetRecalib;
-  JetRecalibrator jetRecalibL1;
   JetScaleResolution jetScaleRes;
   PartStats genStat;
 
@@ -275,11 +260,7 @@ public:
   float gen_weight = 0;
   float generatorht = 0;
   float gendilepmass = 0;
-  float def_met = 0.0;
-  float t1_met = 0.0;
-  float raw_met = 0.0;
-  float updatedraw_met = 0.0;
-
+  
   // Met filters' variables
   bool applymetfilters = false;
   bool primaryvertexfilter = false;
@@ -301,7 +282,7 @@ public:
   BTagEntry::JetFlavor bjetflavor;
   BTagEntry::OperatingPoint b_workingpoint;
 
-  Float_t jec_rho =20.;
+  double rho =20.;
 
   const static std::vector<CUTS> genCuts;
   const static std::vector<CUTS> jetCuts;

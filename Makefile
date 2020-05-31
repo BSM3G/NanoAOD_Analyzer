@@ -22,7 +22,6 @@ CMSSW_INC_PATHS += -isystem$(CMSSW_BOOST_BASE)/include
 # These are some cmssw libraries that are linked to the Analyzer
 CMSSW_LIBS += -lCondFormatsJetMETObjects
 CMSSW_LIBS += -lPhysicsToolsUtilities
-CMSSW_LIBS += -lJetMETCorrectionsModules
 CMSSW_LIBS += -lFWCoreCommon -lFWCoreFWLite -lFWCoreFramework -lFWCoreMessageLogger -lFWCoreMessageService -lFWCoreParameterSet -lFWCorePluginManager -lFWCorePrescaleService -lFWCorePythonFramework -lFWCorePythonParameterSet -lFWCoreServiceRegistry -lFWCoreServices -lFWCoreSources -lFWCoreUtilities
 #CMSSW_LIBS += -lFWCoreCommon -lFWCoreConcurrency -lFWCoreFWLite -lFWCoreFramework -lFWCoreFrameworkTest -lFWCoreFrameworkTestDummyForEventSetup -lFWCoreIntegration -lFWCoreIntegrationValueExample -lFWCoreIntegrationWaitingServer -lFWCoreMessageLogger -lFWCoreMessageService -lFWCoreParameterSet -lFWCoreParameterSetReader -lFWCorePluginManager -lFWCorePrescaleService -lFWCorePythonFramework -lFWCorePythonParameterSet -lFWCoreServiceRegistry -lFWCoreServiceRegistryTestDummyService -lFWCoreServices -lFWCoreSources -lFWCoreTFWLiteSelector -lFWCoreTFWLiteSelectorTest -lFWCoreTestProcessor -lFWCoreUtilities
 

@@ -51,7 +51,6 @@ double Particle::pt(uint index)const         {return cur_P->at(index).Pt();}
 double Particle::eta(uint index)const        {return cur_P->at(index).Eta();}
 double Particle::phi(uint index)const        {return cur_P->at(index).Phi();}
 double Particle::energy(uint index)const     {return cur_P->at(index).E();}
-double Particle::mass(uint index)const       {return cur_P->at(index).M();}
 double Particle::charge(uint index)const     {return 0;}
 
 uint Particle::size()const                   {return cur_P->size();}
@@ -217,19 +216,6 @@ GenHadronicTaus::GenHadronicTaus(TTree* _BOOM, std::string filename, std::vector
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////    GEN AK4 JETS   ////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-
-
-GenJets::GenJets(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Particle(_BOOM, "GenJet", filename, syst_names) {
-
-  SetBranch("GenJet_hadronFlavour", genHadronFlavor);
-  SetBranch("GenJet_partonFlavour", genPartonFlavor);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////    JET  ////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -253,10 +239,6 @@ Jet::Jet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names
   
   SetBranch("Jet_puId", puID);
   SetBranch("Jet_area", area);
-  SetBranch("Jet_rawFactor", rawFactor); // JEC
-  SetBranch("Jet_muonIdx1", matchingMuonIdx1);
-  SetBranch("Jet_muonIdx2", matchingMuonIdx2);
-  
   if(_BOOM->FindBranch("Jet_partonFlavour")!=0){
     SetBranch("Jet_partonFlavour", partonFlavour);
   }
@@ -471,11 +453,6 @@ Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
     SetBranch("Muon_pfRelIso03_chg"  , pfRelIso03_chg);
     SetBranch("Muon_pfRelIso04_all"  , pfRelIso04_all);
   }
-
-   SetBranch("Muon_isGlobal", isGlobal);
-   SetBranch("Muon_isPFcand", isPFCand);
-   SetBranch("Muon_isTracker", isTracker);
-
 }
 
 bool Muon::get_Iso(int index, double min, double max) const {
