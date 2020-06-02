@@ -438,6 +438,9 @@ void Analyzer::setupCR(std::string var, double val) {
 
 ////destructor
 Analyzer::~Analyzer() {
+  routfile->Write();
+  routfile->Close();
+
   clear_values();
   delete BOOM;
   delete _Electron;
