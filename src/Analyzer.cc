@@ -2475,7 +2475,8 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
       }
       ////electron cuts
       else if(lep.type == PType::Electron){
-	//std::cout << "got an electron to check..." << std::endl;
+	     //std::cout << "got an electron to check..." << std::endl;
+        /*
         if(cut == "DoDiscrByHLTID"){
           std::bitset<8> idvariable(_Electron->cutBased_HLTPreSel[i]);
           if(ival(ePos) - ival(CUTS::eRElec2)){ //test if it is electron1
@@ -2485,21 +2486,29 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
             passCuts = passCuts && (_Electron->cbHLTIDele2&idvariable).count();
           }
         }
+        */
         if(cut == "DoDiscrByCBID"){
-	  //std::cout << "cutBased[i]: " << (_Electron->cutBased[i]) << std::endl;
+	        //std::cout << "cutBased[i]: " << (_Electron->cutBased[i]) << std::endl;
           std::bitset<8> idvariable(_Electron->cutBased[i]);
-	  //std::cout << "ival(ePos): " << ival(ePos) << std::endl;
-	  //std::cout << "ival(CUTS::eRElec2): " << ival(CUTS::eRElec2) << std::endl;
+          //std::cout << "ival(ePos): " << ival(ePos) << std::endl;
+          //std::cout << "ival(CUTS::eRElec2): " << ival(CUTS::eRElec2) << std::endl;
           if(ival(ePos) - ival(CUTS::eRElec2)){ //test if it is electron1
-	    //std::cout << "cbIDele1: " << (_Electron->cbIDele1) << std::endl;
-	    //std::cout << "idvariable: " << (idvariable) << std::endl;
-	    //std::cout << "the AND: " << (_Electron->cbIDele1&idvariable) << std::endl;
+            //std::cout << "cbIDele1: " << (_Electron->cbIDele1) << std::endl;
+            //std::cout << "idvariable: " << (idvariable) << std::endl;
+            //std::cout << "the AND: " << (_Electron->cbIDele1&idvariable) << std::endl;
             passCuts = passCuts && (_Electron->cbIDele1&idvariable).count();
-	    //std::cout << "it's an elec1..." << std::endl;
-	    //std::cout << "passCuts value2: " << passCuts << std::endl;
+            //std::cout << "it's an elec1..." << std::endl;
+            //std::cout << "passCuts value2: " << passCuts << std::endl;
           }else{
             passCuts = passCuts && (_Electron->cbIDele2&idvariable).count();
           }
+        }
+        else if(cut == "DoDiscrBymvaID"){
+          if(stats.bfind("DiscrBymvaWP80")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WP80[i];
+          
+          else if(stats.bfind("DiscrBymvaWP90")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WP90[i];
+          
+          else if(stats.bfind("DiscrBymvaWPL")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WPL[i];
         }
         else if(cut == "DoDiscrByHEEPID")
          passCuts = passCuts && _Electron->isPassHEEPId[i];
