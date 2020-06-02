@@ -423,7 +423,7 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
   
   if( (elec1.bfind("DoDiscrBymvaID") || elec2.bfind("DoDiscrBymvaID")) ){
     SetBranch("Electron_mvaFall17V2Iso_WP80", mvaFall17V2Iso_WP80);
-    SetBranch("Electron_mvaFall17noIso_WP80", mvaFall17V2noIso_WP80);
+    SetBranch("Electron_mvaFall17V2noIso_WP80", mvaFall17V2noIso_WP80);
 
     SetBranch("Electron_mvaFall17V2Iso_WP90", mvaFall17V2Iso_WP90);
     SetBranch("Electron_mvaFall17V2noIso_WP90", mvaFall17V2noIso_WP90);
