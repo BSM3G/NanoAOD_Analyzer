@@ -824,7 +824,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     applyJetEnergyCorrections(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], year, i);
     // smearJetRes(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], i);
     // smearJetRes(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], i);
-    //updateMet(i);
+    // updateMet(i);
 
   }
   
@@ -840,7 +840,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     // std::cout << "Met value (after updating): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << ", raw pt = " << _MET->RawMet.Pt() << std::endl;
 
     getGoodParticles(i);
-    updateMet(i);
+    selectMet(i);
   }
   active_part = &goodParts;
   
@@ -869,8 +869,6 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoLeptons(*_Electron, CUTS::eRElec2, CUTS::eGElec, _Electron->pstats["Elec2"],syst);
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon1, CUTS::eGMuon, _Muon->pstats["Muon1"],syst);
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon2, CUTS::eGMuon, _Muon->pstats["Muon2"],syst);
-  //getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGTau, _Tau->pstats["Tau1"],syst);
-  //getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGTau, _Tau->pstats["Tau2"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGHadTau, _Tau->pstats["Tau1"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGHadTau, _Tau->pstats["Tau2"],syst);
   getGoodRecoBJets(CUTS::eRBJet, _Jet->pstats["BJet"],syst); //01.16.19
@@ -882,6 +880,7 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoJets(CUTS::eR2ndJet, _Jet->pstats["SecondLeadingJet"],syst);
 
   getGoodRecoFatJets(CUTS::eRWjet, _FatJet->pstats["Wjet"],syst);
+  
   //  treatMuons_Met(systname);
 
   ///VBF Susy cut on leadin jets
@@ -1155,12 +1154,14 @@ double Analyzer::getTauDataMCScaleFactor(int updown){
 }
 
 ///Calculates met from values from each file plus smearing and treating muons as neutrinos
-void Analyzer::updateMet(int syst) {
-  // _MET->update(distats["Run"], *_Jet,  syst);
+void Analyzer::selectMet(int syst) {
+
+  _MET->calculateHtAndMHt(distats["Run"], *_Jet,  syst);
 
   /////MET CUTS
 
   if(!passCutRange(_MET->pt(), distats["Run"].pmap.at("MetCut"))) return;
+  
   if(distats["Run"].bfind("DiscrByHT") && _MET->HT() < distats["Run"].dmap.at("HtCut")) return;
 
   if(syst==0){
@@ -1206,8 +1207,49 @@ bool Analyzer::passMetFilters(std::string year, int ievent){
 }
 
 ///////////////////////////////////////////////
-////////removed for teh time being/////////////
+////////removed for the time being/////////////
 ///////////////////////////////////////////////
+
+void Analyzer::treatMuons_Met(std::string syst) {
+
+//   //syst not implemented for muon as tau or neutrino yet
+  if( syst!="orig" or !distats["Run"].bfind("TreatMuonsAsNeutrinos") ){
+    return;
+  }
+
+  //  Initialize the deltaMus before calculation
+  _MET->systdeltaMEx[syst] = 0.0;
+  _MET->systdeltaMEy[syst] = 0.0;
+
+  if(distats["Run"].bfind("TreatMuonsAsNeutrinos")){
+    // First, loop over the reco muon1 list
+    for(auto it : *active_part->at(CUTS::eRMuon1)) {
+      // Look for the current muon in the eRMuon2 list. If found, skip it.
+      if(find(active_part->at(CUTS::eRMuon2)->begin(), active_part->at(CUTS::eRMuon2)->end(), it) != active_part->at(CUTS::eRMuon2)->end() ) continue;
+
+      _MET->systdeltaMEx[syst] += _Muon->p4(it).Px();
+      _MET->systdeltaMEy[syst] += _Muon->p4(it).Py();
+
+    }
+
+    // Next, loop over the reco muon2 list
+    for(auto it : *active_part->at(CUTS::eRMuon2)){
+
+      _MET->systdeltaMEx[syst] += _Muon->p4(it).Px();
+      _MET->systdeltaMEy[syst] += _Muon->p4(it).Py();
+
+    }
+  }
+  else if(distats["Run"].bmap.at("TreatMuonsAsTaus")){
+
+
+  }
+
+  // recalculate MET, adding the muon Px and Py accordingly
+  _MET->update(syst);
+
+}
+
 
 // void Analyzer::treatMuons_Met(std::string syst) {
 
@@ -1286,6 +1328,7 @@ bool Analyzer::passMetFilters(std::string year, int ievent){
 //     active_part->at(CUTS::eMET)->push_back(1);
 //   }
 // }
+
 
 /////Check if a given branch is not found in the file
 
@@ -1591,7 +1634,7 @@ void Analyzer::smearLepton(Lepton& lep, CUTS eGenPos, const PartStats& stats, co
     for(size_t i = 0; i < lep.size(); i++) {
       TLorentzVector lepReco = lep.RecoP4(i);
       TLorentzVector genVec =  matchLeptonToGen(lepReco, lep.pstats["Smear"],eGenPos);
-      systematics.shiftLepton(lep, lepReco, genVec, _MET->systdeltaMEx[syst], _MET->systdeltaMEy[syst], syst);
+      systematics.shiftLepton(lep, lepReco, genVec, _MET->systdeltaMuMetPx[syst], _MET->systdeltaMEy[syst], syst);
     }
   }
 }

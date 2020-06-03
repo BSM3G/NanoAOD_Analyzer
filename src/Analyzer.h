@@ -186,7 +186,7 @@ public:
   bool passCutRange(double, const std::pair<double, double>&);
   bool findCut(const std::vector<std::string>&, std::string);
 
-  void updateMet(int syst=0);
+  void selectMet(int syst=0);
   bool passMetFilters(std::string, int);
   //  void treatMuons_Met(std::string syst="orig");
   double getPileupWeight(float);
