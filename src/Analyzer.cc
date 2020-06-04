@@ -3518,6 +3518,53 @@ double Analyzer::getZBoostWeight(){
   return boostweigth;
 }
 
+double Analyzer::getZBoostWeightSyst(int ud){
+  double boostweigth=1.;
+  if((active_part->at(CUTS::eGElec)->size() + active_part->at(CUTS::eGTau)->size() + active_part->at(CUTS::eGMuon)->size()) >=1 && (active_part->at(CUTS::eGZ)->size() ==1 || active_part->at(CUTS::eGW)->s\
+ize() ==1)){
+    double boostz = 0;
+    if(active_part->at(CUTS::eGZ)->size() ==1){
+      boostz = _Gen->pt(active_part->at(CUTS::eGZ)->at(0));
+    }
+    if(active_part->at(CUTS::eGW)->size() ==1){
+      boostz = _Gen->pt(active_part->at(CUTS::eGW)->at(0));
+    }
+    if (ud == 0){
+      if(boostz > 0 && boostz <= 50) {boostweigth = 1.1192;}// 1.0942, 1.1192, 1.1442 5.26                                                                                                                  
+      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.1034;}// 1.0901, 1.1034, 1.1167                                                                                                               
+      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0675;}// 1.0559, 1.0675, 1.0791                                                                                                              
+      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0637;}// 1.0511, 1.0637, 1.0763                                                                                                              
+      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.0242;}// 1.011, 1.0242, 1.0374                                                                                                               
+      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9453;}// 0.9269, 0.9453, 0.9637                                                                                                              
+      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8579;}// 0.8302, 0.8579, 0.8856                                                                                                              
+      else if (boostz >= 600) {boostweigth = 0.7822;}// 0.6692, 0.7822, 0.8952                                                                                                                              
+      else {boostweigth = 1;}}
+
+    else if (ud == -1){
+      if(boostz > 0 && boostz <= 50) {boostweigth = 1.0942;}// 1.0942, 1.1192, 1.1442 5.26                                                                                                                  
+      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.0901;}// 1.0901, 1.1034, 1.1167                                                                                                               
+      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0559;}// 1.0559, 1.0675, 1.0791                                                                                                              
+      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0511;}// 1.0511, 1.0637, 1.0763                                                                                                              
+      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.011;}// 1.011, 1.0242, 1.0374                                                                                                                
+      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9269;}// 0.9269, 0.9453, 0.9637                                                                                                              
+      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8302;}// 0.8302, 0.8579, 0.8856                                                                                                              
+      else if (boostz >= 600) {boostweigth = 0.6692;}// 0.6692, 0.7822, 0.8952                                                                                                                              
+      else {boostweigth = 1;}}
+
+    else if (ud == 1){
+      if(boostz > 0 && boostz <= 50) {boostweigth = 1.1442;}// 1.0942, 1.1192, 1.1442 5.26                                                                                                                  
+      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.1167;}// 1.0901, 1.1034, 1.1167                                                                                                               
+      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0791;}// 1.0559, 1.0675, 1.0791                                                                                                              
+      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0763;}// 1.0511, 1.0637, 1.0763                                                                                                              
+      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.0374;}// 1.011, 1.0242, 1.0374                                                                                                               
+      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9637;}// 0.9269, 0.9453, 0.9637                                                                                                              
+      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8856;}// 0.8302, 0.8579, 0.8856                                                                                                              
+      else if (boostz >= 600) {boostweigth = 0.8952;}// 0.6692, 0.7822, 0.8952                                                                                                                              
+      else {boostweigth = 1;}}
+
+  }
+  return boostweigth;
+}
 
 double Analyzer::getWkfactor(){
   double kfactor=1.;
@@ -3560,7 +3607,11 @@ void Analyzer::fill_histogram() {
     if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauDataMCScaleFactor(0);
 
     if(distats["Run"].bfind("ApplyZBoostSF") && isVSample){
-      wgt *= getZBoostWeight();
+      //wgt *= getZBoostWeight();
+      wgt *= getZBoostWeightSyst(0);
+      boosters[0] = getZBoostWeightSyst(0); //06.02.20                                                                                                                                                      
+      boosters[1] = getZBoostWeightSyst(-1);  //06.02.20                                                                                                                                                    
+      boosters[2] = getZBoostWeightSyst(1);  //06.02.20
     }
     if(distats["Run"].bfind("ApplyWKfactor")){
       wgt *= getWkfactor();
@@ -3613,13 +3664,29 @@ void Analyzer::fill_histogram() {
 
       if(syst_names[i].find("Btag")!=std::string::npos){ //01.16.19
         if(syst_names[i]=="Btag_Up"){
-	  wgt/=getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]);
-	  wgt*=getBJetSFResUp(CUTS::eRBJet, _Jet->pstats["BJet"]);
+          wgt/=getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]);
+          wgt*=getBJetSFResUp(CUTS::eRBJet, _Jet->pstats["BJet"]);
         }else if(syst_names[i]=="Btag_Down"){
-	  wgt/=getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]);
+          wgt/=getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]);
           wgt*=getBJetSFResDown(CUTS::eRBJet, _Jet->pstats["BJet"]);
         }
       }
+
+      ///---06.06.20---                                                                                                                                                                                     
+      if(syst_names[i].find("ISR_weight")!=std::string::npos){ //07.09.18                                                                                                                                   
+        if(syst_names[i]=="ISR_weight_up"){
+          if(distats["Run"].bfind("ApplyZBoostSF") && isVSample) {
+            wgt/=boosters[0];
+            wgt*=boosters[2];
+          }
+        }else if(syst_names[i]=="ISR_weight_down"){
+          if(distats["Run"].bfind("ApplyZBoostSF") && isVSample) {
+            wgt/=boosters[0];
+            wgt*=boosters[1];
+          }
+        }
+      }
+      ///---06.02.20 
 
       //get the non particle conditions:
       for(auto itCut : nonParticleCuts){

@@ -171,6 +171,7 @@ public:
   double getTauDataMCScaleFactor(int updown);
   double getWkfactor();
   double getZBoostWeight();
+  double getZBoostWeightSyst(int ud); // 06.02.20
   double getTopBoostWeight(); //01.15.19
   void setupBJetSFInfo(const PartStats&, std::string); // new function that sets up the b-tagging SF info
   double getBJetSF(CUTS, const PartStats&); //01.16.19
@@ -247,6 +248,7 @@ public:
   bool isVSample;
   bool isZsample;
   bool isWSample;
+  double boosters[3] = { }; //06.02.20
 
   std::string btagalgoname;
 
