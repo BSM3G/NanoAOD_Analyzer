@@ -28,8 +28,8 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
   }
 
   // For TreatMuonsAsNeutrinos
-  systdeltaMuMetPx.resize(syst_names.size());
-  systdeltaMuMetPy.resize(syst_names.size());
+  systdeltaMEx.resize(syst_names.size());
+  systdeltaMEy.resize(syst_names.size());
   
   // For HT, MHT
   syst_HT.resize(syst_names.size());

@@ -66,6 +66,7 @@ public:
   TLorentzVector RawMet;
   TLorentzVector DefMet;
   TLorentzVector T1Met;
+  TLorentzVector JERCorrMet;
   TLorentzVector *cur_P;
 
   std::vector<TLorentzVector* > systVec;
