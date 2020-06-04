@@ -814,7 +814,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
       //std::cout << "Jet (before updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
     //}
 
-    //std::cout << "Met value (before updating): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << std::endl;
+    // std::cout << "Met value (before JERC): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << std::endl;
 
      //////Smearing
     smearLepton(*_Electron, CUTS::eGElec, _Electron->pstats["Smear"], distats["Electron_systematics"], i);
@@ -824,7 +824,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     applyJetEnergyCorrections(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], year, i);
     // smearJetRes(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], i);
     // smearJetRes(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], i);
-    //updateMet(i);
+    // updateMet(i);
 
   }
   
@@ -837,10 +837,10 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
       //std::cout << "Jet (after updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
     //}
 
-    // std::cout << "Met value (after updating): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << ", raw pt = " << _MET->RawMet.Pt() << std::endl;
+    // std::cout << "Met value (after JERC): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << ", raw pt = " << _MET->RawMet.Pt() << std::endl;
 
     getGoodParticles(i);
-    updateMet(i);
+    selectMet(i);
   }
   active_part = &goodParts;
   
@@ -869,8 +869,6 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoLeptons(*_Electron, CUTS::eRElec2, CUTS::eGElec, _Electron->pstats["Elec2"],syst);
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon1, CUTS::eGMuon, _Muon->pstats["Muon1"],syst);
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon2, CUTS::eGMuon, _Muon->pstats["Muon2"],syst);
-  //getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGTau, _Tau->pstats["Tau1"],syst);
-  //getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGTau, _Tau->pstats["Tau2"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGHadTau, _Tau->pstats["Tau1"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGHadTau, _Tau->pstats["Tau2"],syst);
   getGoodRecoBJets(CUTS::eRBJet, _Jet->pstats["BJet"],syst); //01.16.19
@@ -882,7 +880,6 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoJets(CUTS::eR2ndJet, _Jet->pstats["SecondLeadingJet"],syst);
 
   getGoodRecoFatJets(CUTS::eRWjet, _FatJet->pstats["Wjet"],syst);
-  //  treatMuons_Met(systname);
 
   ///VBF Susy cut on leadin jets
   VBFTopologyCut(distats["VBFSUSY"],syst);
@@ -1155,12 +1152,21 @@ double Analyzer::getTauDataMCScaleFactor(int updown){
 }
 
 ///Calculates met from values from each file plus smearing and treating muons as neutrinos
-void Analyzer::updateMet(int syst) {
-  // _MET->update(distats["Run"], *_Jet,  syst);
+void Analyzer::selectMet(int syst) {
+
+  // Before using the TreatMuonsAsNeutrinos option, we store the MET value in a separate vector for reference purposes:
+  _MET->JERCorrMet.SetPxPyPzE(_MET->px(), _MET->py(), _MET->p4().Pz(), _MET->energy());
+
+  if(distats["Run"].bfind("TreatMuonsAsNeutrinos") || distats["Run"].bfind("TreatOnlyOneMuonAsNeutrino") ) treatMuonsAsMet(syst);
+
+  _MET->calculateHtAndMHt(distats["Run"], *_Jet,  syst);
+
+  // std::cout << "After treating muons as MET and before selecting: Met px = " << _MET->px() << ", Met py = " << _MET->py() << ", Met pz = " << _MET->p4().Pz() << ", Met E = " << _MET->energy() << std::endl; 
 
   /////MET CUTS
 
   if(!passCutRange(_MET->pt(), distats["Run"].pmap.at("MetCut"))) return;
+  
   if(distats["Run"].bfind("DiscrByHT") && _MET->HT() < distats["Run"].dmap.at("HtCut")) return;
 
   if(syst==0){
@@ -1205,8 +1211,122 @@ bool Analyzer::passMetFilters(std::string year, int ievent){
 
 }
 
+void Analyzer::treatMuonsAsMet(int syst) {
+
+
+  if( ! ( distats["Run"].bfind("TreatMuonsAsNeutrinos") ||  distats["Run"].bfind("TreatOnlyOneMuonAsNeutrino") ) ) return;
+
+  //  Initialize the deltaMus before calculation
+  _MET->systdeltaMEx[syst] = 0.0;
+  _MET->systdeltaMEy[syst] = 0.0;
+
+  // std::cout << "Before treating muons as MET: Met px = " << _MET->px() << ", Met py = " << _MET->py() << ", Met pz = " << _MET->p4().Pz() << ", Met E = " << _MET->energy() << std::endl; 
+  // std::cout << "Number of muons in the event: " << active_part->at(CUTS::eRMuon1)->size() << std::endl;
+  
+  if(! distats["Run"].bfind("TreatOnlyOneMuonAsNeutrino")){ // All muons in the event are being treated as neutrinos.
+    
+    // First, loop over the reco muon1 list
+    for(auto it : *active_part->at(CUTS::eRMuon1)) {
+      // Look for the current muon in the eRMuon2 list. If found, skip it.
+
+      if(find(active_part->at(CUTS::eRMuon2)->begin(), active_part->at(CUTS::eRMuon2)->end(), it) != active_part->at(CUTS::eRMuon2)->end() ) continue;
+      // if(active_part->at(CUTS::eRMuon1)->size() > 0) std::cout << "Muon index " << (it) << " only in eRMuon1 list. Muon px = " << _Muon->p4(it).Px() << ", py = " << _Muon->p4(it).Py() << std::endl;
+
+      _MET->systdeltaMEx[syst] += _Muon->p4(it).Px();
+      _MET->systdeltaMEy[syst] += _Muon->p4(it).Py();
+
+    }
+    // std::cout << "deltaMEx (1) = " << _MET->systdeltaMEx[syst] << ", deltaMEy (1) = " <<  _MET->systdeltaMEy[syst] << std::endl;
+
+    // Next, loop over the reco muon2 list
+    for(auto it : *active_part->at(CUTS::eRMuon2)){
+
+      // if(active_part->at(CUTS::eRMuon2)->size() > 0) std::cout << "Muon index " << (it) << " in eRMuon2 list. Muon px = " << _Muon->p4(it).Px() << ", py = " << _Muon->p4(it).Py() << std::endl;
+      _MET->systdeltaMEx[syst] += _Muon->p4(it).Px();
+      _MET->systdeltaMEy[syst] += _Muon->p4(it).Py();
+
+    }
+  }
+  else if(distats["Run"].bfind("TreatOnlyOneMuonAsNeutrino") && (active_part->at(CUTS::eRMuon1)->size() > 0 || active_part->at(CUTS::eRMuon2)->size() > 0)){ // Only one muon in the event is treated as neutrino. Particular for single lepton final states. The muon gets randomly chosen.
+    //std::cout << "index numbers in eRMuon1: " << std::endl;
+    //for(auto it : *active_part->at(CUTS::eRMuon1)){
+    //  std::cout << "index " << (it) << ", ";
+    //  std::cout << std::endl;
+    //}
+    //std::cout << "index numbers in eRMuon2: " << std::endl;
+    //for(auto it : *active_part->at(CUTS::eRMuon2)){
+    //  std::cout << "index " << (it) << ", ";
+    //  std::cout << std::endl;
+    //}
+
+    // Define a random generator
+    TRandom *rndm1 = new TRandom3(0);
+    TRandom *rndm2 = new TRandom3(0);
+
+    size_t mu1size = active_part->at(CUTS::eRMuon1)->size();
+    size_t mu2size = active_part->at(CUTS::eRMuon2)->size();
+
+    // Define which list of muons will be looped over
+    unsigned int rnd_num = rndm1->Integer(123456789);
+    unsigned int rnd_muon = rndm2->Integer(987654321);
+
+    // std::cout << "rnd_num = " << rnd_num << std::endl;
+    // std::cout << "rnd_muon = " << rnd_muon << std::endl;
+    // std::cout << "mu1size = " << mu1size << ", mu2size = " << mu2size << std::endl;
+
+    if( ( (rnd_num % rnd_muon) % 2 == 0 && mu1size > 0) || ( (rnd_num % rnd_muon) % 2 == 1 && (mu2size == 0 && mu1size > 0) ) ){
+
+      // The muon selected will be from the muon1 list. We select it randomly, using the size of this list as input.
+      // std::cout << "Selecting muon from list 1" << std::endl;
+      
+      if(mu1size > 0){
+        rnd_muon = rnd_muon % mu1size;
+      }
+      else if (mu2size > 0){
+        rnd_muon = rnd_muon % mu2size;
+      }
+      
+      // std::cout << "Selecting muon #" << rnd_muon << " in the eRMuon1 list." << std::endl;
+
+      int it = active_part->at(CUTS::eRMuon1)->at(rnd_muon);
+
+      _MET->systdeltaMEx[syst] += _Muon->p4(it).Px();
+      _MET->systdeltaMEy[syst] += _Muon->p4(it).Py();
+
+    }
+    else if( ((rnd_num % rnd_muon) % 2 == 1 && mu2size > 0) || ((rnd_num % rnd_muon) % 2 == 0 && (mu1size == 0 && mu2size > 0) ) ){
+      // The muon selected will be from the muon2 list. We select it randomly, using the size of this list as input.
+
+      //std::cout << "Selecting muon from list 2" << std::endl;
+
+      if(mu2size > 0){
+        rnd_muon = rnd_muon % mu2size;
+      }
+      else if (mu1size > 0){
+        rnd_muon = rnd_muon % mu1size;
+      }
+
+      // std::cout << "Selecting muon #" << rnd_muon << " in the eRMuon2 list." << std::endl;
+
+      int it = active_part->at(CUTS::eRMuon2)->at(rnd_muon);
+
+      _MET->systdeltaMEx[syst] += _Muon->p4(it).Px();
+      _MET->systdeltaMEy[syst] += _Muon->p4(it).Py();
+    }
+
+
+  }
+  //if(active_part->at(CUTS::eRMuon1)->size() > 0) std::cout << "deltaMEx (2) = " << _MET->systdeltaMEx[syst] << ", deltaMEy (2) = " <<  _MET->systdeltaMEy[syst] << std::endl;
+
+  // recalculate MET, adding the muon Px and Py accordingly
+  _MET->update(syst);
+
+  //if(active_part->at(CUTS::eRMuon1)->size() > 0) std::cout << "After treating muons as MET: Met px = " << _MET->px() << ", Met py = " << _MET->py() << ", Met pz = " << _MET->p4().Pz() << ", Met E = " << _MET->energy() << std::endl; 
+
+}
+
 ///////////////////////////////////////////////
-////////removed for teh time being/////////////
+////////removed for the time being/////////////
 ///////////////////////////////////////////////
 
 // void Analyzer::treatMuons_Met(std::string syst) {
@@ -1286,6 +1406,7 @@ bool Analyzer::passMetFilters(std::string year, int ievent){
 //     active_part->at(CUTS::eMET)->push_back(1);
 //   }
 // }
+
 
 /////Check if a given branch is not found in the file
 
@@ -3723,7 +3844,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(_MET->DefMet.Pt(), "DefaultMETOriginal");
     histAddVal(_MET->T1Met.Pt(), "T1METOriginal");
     histAddVal(_MET->RawMet.Pt(), "RawMETOriginal");
-    histAddVal(_MET->systRawMetVec.at(0)->Pt(),"CorrectedRawMET");
+    histAddVal(_MET->JERCorrMet.Pt(),"CorrectedRawMET");
 
   } else if(group == "FillLeadingJet" && active_part->at(CUTS::eSusyCom)->size() == 0) {
 
