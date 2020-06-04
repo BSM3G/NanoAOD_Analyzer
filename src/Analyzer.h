@@ -171,6 +171,7 @@ public:
   double getTauDataMCScaleFactor(int updown);
   double getWkfactor();
   double getZBoostWeight();
+  double getZBoostWeightSyst(int ud); // 06.02.20
   double getTopBoostWeight(); //01.15.19
   void setupBJetSFInfo(const PartStats&, std::string); // new function that sets up the b-tagging SF info
   double getBJetSF(CUTS, const PartStats&); //01.16.19
@@ -186,9 +187,9 @@ public:
   bool passCutRange(double, const std::pair<double, double>&);
   bool findCut(const std::vector<std::string>&, std::string);
 
-  void updateMet(int syst=0);
+  void selectMet(int syst=0);
   bool passMetFilters(std::string, int);
-  //  void treatMuons_Met(std::string syst="orig");
+  void treatMuonsAsMet(int);
   double getPileupWeight(float);
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> getArray();
 
@@ -247,6 +248,7 @@ public:
   bool isVSample;
   bool isZsample;
   bool isWSample;
+  double boosters[3] = { }; //06.02.20
 
   std::string btagalgoname;
 

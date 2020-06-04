@@ -46,6 +46,7 @@ UseTriggerWildcard false
 ///---Treat Muon as Neutrino---///
 
 TreatMuonsAsNeutrinos 0
+TreatOnlyOneMuonAsNeutrino 0
 TreatMuonsAsTaus 0
 
 ///-----MET cuts------///

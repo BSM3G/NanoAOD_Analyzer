@@ -247,27 +247,19 @@ public:
   // Electron MVA ID fall 2017 
   float miniPFRelIso_all[MAXINDEX];
   float miniPFRelIso_chg[MAXINDEX];
-  float mvaFall17Iso[MAXINDEX];
-  float mvaFall17noIso[MAXINDEX];
+  float mvaFall17V2Iso[MAXINDEX];
+  float mvaFall17V2Iso_WP80[MAXINDEX];
+  float mvaFall17V2Iso_WP90[MAXINDEX];
+  float mvaFall17V2Iso_WPL[MAXINDEX];
+  float mvaFall17V2noIso[MAXINDEX];
+  float mvaFall17V2noIso_WP80[MAXINDEX];
+  float mvaFall17V2noIso_WP90[MAXINDEX];
+  float mvaFall17V2noIso_WPL[MAXINDEX];
+  bool mvaTTH[MAXINDEX];
   float pfRelIso03_all[MAXINDEX];
   float pfRelIso03_chg[MAXINDEX];
   int cutBased[MAXINDEX];
-  bool cutBased_HLTPreSel[MAXINDEX];
-  bool mvaIso_90[MAXINDEX];
-  bool mvanoIso_WP90[MAXINDEX];
-  bool mvaIso_80[MAXINDEX];
-  bool mvanoIso_WP80[MAXINDEX];
-  bool mvaIso_WPL[MAXINDEX];
-  bool mvanoIso_WPL[MAXINDEX];
   bool isPassHEEPId[MAXINDEX];
-
-  // Electron MVA ID spring 2016
-  float mvaSpring16GP[MAXINDEX];
-  float mvaSpring16HZZ[MAXINDEX];
-  bool mvaGP_90[MAXINDEX];
-  bool mvaGP_80[MAXINDEX];
-  bool mvaHZZ_WPL[MAXINDEX];
-  bool mvaTTH[MAXINDEX];
 
 };
 

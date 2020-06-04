@@ -814,7 +814,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
       //std::cout << "Jet (before updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
     //}
 
-    //std::cout << "Met value (before updating): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << std::endl;
+    // std::cout << "Met value (before JERC): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << std::endl;
 
      //////Smearing
     smearLepton(*_Electron, CUTS::eGElec, _Electron->pstats["Smear"], distats["Electron_systematics"], i);
@@ -824,7 +824,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     applyJetEnergyCorrections(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], year, i);
     // smearJetRes(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], i);
     // smearJetRes(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], i);
-    //updateMet(i);
+    // updateMet(i);
 
   }
   
@@ -837,10 +837,10 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
       //std::cout << "Jet (after updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
     //}
 
-    // std::cout << "Met value (after updating): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << ", raw pt = " << _MET->RawMet.Pt() << std::endl;
+    // std::cout << "Met value (after JERC): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << ", raw pt = " << _MET->RawMet.Pt() << std::endl;
 
     getGoodParticles(i);
-    updateMet(i);
+    selectMet(i);
   }
   active_part = &goodParts;
   
@@ -869,8 +869,6 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoLeptons(*_Electron, CUTS::eRElec2, CUTS::eGElec, _Electron->pstats["Elec2"],syst);
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon1, CUTS::eGMuon, _Muon->pstats["Muon1"],syst);
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon2, CUTS::eGMuon, _Muon->pstats["Muon2"],syst);
-  //getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGTau, _Tau->pstats["Tau1"],syst);
-  //getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGTau, _Tau->pstats["Tau2"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGHadTau, _Tau->pstats["Tau1"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGHadTau, _Tau->pstats["Tau2"],syst);
   getGoodRecoBJets(CUTS::eRBJet, _Jet->pstats["BJet"],syst); //01.16.19
@@ -882,7 +880,6 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoJets(CUTS::eR2ndJet, _Jet->pstats["SecondLeadingJet"],syst);
 
   getGoodRecoFatJets(CUTS::eRWjet, _FatJet->pstats["Wjet"],syst);
-  //  treatMuons_Met(systname);
 
   ///VBF Susy cut on leadin jets
   VBFTopologyCut(distats["VBFSUSY"],syst);
@@ -1155,12 +1152,21 @@ double Analyzer::getTauDataMCScaleFactor(int updown){
 }
 
 ///Calculates met from values from each file plus smearing and treating muons as neutrinos
-void Analyzer::updateMet(int syst) {
-  // _MET->update(distats["Run"], *_Jet,  syst);
+void Analyzer::selectMet(int syst) {
+
+  // Before using the TreatMuonsAsNeutrinos option, we store the MET value in a separate vector for reference purposes:
+  _MET->JERCorrMet.SetPxPyPzE(_MET->px(), _MET->py(), _MET->p4().Pz(), _MET->energy());
+
+  if(distats["Run"].bfind("TreatMuonsAsNeutrinos") || distats["Run"].bfind("TreatOnlyOneMuonAsNeutrino") ) treatMuonsAsMet(syst);
+
+  _MET->calculateHtAndMHt(distats["Run"], *_Jet,  syst);
+
+  // std::cout << "After treating muons as MET and before selecting: Met px = " << _MET->px() << ", Met py = " << _MET->py() << ", Met pz = " << _MET->p4().Pz() << ", Met E = " << _MET->energy() << std::endl; 
 
   /////MET CUTS
 
   if(!passCutRange(_MET->pt(), distats["Run"].pmap.at("MetCut"))) return;
+  
   if(distats["Run"].bfind("DiscrByHT") && _MET->HT() < distats["Run"].dmap.at("HtCut")) return;
 
   if(syst==0){
@@ -1205,8 +1211,122 @@ bool Analyzer::passMetFilters(std::string year, int ievent){
 
 }
 
+void Analyzer::treatMuonsAsMet(int syst) {
+
+
+  if( ! ( distats["Run"].bfind("TreatMuonsAsNeutrinos") ||  distats["Run"].bfind("TreatOnlyOneMuonAsNeutrino") ) ) return;
+
+  //  Initialize the deltaMus before calculation
+  _MET->systdeltaMEx[syst] = 0.0;
+  _MET->systdeltaMEy[syst] = 0.0;
+
+  // std::cout << "Before treating muons as MET: Met px = " << _MET->px() << ", Met py = " << _MET->py() << ", Met pz = " << _MET->p4().Pz() << ", Met E = " << _MET->energy() << std::endl; 
+  // std::cout << "Number of muons in the event: " << active_part->at(CUTS::eRMuon1)->size() << std::endl;
+  
+  if(! distats["Run"].bfind("TreatOnlyOneMuonAsNeutrino")){ // All muons in the event are being treated as neutrinos.
+    
+    // First, loop over the reco muon1 list
+    for(auto it : *active_part->at(CUTS::eRMuon1)) {
+      // Look for the current muon in the eRMuon2 list. If found, skip it.
+
+      if(find(active_part->at(CUTS::eRMuon2)->begin(), active_part->at(CUTS::eRMuon2)->end(), it) != active_part->at(CUTS::eRMuon2)->end() ) continue;
+      // if(active_part->at(CUTS::eRMuon1)->size() > 0) std::cout << "Muon index " << (it) << " only in eRMuon1 list. Muon px = " << _Muon->p4(it).Px() << ", py = " << _Muon->p4(it).Py() << std::endl;
+
+      _MET->systdeltaMEx[syst] += _Muon->p4(it).Px();
+      _MET->systdeltaMEy[syst] += _Muon->p4(it).Py();
+
+    }
+    // std::cout << "deltaMEx (1) = " << _MET->systdeltaMEx[syst] << ", deltaMEy (1) = " <<  _MET->systdeltaMEy[syst] << std::endl;
+
+    // Next, loop over the reco muon2 list
+    for(auto it : *active_part->at(CUTS::eRMuon2)){
+
+      // if(active_part->at(CUTS::eRMuon2)->size() > 0) std::cout << "Muon index " << (it) << " in eRMuon2 list. Muon px = " << _Muon->p4(it).Px() << ", py = " << _Muon->p4(it).Py() << std::endl;
+      _MET->systdeltaMEx[syst] += _Muon->p4(it).Px();
+      _MET->systdeltaMEy[syst] += _Muon->p4(it).Py();
+
+    }
+  }
+  else if(distats["Run"].bfind("TreatOnlyOneMuonAsNeutrino") && (active_part->at(CUTS::eRMuon1)->size() > 0 || active_part->at(CUTS::eRMuon2)->size() > 0)){ // Only one muon in the event is treated as neutrino. Particular for single lepton final states. The muon gets randomly chosen.
+    //std::cout << "index numbers in eRMuon1: " << std::endl;
+    //for(auto it : *active_part->at(CUTS::eRMuon1)){
+    //  std::cout << "index " << (it) << ", ";
+    //  std::cout << std::endl;
+    //}
+    //std::cout << "index numbers in eRMuon2: " << std::endl;
+    //for(auto it : *active_part->at(CUTS::eRMuon2)){
+    //  std::cout << "index " << (it) << ", ";
+    //  std::cout << std::endl;
+    //}
+
+    // Define a random generator
+    TRandom *rndm1 = new TRandom3(0);
+    TRandom *rndm2 = new TRandom3(0);
+
+    size_t mu1size = active_part->at(CUTS::eRMuon1)->size();
+    size_t mu2size = active_part->at(CUTS::eRMuon2)->size();
+
+    // Define which list of muons will be looped over
+    unsigned int rnd_num = rndm1->Integer(123456789);
+    unsigned int rnd_muon = rndm2->Integer(987654321);
+
+    // std::cout << "rnd_num = " << rnd_num << std::endl;
+    // std::cout << "rnd_muon = " << rnd_muon << std::endl;
+    // std::cout << "mu1size = " << mu1size << ", mu2size = " << mu2size << std::endl;
+
+    if( ( (rnd_num % rnd_muon) % 2 == 0 && mu1size > 0) || ( (rnd_num % rnd_muon) % 2 == 1 && (mu2size == 0 && mu1size > 0) ) ){
+
+      // The muon selected will be from the muon1 list. We select it randomly, using the size of this list as input.
+      // std::cout << "Selecting muon from list 1" << std::endl;
+      
+      if(mu1size > 0){
+        rnd_muon = rnd_muon % mu1size;
+      }
+      else if (mu2size > 0){
+        rnd_muon = rnd_muon % mu2size;
+      }
+      
+      // std::cout << "Selecting muon #" << rnd_muon << " in the eRMuon1 list." << std::endl;
+
+      int it = active_part->at(CUTS::eRMuon1)->at(rnd_muon);
+
+      _MET->systdeltaMEx[syst] += _Muon->p4(it).Px();
+      _MET->systdeltaMEy[syst] += _Muon->p4(it).Py();
+
+    }
+    else if( ((rnd_num % rnd_muon) % 2 == 1 && mu2size > 0) || ((rnd_num % rnd_muon) % 2 == 0 && (mu1size == 0 && mu2size > 0) ) ){
+      // The muon selected will be from the muon2 list. We select it randomly, using the size of this list as input.
+
+      //std::cout << "Selecting muon from list 2" << std::endl;
+
+      if(mu2size > 0){
+        rnd_muon = rnd_muon % mu2size;
+      }
+      else if (mu1size > 0){
+        rnd_muon = rnd_muon % mu1size;
+      }
+
+      // std::cout << "Selecting muon #" << rnd_muon << " in the eRMuon2 list." << std::endl;
+
+      int it = active_part->at(CUTS::eRMuon2)->at(rnd_muon);
+
+      _MET->systdeltaMEx[syst] += _Muon->p4(it).Px();
+      _MET->systdeltaMEy[syst] += _Muon->p4(it).Py();
+    }
+
+
+  }
+  //if(active_part->at(CUTS::eRMuon1)->size() > 0) std::cout << "deltaMEx (2) = " << _MET->systdeltaMEx[syst] << ", deltaMEy (2) = " <<  _MET->systdeltaMEy[syst] << std::endl;
+
+  // recalculate MET, adding the muon Px and Py accordingly
+  _MET->update(syst);
+
+  //if(active_part->at(CUTS::eRMuon1)->size() > 0) std::cout << "After treating muons as MET: Met px = " << _MET->px() << ", Met py = " << _MET->py() << ", Met pz = " << _MET->p4().Pz() << ", Met E = " << _MET->energy() << std::endl; 
+
+}
+
 ///////////////////////////////////////////////
-////////removed for teh time being/////////////
+////////removed for the time being/////////////
 ///////////////////////////////////////////////
 
 // void Analyzer::treatMuons_Met(std::string syst) {
@@ -1286,6 +1406,7 @@ bool Analyzer::passMetFilters(std::string year, int ievent){
 //     active_part->at(CUTS::eMET)->push_back(1);
 //   }
 // }
+
 
 /////Check if a given branch is not found in the file
 
@@ -2440,8 +2561,14 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
   int i = 0;
   for(auto lvec: lep) {
     bool passCuts = true;
-    if (fabs(lvec.Eta()) > stats.dmap.at("EtaCut")) passCuts = passCuts && false;
-    else if (lvec.Pt() < stats.pmap.at("PtCut").first || lvec.Pt() > stats.pmap.at("PtCut").second) passCuts = passCuts && false;
+    if (fabs(lvec.Eta()) > stats.dmap.at("EtaCut")){ 
+    	passCuts = passCuts && false;
+    	if(lep.type == PType::Electron) std::cout << "Electron eta cut: " << lvec.Eta() << ", passCuts = " << passCuts << std::endl;
+    }
+    else if (lvec.Pt() < stats.pmap.at("PtCut").first || lvec.Pt() > stats.pmap.at("PtCut").second){ 
+    	passCuts = passCuts && false;
+    	if(lep.type == PType::Electron) std::cout << "Electron pt cut: " << lvec.Pt() << ", passCuts = " << passCuts << std::endl;
+    }
 
     if((lep.pstats.at("Smear").bfind("MatchToGen")) && (!isData)) {   /////check
       if(matchLeptonToGen(lvec, lep.pstats.at("Smear") ,eGenPos) == TLorentzVector(0,0,0,0)) continue;
@@ -2451,8 +2578,10 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
       if(!passCuts) break;
       else if(cut == "DoDiscrByIsolation") {
         double firstIso = (stats.pmap.find("IsoSumPtCutValue") != stats.pmap.end()) ? stats.pmap.at("IsoSumPtCutValue").first : ival(ePos) - ival(CUTS::eRTau1) + 1;
+        if(lep.type == PType::Electron) std::cout << "first iso cut: " << _Electron->miniPFRelIso_all[i] << ", passCuts = " << passCuts << std::endl;
 	//if (lep.type == PType::Electron){std::cout << "firstIso: " << firstIso << std::endl;}
         double secondIso = (stats.pmap.find("IsoSumPtCutValue") != stats.pmap.end()) ? stats.pmap.at("IsoSumPtCutValue").second : stats.bfind("FlipIsolationRequirement");
+        if(lep.type == PType::Electron) std::cout << "second iso cut: " << _Electron->miniPFRelIso_all[i] << ", passCuts = " << passCuts << std::endl;
 	//if (lep.type == PType::Electron){std::cout << "secondIso: " << secondIso << std::endl;}
 	passCuts = passCuts && lep.get_Iso(i, firstIso, secondIso);
 	//if (lep.type == PType::Electron){std::cout << "pass cuts: " << passCuts << std::endl;}
@@ -2467,7 +2596,8 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
       }
       ////electron cuts
       else if(lep.type == PType::Electron){
-	//std::cout << "got an electron to check..." << std::endl;
+	     //std::cout << "got an electron to check..." << std::endl;
+        /*
         if(cut == "DoDiscrByHLTID"){
           std::bitset<8> idvariable(_Electron->cutBased_HLTPreSel[i]);
           if(ival(ePos) - ival(CUTS::eRElec2)){ //test if it is electron1
@@ -2477,21 +2607,29 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
             passCuts = passCuts && (_Electron->cbHLTIDele2&idvariable).count();
           }
         }
+        */
         if(cut == "DoDiscrByCBID"){
-	  //std::cout << "cutBased[i]: " << (_Electron->cutBased[i]) << std::endl;
+	        //std::cout << "cutBased[i]: " << (_Electron->cutBased[i]) << std::endl;
           std::bitset<8> idvariable(_Electron->cutBased[i]);
-	  //std::cout << "ival(ePos): " << ival(ePos) << std::endl;
-	  //std::cout << "ival(CUTS::eRElec2): " << ival(CUTS::eRElec2) << std::endl;
+          //std::cout << "ival(ePos): " << ival(ePos) << std::endl;
+          //std::cout << "ival(CUTS::eRElec2): " << ival(CUTS::eRElec2) << std::endl;
           if(ival(ePos) - ival(CUTS::eRElec2)){ //test if it is electron1
-	    //std::cout << "cbIDele1: " << (_Electron->cbIDele1) << std::endl;
-	    //std::cout << "idvariable: " << (idvariable) << std::endl;
-	    //std::cout << "the AND: " << (_Electron->cbIDele1&idvariable) << std::endl;
+            //std::cout << "cbIDele1: " << (_Electron->cbIDele1) << std::endl;
+            //std::cout << "idvariable: " << (idvariable) << std::endl;
+            //std::cout << "the AND: " << (_Electron->cbIDele1&idvariable) << std::endl;
             passCuts = passCuts && (_Electron->cbIDele1&idvariable).count();
-	    //std::cout << "it's an elec1..." << std::endl;
-	    //std::cout << "passCuts value2: " << passCuts << std::endl;
+            //std::cout << "it's an elec1..." << std::endl;
+            //std::cout << "passCuts value2: " << passCuts << std::endl;
           }else{
             passCuts = passCuts && (_Electron->cbIDele2&idvariable).count();
           }
+        }
+        else if(cut == "DoDiscrBymvaID"){
+          if(stats.bfind("DiscrBymvaWP80")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WP80[i];
+          
+          else if(stats.bfind("DiscrBymvaWP90")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WP90[i];
+          
+          else if(stats.bfind("DiscrBymvaWPL")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WPL[i];
         }
         else if(cut == "DoDiscrByHEEPID")
          passCuts = passCuts && _Electron->isPassHEEPId[i];
@@ -3380,6 +3518,53 @@ double Analyzer::getZBoostWeight(){
   return boostweigth;
 }
 
+double Analyzer::getZBoostWeightSyst(int ud){
+  double boostweigth=1.;
+  if((active_part->at(CUTS::eGElec)->size() + active_part->at(CUTS::eGTau)->size() + active_part->at(CUTS::eGMuon)->size()) >=1 && (active_part->at(CUTS::eGZ)->size() ==1 || active_part->at(CUTS::eGW)->s\
+ize() ==1)){
+    double boostz = 0;
+    if(active_part->at(CUTS::eGZ)->size() ==1){
+      boostz = _Gen->pt(active_part->at(CUTS::eGZ)->at(0));
+    }
+    if(active_part->at(CUTS::eGW)->size() ==1){
+      boostz = _Gen->pt(active_part->at(CUTS::eGW)->at(0));
+    }
+    if (ud == 0){
+      if(boostz > 0 && boostz <= 50) {boostweigth = 1.1192;}// 1.0942, 1.1192, 1.1442 5.26                                                                                                                  
+      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.1034;}// 1.0901, 1.1034, 1.1167                                                                                                               
+      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0675;}// 1.0559, 1.0675, 1.0791                                                                                                              
+      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0637;}// 1.0511, 1.0637, 1.0763                                                                                                              
+      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.0242;}// 1.011, 1.0242, 1.0374                                                                                                               
+      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9453;}// 0.9269, 0.9453, 0.9637                                                                                                              
+      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8579;}// 0.8302, 0.8579, 0.8856                                                                                                              
+      else if (boostz >= 600) {boostweigth = 0.7822;}// 0.6692, 0.7822, 0.8952                                                                                                                              
+      else {boostweigth = 1;}}
+
+    else if (ud == -1){
+      if(boostz > 0 && boostz <= 50) {boostweigth = 1.0942;}// 1.0942, 1.1192, 1.1442 5.26                                                                                                                  
+      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.0901;}// 1.0901, 1.1034, 1.1167                                                                                                               
+      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0559;}// 1.0559, 1.0675, 1.0791                                                                                                              
+      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0511;}// 1.0511, 1.0637, 1.0763                                                                                                              
+      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.011;}// 1.011, 1.0242, 1.0374                                                                                                                
+      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9269;}// 0.9269, 0.9453, 0.9637                                                                                                              
+      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8302;}// 0.8302, 0.8579, 0.8856                                                                                                              
+      else if (boostz >= 600) {boostweigth = 0.6692;}// 0.6692, 0.7822, 0.8952                                                                                                                              
+      else {boostweigth = 1;}}
+
+    else if (ud == 1){
+      if(boostz > 0 && boostz <= 50) {boostweigth = 1.1442;}// 1.0942, 1.1192, 1.1442 5.26                                                                                                                  
+      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.1167;}// 1.0901, 1.1034, 1.1167                                                                                                               
+      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0791;}// 1.0559, 1.0675, 1.0791                                                                                                              
+      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0763;}// 1.0511, 1.0637, 1.0763                                                                                                              
+      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.0374;}// 1.011, 1.0242, 1.0374                                                                                                               
+      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9637;}// 0.9269, 0.9453, 0.9637                                                                                                              
+      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8856;}// 0.8302, 0.8579, 0.8856                                                                                                              
+      else if (boostz >= 600) {boostweigth = 0.8952;}// 0.6692, 0.7822, 0.8952                                                                                                                              
+      else {boostweigth = 1;}}
+
+  }
+  return boostweigth;
+}
 
 double Analyzer::getWkfactor(){
   double kfactor=1.;
@@ -3422,7 +3607,11 @@ void Analyzer::fill_histogram() {
     if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauDataMCScaleFactor(0);
 
     if(distats["Run"].bfind("ApplyZBoostSF") && isVSample){
-      wgt *= getZBoostWeight();
+      //wgt *= getZBoostWeight();
+      wgt *= getZBoostWeightSyst(0);
+      boosters[0] = getZBoostWeightSyst(0); //06.02.20                                                                                                                                                      
+      boosters[1] = getZBoostWeightSyst(-1);  //06.02.20                                                                                                                                                    
+      boosters[2] = getZBoostWeightSyst(1);  //06.02.20
     }
     if(distats["Run"].bfind("ApplyWKfactor")){
       wgt *= getWkfactor();
@@ -3475,13 +3664,29 @@ void Analyzer::fill_histogram() {
 
       if(syst_names[i].find("Btag")!=std::string::npos){ //01.16.19
         if(syst_names[i]=="Btag_Up"){
-	  wgt/=getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]);
-	  wgt*=getBJetSFResUp(CUTS::eRBJet, _Jet->pstats["BJet"]);
+          wgt/=getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]);
+          wgt*=getBJetSFResUp(CUTS::eRBJet, _Jet->pstats["BJet"]);
         }else if(syst_names[i]=="Btag_Down"){
-	  wgt/=getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]);
+          wgt/=getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]);
           wgt*=getBJetSFResDown(CUTS::eRBJet, _Jet->pstats["BJet"]);
         }
       }
+
+      ///---06.06.20---                                                                                                                                                                                     
+      if(syst_names[i].find("ISR_weight")!=std::string::npos){ //07.09.18                                                                                                                                   
+        if(syst_names[i]=="ISR_weight_up"){
+          if(distats["Run"].bfind("ApplyZBoostSF") && isVSample) {
+            wgt/=boosters[0];
+            wgt*=boosters[2];
+          }
+        }else if(syst_names[i]=="ISR_weight_down"){
+          if(distats["Run"].bfind("ApplyZBoostSF") && isVSample) {
+            wgt/=boosters[0];
+            wgt*=boosters[1];
+          }
+        }
+      }
+      ///---06.02.20 
 
       //get the non particle conditions:
       for(auto itCut : nonParticleCuts){
@@ -3706,7 +3911,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(_MET->DefMet.Pt(), "DefaultMETOriginal");
     histAddVal(_MET->T1Met.Pt(), "T1METOriginal");
     histAddVal(_MET->RawMet.Pt(), "RawMETOriginal");
-    histAddVal(_MET->systRawMetVec.at(0)->Pt(),"CorrectedRawMET");
+    histAddVal(_MET->JERCorrMet.Pt(),"CorrectedRawMET");
 
   } else if(group == "FillLeadingJet" && active_part->at(CUTS::eSusyCom)->size() == 0) {
 

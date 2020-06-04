@@ -27,8 +27,11 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
     systRawMetVec.push_back(new TLorentzVector);
   }
 
+  // For TreatMuonsAsNeutrinos
   systdeltaMEx.resize(syst_names.size());
   systdeltaMEy.resize(syst_names.size());
+  
+  // For HT, MHT
   syst_HT.resize(syst_names.size());
   syst_MHT.resize(syst_names.size());
   syst_MHTphi.resize(syst_names.size());
@@ -96,58 +99,33 @@ void Met::init(){
   t1met_py = Reco.Py();
 
   for(int i=0; i < (int) syst_names.size(); i++) {
+  	// initialize the Raw MET vector
     systRawMetVec.at(i)->SetPxPyPzE(RawMet.Px(), RawMet.Py(), RawMet.Pz(), RawMet.E());
+  
+  	// initialize the deltaMuMet vectors to zero
+    fill(systdeltaMEx.begin(), systdeltaMEx.end(), 0);
+    fill(systdeltaMEy.begin(), systdeltaMEy.end(), 0);
+
   } 
 
+  // The part below is done separately in Met::propagateUnclEnergyUncty, so this is not needed here anymore.
+/*
   for(int i=0; i < (int) syst_names.size(); i++) {
     
     if(i == Unclup) systVec.at(i)->SetPxPyPzE(MetUnclUp[0]+Reco.Px(),MetUnclUp[1]+Reco.Py(),0,sqrt(pow(MetUnclUp[0]+Reco.Px(),2)+pow(MetUnclUp[1]+Reco.Py(),2)));
     else if(i == Uncldown) systVec.at(i)->SetPxPyPzE(MetUnclDown[0]+Reco.Px(),MetUnclDown[1]+Reco.Py(),0,sqrt(pow(MetUnclDown[0]+Reco.Px(),2)+pow(MetUnclDown[1]+Reco.Py(),2)));
     else if(systVec.at(i) != nullptr) addP4Syst(Reco, i);
-    // else if(systVec.at(i) != nullptr) addP4Syst(RawMet, i);
-    
-    fill(systdeltaMEx.begin(), systdeltaMEx.end(), 0);
-    fill(systdeltaMEy.begin(), systdeltaMEy.end(), 0);
+
+    fill(systdeltaMuMetPx.begin(), systdeltaMuMetPx.end(), 0);
+    fill(systdeltaMuMetPy.begin(), systdeltaMuMetPy.end(), 0);
   }
-   cur_P=&Reco;
-   // cur_P=&RawMet;
+*/
+
+  cur_P=&Reco;
 
   // syst_HT[activeSystematic]=0.;
   // syst_MHT[activeSystematic]=0.;
   // syst_MHTphi[activeSystematic]=99.;
-}
-
-
-void Met::update(PartStats& stats, Jet& jet, int syst=0){
-  ///Calculates met from values from each file plus smearing and treating muons as neutrinos
-  if(systVec.at(syst) == nullptr) return;
-  double sumpxForMht=0;
-  double sumpyForMht=0;
-  double sumptForHt=0;
-
-  int i=0;
-  for(auto jetVec: jet) {
-    bool add = true;
-    if( (jetVec.Pt() < stats.dmap.at("JetPtForMhtAndHt")) ||
-        (abs(jetVec.Eta()) > stats.dmap.at("JetEtaForMhtAndHt")) ||
-        ( stats.bfind("ApplyJetLooseIDforMhtAndHt") &&
-          !jet.passedLooseJetID(i) ) ) add = false;
-    if(add) {
-      sumpxForMht -= jetVec.Px();
-      sumpyForMht -= jetVec.Py();
-      sumptForHt  += jetVec.Pt();
-    }
-    i++;
-  }
-  syst_HT.at(syst)=sumptForHt;
-  syst_MHT.at(syst)= sqrt( pow(sumpxForMht,2.0) + pow(sumpyForMht,2.0) );
-  syst_MHTphi.at(syst)=atan2(sumpyForMht,sumpxForMht);
-
-  systVec.at(syst)->SetPxPyPzE(systVec.at(syst)->Px()+systdeltaMEx[syst], 
-                               systVec.at(syst)->Py()+systdeltaMEy[syst], 
-                               systVec.at(syst)->Pz(), 
-                               TMath::Sqrt(pow(systVec.at(syst)->Px()+systdeltaMEx[syst],2) + pow(systVec.at(syst)->Py()+systdeltaMEy[syst],2)));
-
 }
 
 void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jet_pt_up, double const& jet_pt_down, std::string& systname, int syst){
@@ -247,6 +225,58 @@ void Met::propagateUnclEnergyUncty(std::string& systname, int syst){
   }
 
   systRawMetVec.at(syst)->SetPxPyPzE(met_px_unclEnshift, met_py_unclEnshift, systRawMetVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_unclEnshift,2) + pow(met_py_unclEnshift,2)));
+
+}
+
+
+//void Met::update(PartStats& stats, Jet& jet, int syst=0){
+void Met::update(int syst=0){
+
+  if(systRawMetVec.at(syst) == nullptr) return;
+  // if(systVec.at(syst) == nullptr) return;
+
+  // Treat muons as neutrinos. This is done on the systRawMetVec which is the vector that has all the JERC propagated. 
+  systRawMetVec.at(syst)->SetPxPyPzE(systRawMetVec.at(syst)->Px()+systdeltaMEx[syst], 
+                               systRawMetVec.at(syst)->Py()+systdeltaMEy[syst], 
+                               systRawMetVec.at(syst)->Pz(), 
+                               TMath::Sqrt(pow(systRawMetVec.at(syst)->Px()+systdeltaMEx[syst],2) + pow(systRawMetVec.at(syst)->Py()+systdeltaMEy[syst],2)));
+
+  //systVec.at(syst)->SetPxPyPzE(systVec.at(syst)->Px()+systdeltaMuMetPx[syst], 
+  //                             systVec.at(syst)->Py()+systdeltaMuMetPy[syst], 
+  //                             systVec.at(syst)->Pz(), 
+  //                             TMath::Sqrt(pow(systVec.at(syst)->Px()+systdeltaMuMetPx[syst],2) + pow(systVec.at(syst)->Py()+systdeltaMuMetPy[syst],2)));
+
+}
+
+void Met::calculateHtAndMHt(PartStats& stats, Jet& jet, int syst=0){
+
+  if(systRawMetVec.at(syst) == nullptr) return;
+
+  double sumpxForMht=0;
+  double sumpyForMht=0;
+  double sumptForHt=0;
+
+  // Calculates HT and MHT.
+
+  int i=0;
+  for(auto jetVec: jet){
+    bool add = true;
+    if( (jetVec.Pt() < stats.dmap.at("JetPtForMhtAndHt")) || 
+    	(abs(jetVec.Eta()) > stats.dmap.at("JetEtaForMhtAndHt")) || 
+    	(stats.bfind("ApplyJetLooseIDforMhtAndHt") && !jet.passedLooseJetID(i)) ||
+    	(stats.bfind("ApplyJetTightIDforMhtAndHt") && !jet.passedTightJetID(i)) ) add = false;
+    
+    if(add) {
+      sumpxForMht -= jetVec.Px();
+      sumpyForMht -= jetVec.Py();
+      sumptForHt  += jetVec.Pt();
+    }
+
+    i++;
+  }
+  syst_HT.at(syst)=sumptForHt;
+  syst_MHT.at(syst)= sqrt( pow(sumpxForMht,2.0) + pow(sumpyForMht,2.0) );
+  syst_MHTphi.at(syst)=atan2(sumpyForMht,sumpxForMht);
 
 }
 
