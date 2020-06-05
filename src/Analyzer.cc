@@ -2563,11 +2563,11 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
     bool passCuts = true;
     if (fabs(lvec.Eta()) > stats.dmap.at("EtaCut")){ 
     	passCuts = passCuts && false;
-    	if(lep.type == PType::Electron) std::cout << "Electron eta cut: " << lvec.Eta() << ", passCuts = " << passCuts << std::endl;
+    	// if(lep.type == PType::Electron) std::cout << "Electron eta cut: " << lvec.Eta() << ", passCuts = " << passCuts << std::endl;
     }
     else if (lvec.Pt() < stats.pmap.at("PtCut").first || lvec.Pt() > stats.pmap.at("PtCut").second){ 
     	passCuts = passCuts && false;
-    	if(lep.type == PType::Electron) std::cout << "Electron pt cut: " << lvec.Pt() << ", passCuts = " << passCuts << std::endl;
+    	// if(lep.type == PType::Electron) std::cout << "Electron pt cut: " << lvec.Pt() << ", passCuts = " << passCuts << std::endl;
     }
 
     if((lep.pstats.at("Smear").bfind("MatchToGen")) && (!isData)) {   /////check
@@ -2578,10 +2578,10 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
       if(!passCuts) break;
       else if(cut == "DoDiscrByIsolation") {
         double firstIso = (stats.pmap.find("IsoSumPtCutValue") != stats.pmap.end()) ? stats.pmap.at("IsoSumPtCutValue").first : ival(ePos) - ival(CUTS::eRTau1) + 1;
-        if(lep.type == PType::Electron) std::cout << "first iso cut: " << _Electron->miniPFRelIso_all[i] << ", passCuts = " << passCuts << std::endl;
+        // if(lep.type == PType::Electron) std::cout << "first iso cut: " << _Electron->miniPFRelIso_all[i] << ", passCuts = " << passCuts << std::endl;
 	//if (lep.type == PType::Electron){std::cout << "firstIso: " << firstIso << std::endl;}
         double secondIso = (stats.pmap.find("IsoSumPtCutValue") != stats.pmap.end()) ? stats.pmap.at("IsoSumPtCutValue").second : stats.bfind("FlipIsolationRequirement");
-        if(lep.type == PType::Electron) std::cout << "second iso cut: " << _Electron->miniPFRelIso_all[i] << ", passCuts = " << passCuts << std::endl;
+        // if(lep.type == PType::Electron) std::cout << "second iso cut: " << _Electron->miniPFRelIso_all[i] << ", passCuts = " << passCuts << std::endl;
 	//if (lep.type == PType::Electron){std::cout << "secondIso: " << secondIso << std::endl;}
 	passCuts = passCuts && lep.get_Iso(i, firstIso, secondIso);
 	//if (lep.type == PType::Electron){std::cout << "pass cuts: " << passCuts << std::endl;}
