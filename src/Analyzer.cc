@@ -220,7 +220,6 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   systematics = Systematics(distats);
 
   setupJetCorrections(year, outfile);
-  jetScaleRes = JetScaleResolution("Pileup/Summer16_23Sep2016V4_MC_Uncertainty_AK4PFchs.txt", "",  "Pileup/Spring16_25nsV6_MC_PtResolution_AK4PFchs.txt", "Pileup/Spring16_25nsV6_MC_SF_AK4PFchs.txt");
 
 
 
@@ -805,16 +804,19 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   // ---------------- Trigger requirement ------------------ //
   TriggerCuts(CUTS::eRTrig1);
 
-  //std::cout << std::endl << "------------------- Event #" << event << " ----------------------" << std::endl;
+  std::cout << std::endl << "------------------- Event #" << event << " ----------------------" << std::endl;
 
   ////check update met is ok
   for(size_t i=0; i < syst_names.size(); i++) {
-    //for(size_t i=0; i < _Jet->size(); i++) {
-      //if(i % jetsize == 0) std::cout << std::endl;
-      //std::cout << "Jet (before updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
-    //}
-
-    // std::cout << "Met value (before JERC): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << std::endl;
+  	std::string systname = syst_names.at(i);
+  	//std::cout << "Systematic: " << systname << std::endl;
+    
+  	if(i == 0){
+	    for(size_t i=0; i < _Jet->size(); i++) {
+	      std::cout << "Jet (before updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
+	    }
+	}
+    //std::cout << "Met value (before JERC): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << std::endl;
 
      //////Smearing
     smearLepton(*_Electron, CUTS::eGElec, _Electron->pstats["Smear"], distats["Electron_systematics"], i);
@@ -832,12 +834,12 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     std::string systname = syst_names.at(i);
     for( auto part: allParticles) part->setCurrentP(i);
     _MET->setCurrentP(i);
-    //for(size_t i=0; i < _Jet->size(); i++) {
-    //  if(i % jetsize == 0) std::cout << std::endl;
-      //std::cout << "Jet (after updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
-    //}
+	std::cout << "Systematic: " << systname << std::endl;
+    for(size_t i=0; i < _Jet->size(); i++) {
+      std::cout << "Jet (after updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
+    }
 
-    // std::cout << "Met value (after JERC): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << ", raw pt = " << _MET->RawMet.Pt() << std::endl;
+    //std::cout << "Met value (after JERC): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << ", raw pt = " << _MET->RawMet.Pt() << std::endl;
 
     getGoodParticles(i);
     selectMet(i);
@@ -1791,7 +1793,7 @@ void Analyzer::setupJetCorrections(std::string year, std::string outputfilename)
    }
 
    try{
-     jetScaleRes = JetScaleResolution((PUSPACE+"JetResDatabase/textFiles/"+jectag+"_Uncertainty_AK4PFchs.txt").c_str(),"Total",(PUSPACE+"JetResDatabase/textFiles/"+jertag+"_PtResolution_AK4PFchs.txt").c_str(), (PUSPACE+"JetResDatabase/textFiles/"+jertag+"_SF_AK4PFchs.txt").c_str());
+     jetScaleRes = JetScaleResolution((PUSPACE+"JetResDatabase/textFiles/"+jectag+"_Uncertainty_AK4PFchs.txt").c_str(),"",(PUSPACE+"JetResDatabase/textFiles/"+jertag+"_PtResolution_AK4PFchs.txt").c_str(), (PUSPACE+"JetResDatabase/textFiles/"+jertag+"_SF_AK4PFchs.txt").c_str());
    }
    catch(edm::Exception &err){
      std::cerr << "Error in setupJetCorrections (JetScaleResolution): " << err.what() << std::endl;
@@ -1823,6 +1825,55 @@ void Analyzer::setupJetCorrections(std::string year, std::string outputfilename)
 
  }
 
+void Analyzer::getJetEnergyResSFs(Particle& jet, const CUTS eGenPos){
+
+	// Clean up the vector before starting:
+	jets_jer_sfs.clear();
+
+	// Loop over all jets
+	for(size_t i = 0; i < jet.size(); i++){
+
+		const TLorentzVector origJetReco = jet.RecoP4(i);
+
+		double genJetMatchDR = 0.0;
+
+	    try{
+	      genJetMatchDR = jet.pstats["Smear"].dmap.at("GenMatchingDeltaR");
+	    }
+	    catch(std::out_of_range& err){
+	        // std::cerr << "ERROR in smearJet: " << err.what() << std::endl;
+	        // std::cout << "\tThe option GenMatchingDeltaR is missing from Jet_info.in" << std::endl;
+	        // std::cout << "\tSetting GenMatchingDeltaR to 0.4 by default." << std::endl;
+	        if(jet.type == PType::Jet) genJetMatchDR = 0.4;
+	        else if(jet.type == PType::FatJet) genJetMatchDR = 0.8;
+	        // std::cout << "error: genJetMatchDR = " << genJetMatchDR << std::endl;
+	    }
+
+	    // Find the gen-level jet that matches this reco jet.
+      	TLorentzVector genJet = matchJetToGen(origJetReco, genJetMatchDR, eGenPos);
+
+      	// Save the three scale factors (nominal, down and up) as a vector in a vector:
+
+      	std::vector<float> jet_jer_sf = jetScaleRes.GetSmearValsPtSF(origJetReco, genJet, jec_rho);
+
+      	// Check that the sf are in the right order
+      	//0 - nominal, 1 - down, 2 - up
+	    if(jet_jer_sf.at(2) < jet_jer_sf.at(1)){
+	        // assign the values correctly
+	        std::vector<float> jet_jer_sf_tmp;
+	        jet_jer_sf_tmp.push_back(jet_jer_sf.at(0));
+	        jet_jer_sf_tmp.push_back(jet_jer_sf.at(2));
+	        jet_jer_sf_tmp.push_back(jet_jer_sf.at(1));
+	        
+	        // erase these two elements from the vector 
+	        jet_jer_sf = jet_jer_sf_tmp; 
+	    }
+
+      	jets_jer_sfs.push_back(jet_jer_sf);
+	}
+
+}
+
 // --- Function that applies the latest JECs and propagates them to MET  --- //
 void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, const PartStats& stats, std::string year, int syst){
   
@@ -1847,14 +1898,18 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
   // std::cout << "Systematic #" << syst << ": " << systname << std::endl;
   //std::cout << "Total number of systematics = " << syst_names.size() << std::endl;
 
-  
+  // Get the jet energy resolution scale factors only once and before looping over jets to apply them.
+  if(!isData && systname == "orig"){
+  	getJetEnergyResSFs(jet, eGenPos);
+  }
+
+
   //for(size_t i=0; i< _Jet->size(); i++) {
     // std::cout << "Reco jet (before loop): pt = " << _Jet->RecoP4(i).Pt() << ", mass = " << _Jet->RecoP4(i).M() << ", eta = " << _Jet->RecoP4(i).Eta() << ", phi = " << _Jet->RecoP4(i).Phi() << std::endl; 
     // std::cout << "Jet (before loop): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
     //std::cout << "Reco jet (before loop): pt = " << _Jet->pt(i) << ", mass = " << _Jet->mass(i) << ", eta = " << _Jet->eta(i) << ", phi = " << _Jet->phi(i) << std::endl; 
-
   //}  
-  // std::cout << "--------" << std::endl;
+  //std::cout << "--------" << std::endl;
   
   // Here we apply the jet energy resolution corrections if desired for the nominal value and the same goes for the systematics up and down.
   // That's why here we call the smearJetRes function.
@@ -1877,7 +1932,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
   // Loop over all jets
   for(size_t i = 0; i < jet.size(); i++){
 
-    // std::cout << std::endl << "~~~~ Jet #" << i << " ~~~~" << std::endl;
+    //std::cout << std::endl << "~~~~ Jet #" << i << " ~~~~" << std::endl;
     //std::cout << "Jet (in correction loop): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << ", raw pt = " << _Jet->p4(i).Pt() * (1.0 - _Jet->rawFactor[i]) << std::endl;
     // if(passJetVetoEEnoise2017(i) == false) badeejets++;
     // Get the reconstruced 4-vector (original vector straight from the corresponding branches)
@@ -1944,15 +1999,15 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     double genJetMatchDR = 0.0;
 
     try{
-      genJetMatchDR = jet.pstats["Smear"].dmap.at("GenMatchingDeltaR");
+       genJetMatchDR = jet.pstats["Smear"].dmap.at("GenMatchingDeltaR");
     }
     catch(std::out_of_range& err){
-        // std::cerr << "ERROR in smearJet: " << err.what() << std::endl;
-        // std::cout << "\tThe option GenMatchingDeltaR is missing from Jet_info.in" << std::endl;
-        // std::cout << "\tSetting GenMatchingDeltaR to 0.4 by default." << std::endl;
-        if(jet.type == PType::Jet) genJetMatchDR = 0.4;
-        else if(jet.type == PType::FatJet) genJetMatchDR = 0.8;
-        // std::cout << "error: genJetMatchDR = " << genJetMatchDR << std::endl;
+    //     // std::cerr << "ERROR in smearJet: " << err.what() << std::endl;
+    //     // std::cout << "\tThe option GenMatchingDeltaR is missing from Jet_info.in" << std::endl;
+    //     // std::cout << "\tSetting GenMatchingDeltaR to 0.4 by default." << std::endl;
+         if(jet.type == PType::Jet) genJetMatchDR = 0.4;
+         else if(jet.type == PType::FatJet) genJetMatchDR = 0.8;
+    //     // std::cout << "error: genJetMatchDR = " << genJetMatchDR << std::endl;
     }
     
     //for(size_t i=0; i< _Jet->size(); i++) {
@@ -1962,6 +2017,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
     //}  
     // std::cout << "--------" << std::endl;
+    
     // Define the JER scale factors:
     double jer_sf_nom = 1.0, jer_shift = 1.0;
 
@@ -1970,7 +2026,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     // Define the new jet pt and mass variables to be updated after applying the JER corrections.
     double jet_pt_jerShifted = origJetReco.Pt() * jer_shift, jet_mass_jerShifted = origJetReco.M() * jer_shift;
 
-    // std::cout << "jer_sf_nom (before smearing) = " << jer_sf_nom << std::endl;
+    //std::cout << "jer_sf_nom (before smearing) = " << jer_sf_nom << ", jet_pt_nom (before smearing) = " << jet_pt_nom << ", jet_mass_nom (before smearing) = " <<  jet_mass_nom << std::endl;
 
     if(!isData){
 
@@ -1987,19 +2043,28 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
         //continue;
       }
 
-
-      // std::cout << "jer_shift = " << jer_shift << ", jet_pt_jerShifted = " << jet_pt_jerShifted << ", jet_mass_jerShifted = " << jet_mass_jerShifted << std::endl;
+      //std::cout << "Was this jet matched to a lepton? " << jetlepmatch << std::endl;
+      //std::cout << "jer_shift = " << jer_shift << ", jet_pt_jerShifted = " << jet_pt_jerShifted << ", jet_mass_jerShifted = " << jet_mass_jerShifted << std::endl;
 
       // Find the gen-level jet that matches this reco jet.
       TLorentzVector genJet = matchJetToGen(origJetReco, genJetMatchDR, eGenPos);
 
+      //std::cout << "Matched gen-jet pt = " << genJet.Pt() << ", mass = " << genJet.M() << ", eta = " << genJet.Eta() << ", phi = " << genJet.Phi() << std::endl;
+
       // Always calculate this, so that the scale uncertainties have access to it.
       if(stats.bfind("SmearTheJet")){
-        jer_sf_nom = jetScaleRes.GetSmearValsPtSF(origJetReco, genJet, jec_rho, 0);
+        // jer_sf_nom = jetScaleRes.GetSmearValsPtSF(origJetReco, genJet, jec_rho, 0.0);
+        jer_sf_nom = jets_jer_sfs.at(i).at(0); // i is the jet index, 0 is the nominal value
         jet_pt_nom = origJetReco.Pt() * jer_sf_nom > 0.0 ? origJetReco.Pt() * jer_sf_nom : -1.0 * origJetReco.Pt() * jer_sf_nom; 
         jet_mass_nom = origJetReco.M() * jer_sf_nom > 0.0 ? origJetReco.M() * jer_sf_nom : -1.0 * origJetReco.M() * jer_sf_nom;
       }
       
+      //std::cout << "jer_sf_nom (after SmearTheJet) = " << jer_sf_nom << ", jet_pt_nom (after SmearTheJet) = " << jet_pt_nom << ", jet_mass_nom (after SmearTheJet) = " <<  jet_mass_nom << std::endl;
+
+      //if(systname == "orig"){
+      //	jet_jer_nom_sfs.push_back(jer_sf_nom); // store all the jer_sf_nom in this vector. This will be useful for those jets that were not matched to a gen-jet.
+      //}
+
       if(!jetlepmatch){
         if(systname == "orig"){ // This corresponds to the nominal values
 
@@ -2010,31 +2075,33 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
           jet_pt_jerShifted = jet_pt_nom;
           jet_mass_jerShifted = jet_mass_nom;
 
-          // std::cout << "jer_shift = " << jer_shift << ", jet_pt_jerShifted = " << jet_pt_jerShifted << ", jet_mass_jerShifted = " << jet_mass_jerShifted << std::endl;
+          //std::cout << "jer_shift = " << jer_shift << ", jet_pt_jerShifted = " << jet_pt_jerShifted << ", jet_mass_jerShifted = " << jet_mass_jerShifted << std::endl;
 
         }else if(systname.find("_Res_") != std::string::npos){
 
           if(systname == "Jet_Res_Up"){
-            jer_shift = jetScaleRes.GetSmearValsPtSF(origJetReco, genJet, jec_rho, 1);
+            // jer_shift = jetScaleRes.GetSmearValsPtSF(origJetReco, genJet, jec_rho, 1.0);
+            jer_shift = jets_jer_sfs.at(i).at(2); // i is the jet index, 2 is the up value
           }else if(systname == "Jet_Res_Down"){
-            jer_shift = jetScaleRes.GetSmearValsPtSF(origJetReco, genJet, jec_rho, -1);
+            //jer_shift = jetScaleRes.GetSmearValsPtSF(origJetReco, genJet, jec_rho, -1.0);
+            jer_shift = jets_jer_sfs.at(i).at(1); // i is the jet index, 2 is the down value
           }
 
           jet_pt_jerShifted = jer_shift * origJetReco.Pt();
           jet_mass_jerShifted = jer_shift * origJetReco.M();
 
-          // std::cout << "jer_shift = " << jer_shift << ", jet_pt_jerShifted = " << jet_pt_jerShifted << ", jet_mass_jerShifted = " << jet_mass_jerShifted << std::endl;
+          //std::cout << "jer_shift = " << jer_shift << ", jet_pt_jerShifted = " << jet_pt_jerShifted << ", jet_mass_jerShifted = " << jet_mass_jerShifted << std::endl;
 
         } 
         // Correct the jet 4-momentum according to the systematic applied for JER
-        systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
+        // systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
         // std::cout << "Reco jet (right before shifting): pt = " << jet.RecoP4(i).Pt() << ", mass = " << jet.RecoP4(i).M() << ", eta = " << jet.RecoP4(i).Eta() << ", phi = " << jet.RecoP4(i).Phi() << std::endl; 
       }
     }
-    else if(isData){
+    //else if(isData){
       // Here, jet_pt_jerShifted and jet_mass_jerShifted are unchanged w.r.t. the original values. We need to do this in order to keep these jets in the _Jet vector.
-      systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
-    }
+      //systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
+    //}
 
     //std::cout << "jer_shift = " << jer_shift << ", jet_pt_jerShifted = " << jet_pt_jerShifted << ", jet_mass_jerShifted = " << jet_mass_jerShifted << std::endl;    
 
@@ -2070,6 +2137,10 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     double jes_delta = 1.0;
     double jes_delta_t1 = 1.0;
 
+    //std::cout << "jer_sf_nom (before JES) = " << jer_sf_nom << ", jet_pt_nom (before JES) = " << jet_pt_nom << ", jet_mass_nom (before JES) = " <<  jet_mass_nom << std::endl;
+    //std::cout << "jes_delta = " << jes_delta << ", jes_delta_t1 = " << jes_delta_t1 << std::endl;
+    //std::cout << "jet_pt_jesShifted = " << jet_pt_jesShifted << ", jet_mass_jesShifted = " << jet_mass_jesShifted << std::endl;
+
     if(!isData && systname.find("_Scale_") != std::string::npos){
       // Here we will be using the mass and pt that were obtained after applying JER corrections 
       // double jet_pt_nom = jet.p4(i).Pt();
@@ -2078,23 +2149,51 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
       jes_delta = jetScaleRes.GetScaleDelta(jet_pt_nom, origJetReco.Eta());
       jes_delta_t1 = jetScaleRes.GetScaleDelta(jet_pt_L1L2L3, origJetReco.Eta());
 
+      //std::cout << "jes_delta = " << jes_delta << ", jes_delta_t1 = " << jes_delta_t1 << ", jet_pt_nom (before JES) = " << jet_pt_nom << ", jet_mass_nom (before JES) = " <<  jet_mass_nom << std::endl;
+
       // JES applied for systematics both in data and MC.
       if(systname == "Jet_Scale_Up"){
+
+      	//std::cout << "Jet_pt_nom (right before JES) = " << jet_pt_nom << ", jet_mass_nom (right before JES) = " <<  jet_mass_nom << std::endl;
+
         jet_pt_jesShifted = jet_pt_nom * (1.0 + jes_delta);
         jet_mass_jesShifted = jet_mass_nom * (1.0 + jes_delta);
         // Redo JES variations for T1 MET
         jet_pt_jesShiftedT1 = jet_pt_L1L2L3 * (1.0 + jes_delta_t1);
+
+        //std::cout << "jet_pt_jesShifted = " << jet_pt_jesShifted << ", jet_mass_jesShifted = " << jet_mass_jesShifted << std::endl;
       }
       else if(systname == "Jet_Scale_Down"){
         jet_pt_jesShifted = jet_pt_nom * (1.0 - jes_delta);
         jet_mass_jesShifted = jet_mass_nom * (1.0 - jes_delta);
         // Redo JES variations for T1 MET
         jet_pt_jesShiftedT1 = jet_pt_L1L2L3 * (1.0 - jes_delta_t1);
+
+        //std::cout << "jet_pt_jesShifted = " << jet_pt_jesShifted << ", jet_mass_jesShifted = " << jet_mass_jesShifted << std::endl;
       }
       // Correct the jet 4-momentum according to the systematic applied for JES.
-      systematics.shiftParticle(jet, origJetReco, jet_pt_jesShifted, jet_mass_jesShifted, systname, syst);
+      // systematics.shiftParticle(jet, origJetReco, jet_pt_jesShifted, jet_mass_jesShifted, systname, syst);
+    }
+
+    // Shift the jet 4-momentum accordingly:
+
+    if(isData){
+    	// Here, jet_pt_jerShifted and jet_mass_jerShifted are unchanged w.r.t. the original values. We need to do this in order to keep these jets in the _Jet vector.
+    	systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
+    }
+    else if(!isData){
+    	if(systname.find("_Scale_") != std::string::npos){
+    		// Correct the jet 4-momentum according to the systematic applied for JES.
+      		systematics.shiftParticle(jet, origJetReco, jet_pt_jesShifted, jet_mass_jesShifted, systname, syst);
+    	}
+    	else{
+    		// Correct the jet 4-momentum according to the systematic applied for JER
+        	systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
+    	}
     }
     
+    // --------------------- Propagation of JER/JES to MET --------------------- //
+
     double jetTotalEmEF = _Jet->neutralEmEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
     // std::cout << "jet total EM energy fraction = " << jetTotalEmEF << std::endl;
     
@@ -2145,13 +2244,18 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
      //std::cout << "Jet (after loop): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << ", raw pt = " << _Jet->p4(i).Pt() * (1.0 - _Jet->rawFactor[i]) << std::endl; 
     //std::cout << "Reco jet (before loop): pt = " << _Jet->pt(i) << ", mass = " << _Jet->mass(i) << ", eta = " << _Jet->eta(i) << ", phi = " << _Jet->phi(i) << std::endl; 
    //}
-  // std::cout << "--------" << std::endl;
+  //std::cout << "--------" << std::endl;
   // std::cout << "Number of bad EE jets = " << badeejets << std::endl;
+
+  //for(size_t i = 0; i < jets_jer_sfs.size(); i++){
+  //	std::cout << "Jet #" << i << ", jer nom sf = " << jets_jer_sfs.at(i).at(0) << ", jer down sf = " << jets_jer_sfs.at(i).at(1) << ", jer up sf = " << jets_jer_sfs.at(i).at(2) << std::endl;
+  //}
 
 }
 
 // --- Function that smeares the jet energy resolution: this is done only in MC to improve the agreement between data and MC --- //
- void Analyzer::smearJetRes(Particle& jet, const CUTS eGenPos, const PartStats& stats, int syst) {
+
+void Analyzer::smearJetRes(Particle& jet, const CUTS eGenPos, const PartStats& stats, int syst) {
   //at the moment
   if(isData || jet.type != PType::Jet ){
     // If it is data or not a reco jet collection, then return the original values for the 4-momenta of all particles.
@@ -2211,7 +2315,8 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
      if(systname == "orig" && stats.bfind("SmearTheJet")){ // This corresponds to the nominal values
 
        // Get the scale factors:
-       jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho, 0); // In this case, the jer_shift is the nominal jer sf.
+       //jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho, 0); // In this case, the jer_shift is the nominal jer sf.
+    	jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho).at(0); // In this case, the jer_shift is the nominal jer sf.
 
        // If smearing, update the jet_pt_nom and jet_mass_nom:
        jet_pt_jerShifted = jetReco.Pt() * jer_shift > 0.0 ? jetReco.Pt() * jer_shift : -1.0 * jetReco.Pt() * jer_shift; 
@@ -2222,9 +2327,11 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
      }else if(systname.find("_Res_") != std::string::npos){
 
        if(systname == "Jet_Res_Up"){
-         jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho, 1);
+         // jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho, 1);
+       	jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho).at(2);
        }else if(systname == "Jet_Res_Down"){
-         jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho, -1);
+       	// jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho, -1);
+        jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho).at(1);
        }
 
        jet_pt_jerShifted = jer_shift * jetReco.Pt();
@@ -2433,6 +2540,8 @@ void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
      active_part->at(CUTS::eGJet)->push_back(i); 
      // std::cout << "~~~~~~~~ Jet from _GenJet: pt = " << _GenJet->pt(i) << ", eta = " << _GenJet->eta(i) << std::endl;
    }
+
+   // std::cout << "number of good gen jets = " << active_part->at(CUTS::eGJet)->size() << std::endl;
  }
 
  // --- Function that applies selections to b-jets at gen-level (stored in the GenVisTau list) --- //

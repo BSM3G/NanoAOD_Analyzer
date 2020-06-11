@@ -181,6 +181,7 @@ public:
   void create_fillInfo();
 
   void setupJetCorrections(std::string, std::string);
+  void getJetEnergyResSFs(Particle& jet, const CUTS eGenPos);
   void applyJetEnergyCorrections(Particle&, CUTS, const PartStats&, std::string, int syst=0);
 
   inline bool passCutRange(std::string, double, const PartStats&);
@@ -301,6 +302,7 @@ public:
   BTagEntry::OperatingPoint b_workingpoint;
 
   Float_t jec_rho =20.;
+  std::vector< std::vector<float> > jets_jer_sfs;
 
   const static std::vector<CUTS> genCuts;
   const static std::vector<CUTS> jetCuts;
