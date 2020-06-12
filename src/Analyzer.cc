@@ -3831,7 +3831,7 @@ void Analyzer::fill_histogram() {
         active_part->at(itCut)=goodParts.at(itCut);
       }
 
-      //if(!fillCuts(false)) continue;
+      if(!fillCuts(false)) continue;
 
       //std::cout << "I get here!" << std::endl;
 
