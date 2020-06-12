@@ -410,6 +410,11 @@ void Analyzer::create_fillInfo() {
     if(fillInfo[it] == nullptr) fillInfo[it] = new FillVals();
   }
 
+  // BRENDA JUN 11
+  for(auto it: *syst_histo.get_groups()) {
+    if(fillInfo[it] == nullptr) fillInfo[it] = new FillVals();
+  }
+
 }
 
 void Analyzer::setupCR(std::string var, double val) {
@@ -717,7 +722,10 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   }
   _MET->init();
 
+  
   active_part = &goodParts;
+
+
   if(!select_mc_background()){
     //we will put nothing in good particles
     clear_values();
@@ -804,21 +812,21 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   // ---------------- Trigger requirement ------------------ //
   TriggerCuts(CUTS::eRTrig1);
 
-  std::cout << std::endl << "------------------- Event #" << event << " ----------------------" << std::endl;
+  //std::cout << std::endl << "------------------- Event #" << event << " ----------------------" << std::endl;
 
   ////check update met is ok
   for(size_t i=0; i < syst_names.size(); i++) {
   	std::string systname = syst_names.at(i);
   	//std::cout << "Systematic: " << systname << std::endl;
     
-  	if(i == 0){
-	    for(size_t i=0; i < _Jet->size(); i++) {
-	      std::cout << "Jet (before updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
-	    }
-	}
+  	//if(i == 0){
+	//    for(size_t i=0; i < _Jet->size(); i++) {
+	//      std::cout << "Jet (before updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
+	//    }
+	//}
     //std::cout << "Met value (before JERC): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << std::endl;
 
-     //////Smearing
+    //////Smearing
     smearLepton(*_Electron, CUTS::eGElec, _Electron->pstats["Smear"], distats["Electron_systematics"], i);
     smearLepton(*_Muon, CUTS::eGMuon, _Muon->pstats["Smear"], distats["Muon_systematics"], i);
     smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
@@ -834,17 +842,27 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     std::string systname = syst_names.at(i);
     for( auto part: allParticles) part->setCurrentP(i);
     _MET->setCurrentP(i);
-	std::cout << "Systematic: " << systname << std::endl;
-    for(size_t i=0; i < _Jet->size(); i++) {
-      std::cout << "Jet (after updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
-    }
+	//std::cout << "Systematic: " << systname << std::endl;
+    //for(size_t i=0; i < _Jet->size(); i++) {
+    //  std::cout << "Jet (after updating): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
+    //}
 
     //std::cout << "Met value (after JERC): px = " << _MET->px() << ", py = " << _MET->py() << ", pt = " << _MET->pt() << ", phi = " << _MET->phi() << ", raw pt = " << _MET->RawMet.Pt() << std::endl;
 
     getGoodParticles(i);
     selectMet(i);
+
+    //if(systname == "orig"){
+    	//active_part = &goodParts;
+    //	syst_parts.push_back()
+    //}
+    //else{
+    //	active_part = &syst_parts.at(i);
+    //}
   }
-  active_part = &goodParts;
+
+
+  // active_part = &goodParts; // original
   
   if( event < 10 || ( event < 100 && event % 10 == 0 ) ||
   ( event < 1000 && event % 100 == 0 ) ||
@@ -3707,6 +3725,7 @@ void Analyzer::fill_histogram() {
   if(isData && blinded && maxCut == SignalRegion) return;
 
   const std::vector<std::string>* groups = histo.get_groups();
+
   if(!isData){
     wgt = 1.;
     //wgt *= getTopBoostWeight(); //01.15.19
@@ -3730,15 +3749,24 @@ void Analyzer::fill_histogram() {
   //backup current weight
   backup_wgt=wgt;
 
+
   for(size_t i = 0; i < syst_names.size(); i++) {
     for(Particle* ipart: allParticles) ipart->setCurrentP(i);
     _MET->setCurrentP(i);
+	
+	//std::cout << "Systematic: " << syst_names.at(i) << std::endl;
+	/*
+    for(size_t i=0; i < _Jet->size(); i++) {
+      std::cout << "Jet (fill histogram): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
+    }
+	*/
     active_part =&syst_parts.at(i);
     //////i == 0 is orig or no syst case
     if(i == 0) {
       active_part = &goodParts;
       fillCuts(true);
       for(auto it: *groups) {
+      	//std::cout << "group = " << it << std::endl;
         fill_Folder(it, maxCut, histo, false);
       }
       if(!fillCuts(false)) {
@@ -3797,20 +3825,35 @@ void Analyzer::fill_histogram() {
       }
       ///---06.02.20 
 
+      //std::cout << "wgt (fill histogram 2) = " << wgt << std::endl;
       //get the non particle conditions:
       for(auto itCut : nonParticleCuts){
         active_part->at(itCut)=goodParts.at(itCut);
       }
-      if(!fillCuts(false)) continue;
+
+      //if(!fillCuts(false)) continue;
+
+      //std::cout << "I get here!" << std::endl;
+
       for(auto it: *syst_histo.get_groups()) {
+      	//std::cout << "syst_histo group = " << it << std::endl;
         fill_Folder(it, i, syst_histo, true);
       }
       wgt=backup_wgt;
     }
+  
   }
+
   for(Particle* ipart: allParticles) ipart->setCurrentP(0);
-  _MET->setCurrentP(0);
+   _MET->setCurrentP(0);
   active_part = &goodParts;
+
+  //std::cout << "End of fill_histogram" << std::endl;
+/*
+  for(size_t i=0; i < _Jet->size(); i++) {
+     std::cout << "Jet (end of fill histogram): pt = " << _Jet->p4(i).Pt() << ", mass = " << _Jet->p4(i).M() << ", eta = " << _Jet->p4(i).Eta() << ", phi = " << _Jet->p4(i).Phi() << std::endl; 
+  }
+*/
 }
 
 ///Function that fills up the histograms
@@ -3820,6 +3863,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
    * histAddVal(val, name) histo.addVal(val, group, max, name, wgt)
    * so each histogram knows the group, max and weight!
    */
+
   if(group == "FillRun" && (&ihisto==&histo)) {
     if(crbins != 1) {
       for(int i = 0; i < crbins; i++) {
@@ -3990,6 +4034,9 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(_FatJet->tau2[it], "tau2");
         histAddVal(_FatJet->tau2[it]/_FatJet->tau1[it], "tau2Overtau1");
       }
+      //if(part->type == PType::Jet){
+      //	std::cout << "jet pt = " << part->p4(it).Pt() << ", eta = " << part->p4(it).Eta() << ", phi = " << part->p4(it).Phi() << ", mass = " << part->p4(it).M() << std::endl;
+      //}
     }
 
     if((part->type != PType::Jet ) && active_part->at(ePos)->size() > 0) {
