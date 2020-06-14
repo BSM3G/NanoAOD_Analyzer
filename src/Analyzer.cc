@@ -1170,9 +1170,9 @@ void Analyzer::selectMet(int syst) {
   if(syst==0){
     active_part->at(CUTS::eMET)->push_back(1);
   } 
-  //else{
-  //  syst_parts.at(syst).at(CUTS::eMET)->push_back(1);
-  //}
+  else{
+    syst_parts.at(syst).at(CUTS::eMET)->push_back(1);
+  }
 }
 
 bool Analyzer::passMetFilters(std::string year, int ievent){
@@ -3577,7 +3577,7 @@ void Analyzer::fill_histogram() {
     for(Particle* ipart: allParticles) ipart->setCurrentP(i);
     _MET->setCurrentP(i);
 
-    active_part =&syst_parts.at(i); 
+    active_part = &syst_parts.at(i); 
 
     if(i == 0) {
       active_part = &goodParts;
