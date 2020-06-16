@@ -4327,20 +4327,12 @@ void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHist
   TH1D* histmc = (TH1D*)file1->FindObjectAny(MCHistoName.c_str());
   if(!histmc) throw std::runtime_error(("Failed to extract histogram "+MCHistoName+" from "+PUSPACE+MCHisto+"!").c_str());
 
-  TFile* file2 = new TFile((PUSPACE+DataHisto+".root").c_str());
+  TFile* file2 = new TFile((PUSPACE+DataHisto).c_str());
   TH1D* histdata = (TH1D*)file2->FindObjectAny(DataHistoName.c_str());
   if(!histdata) throw std::runtime_error(("Failed to extract histogram "+DataHistoName+" from "+PUSPACE+DataHisto+"!").c_str());
 
-  TFile* file3 = new TFile((PUSPACE+DataHisto+"Up.root").c_str());
-  TH1D* histdata_up = (TH1D*)file3->FindObjectAny(DataHistoName.c_str());
-  if(!histdata) throw std::runtime_error(("Failed to extract histogram "+DataHistoName+" from "+PUSPACE+DataHisto+"!").c_str());
-  
-  TFile* file4 = new TFile((PUSPACE+DataHisto+"Do.root").c_str());
-  TH1D* histdata_down = (TH1D*)file4->FindObjectAny(DataHistoName.c_str());
-  if(!histdata) throw std::runtime_error(("Failed to extract histogram "+DataHistoName+" from "+PUSPACE+DataHisto+"!").c_str());
-
-  //TH1D* histdata_up = (TH1D*)file2->FindObjectAny((DataHistoName+"Up").c_str());
-  //TH1D* histdata_down = (TH1D*)file2->FindObjectAny((DataHistoName+"Down").c_str());
+  TH1D* histdata_up = (TH1D*)file2->FindObjectAny((DataHistoName+"Up").c_str());
+  TH1D* histdata_down = (TH1D*)file2->FindObjectAny((DataHistoName+"Do").c_str());
 
 
   histmc->Scale(1./histmc->Integral());
@@ -4359,12 +4351,9 @@ void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHist
       value = 1;
       valueUp = 1;
       valueDown = 1;
-    }else{
-      //std::cout << "histdata nom bin #" << bin << " = " << histdata->GetBinContent(bin) << std::endl;
+    }else{ 
       value = histdata->GetBinContent(bin) / histmc->GetBinContent(bin);
-      if(histdata_up){
-        //std::cout << "histdata up bin #" << bin << " = " << histdata_up->GetBinContent(bin) << std::endl;
-        //std::cout << "histdata down bin #" << bin << " = " << histdata_down->GetBinContent(bin) << std::endl;
+      if(histdata_up){ 
         valueUp = histdata_up->GetBinContent(bin) / histmc->GetBinContent(bin);
         valueDown = histdata_down->GetBinContent(bin) / histmc->GetBinContent(bin);
       }
@@ -4377,15 +4366,10 @@ void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHist
       hPU_up[bin]   = value;
       hPU_down[bin] = value;
     }
-
-    //std::cout << "hPU_up = " << hPU_up[bin] << ", hPU_down = " << hPU_down[bin] << std::endl; 
   }
 
   file1->Close();
   file2->Close();
-  file3->Close();
-  file4->Close();
-
 }
 
 void Analyzer::initializeWkfactor(std::vector<std::string> infiles) {
