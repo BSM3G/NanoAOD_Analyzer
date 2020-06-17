@@ -36,6 +36,7 @@ public:
   virtual std::vector<CUTS> findExtraCuts(){return std::vector<CUTS>();}
   void init();
   void unBranch();
+  bool needSys(int) const;
   double pt() const;
   double px() const;
   double py() const;
@@ -53,6 +54,7 @@ public:
   void addP4Syst(TLorentzVector, int);
   void setMT2Mass(double);
   void setCurrentP(int);
+  TLorentzVector getNominalP();
   std::string getName() {return GenName;};
   // void update(PartStats&, Jet&, int);
   void update(int);

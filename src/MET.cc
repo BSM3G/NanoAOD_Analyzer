@@ -23,10 +23,21 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
   SetBranch("RawMET_phi", raw_met_phi);
 
   // Initialize the systRawMet vector 
+  
   for(auto name: syst_names){
-    systRawMetVec.push_back(new TLorentzVector);
+    if(name == "orig") 
+      systRawMetVec.push_back(new TLorentzVector);
+    else if(name.find("Met")!=std::string::npos){
+      systRawMetVec.push_back(new TLorentzVector);
+    }
+    else if(name.find("weight")!=std::string::npos){
+      systRawMetVec.push_back(nullptr);
+    }else if(name.find("Tau_qcd")!=std::string::npos){
+      systRawMetVec.push_back(nullptr);
+    }else
+      systRawMetVec.push_back(new TLorentzVector);
   }
-
+  
   // For TreatMuonsAsNeutrinos
   systdeltaMEx.resize(syst_names.size());
   systdeltaMEy.resize(syst_names.size());
@@ -50,6 +61,13 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
     }else
       systVec.push_back(new TLorentzVector);
   }
+
+  // Initialize the systRawMet vector 
+  /*
+  for(auto name: syst_names){
+    systRawMetVec.push_back(new TLorentzVector);
+  }
+  */
   
   if( std::find(syst_names.begin(), syst_names.end(), "MetUncl_Up") != syst_names.end() && _BOOM->GetListOfBranches()->FindObject((GenName+"_MetUnclustEnUpDeltaX").c_str()) !=0){
     SetBranch((GenName+"_MetUnclustEnUpDeltaX").c_str(), MetUnclUp[0]);
@@ -65,14 +83,19 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
   activeSystematic=0;
 }
 
+bool Met::needSys(int syst) const {
+  return systRawMetVec.at(syst) != nullptr;
+}
 
 void Met::addPtEtaPhiESyst(double ipt,double ieta, double iphi, double ienergy, int syst){
   systVec.at(syst)->SetPtEtaPhiE(ipt,ieta,iphi,ienergy);
+  systRawMetVec.at(syst)->SetPtEtaPhiE(ipt,ieta,iphi,ienergy);
 }
 
 
 void Met::addP4Syst(TLorentzVector mp4, int syst){
   systVec.at(syst)->SetPtEtaPhiE(mp4.Pt(),mp4.Eta(),mp4.Phi(),mp4.E());
+  systRawMetVec.at(syst)->SetPtEtaPhiE(mp4.Pt(),mp4.Eta(),mp4.Phi(),mp4.E());
 }
 
 
@@ -100,7 +123,8 @@ void Met::init(){
 
   for(int i=0; i < (int) syst_names.size(); i++) {
   	// initialize the Raw MET vector
-    systRawMetVec.at(i)->SetPxPyPzE(RawMet.Px(), RawMet.Py(), RawMet.Pz(), RawMet.E());
+  	if(systRawMetVec.at(i) != nullptr) addP4Syst(RawMet, i);
+    // systRawMetVec.at(i)->SetPxPyPzE(RawMet.Px(), RawMet.Py(), RawMet.Pz(), RawMet.E());
   
   	// initialize the deltaMuMet vectors to zero
     fill(systdeltaMEx.begin(), systdeltaMEx.end(), 0);
@@ -303,6 +327,13 @@ double Met::MT2(TLorentzVector& pa, TLorentzVector& pb){
 
 void Met::setMT2Mass(double mass){
   MT2mass=mass;
+}
+
+TLorentzVector Met::getNominalP(){
+  // Use the information from the raw met vector instead, since this is the vector all jet corrections are propagated to.
+	TLorentzVector nominalP4;
+	nominalP4.SetPxPyPzE(systRawMetVec.at(0)->Px(), systRawMetVec.at(0)->Py(), systRawMetVec.at(0)->Pz(), systRawMetVec.at(0)->E());
+	return nominalP4;
 }
 
 void Met::setCurrentP(int syst){

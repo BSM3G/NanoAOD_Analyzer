@@ -818,6 +818,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
 
     applyJetEnergyCorrections(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], year, i);
+    updateMet(i);
 
   }
   
@@ -1149,9 +1150,31 @@ double Analyzer::getTauDataMCScaleFactor(int updown){
   return sf;
 }
 
+// ---- Function that propagates the unclustered energy uncertainty to MET ---- //
+void Analyzer::updateMet(int syst){
+
+  std::string systname = syst_names.at(syst);
+
+  // After jet energy corrections, we need to update all MET vectors in each systematics so they are the same as that in "orig"
+  
+  if(_MET->needSys(syst) != 0){
+
+    TLorentzVector met_p4_nom = _MET->getNominalP();
+    _MET->addP4Syst(met_p4_nom, syst);
+
+  }
+
+  // --- Apply MET unclustered energy uncertainty if needed (syst) ---- // 
+  if(!isData){
+    _MET->propagateUnclEnergyUncty(systname,syst);
+  }
+
+}
+
+
 ///Calculates met from values from each file plus smearing and treating muons as neutrinos
 void Analyzer::selectMet(int syst) {
-
+   
   // Before using the TreatMuonsAsNeutrinos option, we store the MET value in a separate vector for reference purposes:
   _MET->JERCorrMet.SetPxPyPzE(_MET->px(), _MET->py(), _MET->p4().Pz(), _MET->energy());
 
@@ -2081,14 +2104,10 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
   
   }
   
-  // Propagate "unclustered energy" uncertainty to MET
+  // Propagate "unclustered energy" uncertainty to MET to finalize the 2017 MET recipe v2
   if(year.compare("2017") == 0){
     // Remove the L1L2L3-L1 corrected jets in the EE region from the default MET branch
     _MET->propagateUnclEnergyUnctyEE(delta_x_T1Jet, delta_y_T1Jet, delta_x_rawJet, delta_y_rawJet, systname, syst);
-  }
-
-  if(!isData){
-    _MET->propagateUnclEnergyUncty(systname,syst);
   }
 
 }
