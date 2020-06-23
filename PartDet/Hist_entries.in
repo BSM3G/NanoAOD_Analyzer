@@ -126,8 +126,10 @@ Electron2MetMt              100   0      500
 
 //------------------------------------------------//
 
-FillMuon1 0
+FillMuon1 1
 
+
+Muon1ptak8pt        2000   0.    5000.
 NMuon1                   20   0.      20.
 Muon1Energy            2000   0.    5000.
 Muon1Pt                2000   0.    5000.
@@ -181,7 +183,7 @@ CentralJetPt    200   0.   500.
 CentralJetEta   100  -5.0   +5.0
 
 
-FillWJet 0
+FillWJet 1
 
 NWJet      20   0.    20.
 WJetPt    200   0.   500.
@@ -207,7 +209,7 @@ CorrectedRawMET    100  0  1000
  
 //------------------------------------------------//
 
-FillLeadingJet 0
+FillLeadingJet 1
 
 FirstLeadingJetPt     200   0.   1000.
 SecondLeadingJetPt    200   0.   1000.
@@ -235,7 +237,7 @@ DeltaEtaVsDeltaPhiLeadSubl   200   0      10.   72   0    +3.15
 
 //------------------------------------------------//
 
-FillDiJet 0
+FillDiJet 1
 
 DiJetDeltaR           200   0    10.
 DiJetDeltaEta         200   0    10.
@@ -279,7 +281,7 @@ Muon1MetDeltaPhiVsDiMuonCosDphi   72  0   +3.15  220    -1.1    1.1
 
 //------------------------------------------------//
 
-FillDiTau 1
+FillDiTau 0
 
 DiTau_Tau1DiJetDeltaPhi          72     0    +3.15
 DiTau_Tau2DiJetDeltaPhi          72     0    +3.15
