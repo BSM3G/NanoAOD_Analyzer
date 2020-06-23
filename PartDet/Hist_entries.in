@@ -129,7 +129,7 @@ Electron2MetMt              100   0      500
 FillMuon1 1
 
 
-Muon1ptak8pt        2000   0.    5000.
+ptak8pt        2000   0.    5000.
 NMuon1                   20   0.      20.
 Muon1Energy            2000   0.    5000.
 Muon1Pt                2000   0.    5000.
