@@ -2583,7 +2583,9 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       //else if(cut == "MatchBToGen") passCuts = passCuts && (isData ||  abs(_Jet->partonFlavour->at(i)) == 5);
       else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
       else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+      else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(lvec, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
       else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(lvec, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
+
     // ----anti-overlap requirements
       else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
       else if (cut =="RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
@@ -2904,6 +2906,14 @@ bool Analyzer::isOverlapingB(const TLorentzVector& lvec, Jet& overlapper, CUTS e
     if(lvec.DeltaR(overlapper.p4(it)) < MatchingDeltaR) return true;
   }
   return false;
+}
+
+
+bool Analyzer::isOverlapingC(const TLorentzVector& lvec, FatJet& overlapper, CUTS ePos, double MatchingDeltaR) {
+	for(auto it : *active_part->at(ePos)) {
+		if(lvec.DeltaR(overlapper.p4(it)) < MatchingDeltaR) return true;
+	}
+	return false;
 }
 
 ///Tests if tau decays into the specified number of jet prongs.
@@ -3687,6 +3697,14 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       if(ptIndexVector.size()>0){
         histAddVal(part->pt(ptIndexVector.back().second), "FirstLeadingPt");
         histAddVal(part->eta(ptIndexVector.back().second), "FirstLeadingEta");
+	if((part->type == PType::Muon )){
+		Float_t  leadingmu_pt = (part->pt(ptIndexVector.back().second));
+		Float_t hnandfatjets = leadingmu_pt;
+		for(Int_t i=0; i<active_part->at(CUTS::eRWjet)->size(); i++){
+			hnandfatjets = hnandfatjets + (_FatJet->p4(active_part->at(CUTS::eRWjet)->at(i)).Pt());
+		}
+		histAddVal(hnandfatjets, "ptak8pt");
+	}
       }
       if(ptIndexVector.size()>1){
         histAddVal(part->pt(ptIndexVector.at(ptIndexVector.size()-2).second), "SecondLeadingPt");

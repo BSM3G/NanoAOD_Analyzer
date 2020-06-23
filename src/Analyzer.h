@@ -164,6 +164,7 @@ public:
 
   bool isOverlaping(const TLorentzVector&, Lepton&, CUTS, double);
   bool isOverlapingB(const TLorentzVector&, Jet&, CUTS, double); //01.17.19
+  bool isOverlapingC(const TLorentzVector&, FatJet&, CUTS, double);
   bool passProng(std::string, int);
   bool isInTheCracks(float);
   bool passedLooseJetID(int);
