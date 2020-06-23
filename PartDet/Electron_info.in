@@ -32,15 +32,13 @@ IsoSumPtCutValue 0.0 0.15
 //(0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
 DoDiscrByCBID true
 DiscrByCBID 4
-DoDiscrByHLTID false
-DiscrByHLTID 4
-DoDiscrByHEEPID false
 
-// DoDiscrByVetoID false
-// DoDiscrByLooseID false
-// DoDiscrByMediumID false
-// DoDiscrByTightID true
-// DoDiscrByHEEPID false
+DoDiscrBymvaID false
+DiscrBymvaWP80 0
+DiscrBymvaWP90 1
+DiscrBymvaWPL  0
+
+DoDiscrByHEEPID false
 
 ///---MET TOPOLOGY CUTS---///
 
@@ -64,17 +62,15 @@ PtCut 20.0 9999.9
 DoDiscrByIsolation 1
 IsoSumPtCutValue 0.1 0.2
 
-// DoDiscrByVetoID false
-// DoDiscrByLooseID true
-// DoDiscrByMediumID 0
-// DoDiscrByTightID false
-// DoDiscrByHEEPID 0
-
 //(0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
 DoDiscrByCBID true
 DiscrByCBID 4
-DoDiscrByHLTID false
-DiscrByHLTID 4
+
+DoDiscrBymvaID false
+DiscrBymvaWP80 0
+DiscrBymvaWP90 1
+DiscrBymvaWPL  0
+
 DoDiscrByHEEPID false
 
 ///---MET TOPOLOGY CUTS---///

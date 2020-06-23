@@ -3,15 +3,14 @@
 ####################################
 
 CalculatePUSystematics true
-DataHistos data_pileup_2016_69p2.root  
-MCHistos mc_pileup_Summer16.root
+DataHistos PileUpReweighting2016.root       # 2016: PileUpReweighting2016.root, 2017: PileUpReweighting2017.root, 2018: PileUpReweighting2018.root
+MCHistos mc2016_pileup_Dec2018reReco.root   # 2016: mc2016_pileup_Dec2018reReco.root, 2017: mc2017_pileup_Dec2018reReco.root, 2018: 2016: mc2018_pileup_Dec2018reReco.root
 DataPUHistName pileup
 MCPUHistName pileup
 
 SpecialMCPUCalculation false
 SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6.root
 /// SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_wanddylo_incl.root
-/// SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_dynlo_incl.root
 
 ApplyTauIDSF false
 UsePileUpWeight true
@@ -46,6 +45,7 @@ UseTriggerWildcard false
 ///---Treat Muon as Neutrino---///
 
 TreatMuonsAsNeutrinos 0
+TreatOnlyOneMuonAsNeutrino 0
 TreatMuonsAsTaus 0
 
 ///-----MET cuts------///
@@ -62,6 +62,7 @@ HtCut 30.0
 JetPtForMhtAndHt 30.0        
 JetEtaForMhtAndHt 5.0        
 ApplyJetLooseIDforMhtAndHt false
+ApplyJetTightIDforMhtAndHt false
 
 /// --- MC selection --- ///
 InitializeMCSelection false

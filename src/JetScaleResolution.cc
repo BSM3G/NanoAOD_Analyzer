@@ -36,9 +36,14 @@ double JetScaleResolution::GetScaleDelta(const double& recojetPt, const double& 
     return delta;
 }
 
-double JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho, double sigmares){
+// double JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho, double sigmares){
+std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho){
+
+
     if(!(recojet.Pt() > 0.0)){
-        return recojet.Pt();
+        //return recojet.Pt();
+        std::vector<float> nosmearvalues(3, 1.0);
+        return nosmearvalues;
     }
 
     jer = JME::JetResolution(resfilename);
@@ -47,66 +52,108 @@ double JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& recojet, const
     auto params_sf_and_uncertainty = JME::JetParameters();
     auto params_resolution = JME::JetParameters();
 
-    // Call params_resolution:
-    params_resolution.setJetPt(recojet.Pt());
-    params_resolution.setJetEta(recojet.Eta());
-    params_resolution.setRho(rho);
-
-    float jet_pt_resolution = jer.getResolution(params_resolution);
-
     // CV: define enums to access JER scale factors and uncertainties (cf. CondFormats/JetMETObjects/interface/JetResolutionObject.h) 
-    int index_nominal = 0, index_shift_down = 1, index_shift_up = 2;
+    // int index_nominal = 0, index_shift_down = 1, index_shift_up = 2;
 
-    float jet_pt_sf_and_uncertainty[3] = { };
-    float smear_values[3] = { }; 
+    //float jet_pt_sf_and_uncertainty[3] = { }; 
+    std::vector<float> jet_pt_sf_and_uncertainty; 
     
     for(int index = 0; index < 3; index++){
         Variation var = (Variation) index;
         params_sf_and_uncertainty.setJetEta(recojet.Eta());
-        jet_pt_sf_and_uncertainty[index] = jerSF_and_Uncertainty.getScaleFactor(params_sf_and_uncertainty, var);
+        params_sf_and_uncertainty.setJetPt(recojet.Pt()); // new, june 11, 2020.
+        // jet_pt_sf_and_uncertainty[index] = jerSF_and_Uncertainty.getScaleFactor(params_sf_and_uncertainty, var);
+        jet_pt_sf_and_uncertainty.push_back(jerSF_and_Uncertainty.getScaleFactor(params_sf_and_uncertainty, var));
     }
 
-    for(int index = 0; index < 3; index++){
-        double smearFactor = 0.0;
+    //float smear_values[3] = { };
+    std::vector<float> smear_values;
 
-        // Case 1: we have a "good" generator level jet matched to the reconstructed jet
-        // Case 2: we don't have a generator level jet. Smear jet pT using a random Gaussian variation
-        // Case 3: we cannot smear this jet, as we don't have a generator level jet and the resolution in data is better than the resolution in the simulation, 
+    if(genjet != TLorentzVector(0.,0.,0.,0.)){
+        for(int index = 0; index < 3; index++){
+            double smearFactor = 0.0;
 
-        if(genjet != TLorentzVector(0,0,0,0)){
+            // Case 1: we have a "good" generator level jet matched to the reconstructed jet
+
             double deltaPt = recojet.Pt() - genjet.Pt();
-            smearFactor = 1.0 + (jet_pt_sf_and_uncertainty[index] - 1.0) * (deltaPt / recojet.Pt());
+            smearFactor = 1.0 + (jet_pt_sf_and_uncertainty.at(index) - 1.0) * (deltaPt / recojet.Pt());
+
+            // check that the smeared jet energy remains positive
+            // as the direction of the jet would change ("flip") otherwise - and this is not what we want
+
+            if(smearFactor * recojet.Pt() < 1.0e-2){
+                smearFactor = 1.0e-2;
+            }
+
+            //smear_values[index] = smearFactor;
+            smear_values.push_back(smearFactor);
         }
-        else if(jet_pt_sf_and_uncertainty[index] > 1.0){
-            double sigma = jet_pt_resolution * sqrt( pow(jet_pt_sf_and_uncertainty[index], 2) - 1.0);
-            smearFactor = rnd->Gaus(1.0,sigma);
-        }
-        else{
-            smearFactor = 1.0;
+    }
+    else{
+        // Call params_resolution:
+        params_resolution.setJetPt(recojet.Pt());
+        params_resolution.setJetEta(recojet.Eta());
+        params_resolution.setRho(rho);
+
+        float jet_pt_resolution = jer.getResolution(params_resolution);
+        double rand = rnd->Gaus(0.0, jet_pt_resolution);
+
+        for(int index = 0; index < 3; index++){
+
+            double smearFactor = 0.0;
+
+            if(jet_pt_sf_and_uncertainty[index] > 1.0){
+                // Case 2: we don't have a generator level jet. Smear jet pT using a random Gaussian variation
+                smearFactor =  1.0 + rand * sqrt( pow(jet_pt_sf_and_uncertainty.at(index), 2) - 1.0);
+            }
+            else{
+                // Case 3: we cannot smear this jet, as we don't have a generator level jet and the resolution in data is better than the resolution in the simulation, 
+                // so we would need to randomly "unsmear" the jet, which is impossible
+                smearFactor = 1.0;
+            }
+
+            // Check that the smeared jet energy remains positive, as the direction of the jet would change ("flip") otherwise, and this is not what we want
+            if(smearFactor * recojet.Pt() < 1.0e-2){
+                smearFactor = 1.0e-2;
+            }
+
+            //smear_values[index] = smearFactor;
+            smear_values.push_back(smearFactor);
+
         }
 
-        if(smearFactor < 0.0) smearFactor = 0.0;
-
-        // Check that the smeared jet energy remains positive, as the direction of the jet would change ("flip") otherwise, and this is not what we want
-        if(smearFactor * recojet.Pt() < 1.0e-2){
-            smearFactor = 1.0e-2;
-        }
-
-        smear_values[index] = smearFactor;
     }
 
+    /*        
     // Return the appropriate value depending on what you want:
     if(sigmares == 0.0){ // nominal value
-        return smear_values[index_nominal];
+        //std::cout << "nominal = smear_values[index_nominal] = " << smear_values[index_nominal] << std::endl;
+        std::cout << "nominal = smear_values[index_nominal] = " << smear_values.at(index_nominal) << std::endl;
+        //return smear_values[index_nominal];
+        return smear_values.at(index_nominal);
     }
     else if(sigmares == -1.0){ // down value
-        return smear_values[index_shift_down];
+        //std::cout << "down = smear_values[down] = " << smear_values[index_shift_down] << std::endl;
+        //return smear_values[index_shift_down];
+
+        std::cout << "down = smear_values[down] = " << smear_values.at(index_shift_down) << std::endl;
+        return smear_values.at(index_shift_down);
     }
     else if(sigmares == 1.0){ // up value
-        return smear_values[index_shift_up];
+        std::cout << "up = smear_values[up] = " << smear_values.at(index_shift_up) << std::endl;
+        return smear_values.at(index_shift_up);
+
+        // std::cout << "up = smear_values[up] = " << smear_values[index_shift_up] << std::endl;
+        // return smear_values[index_shift_up];
     }
 
-    return smear_values[index_nominal];
+    return smear_values.at(0);
+    */
+
+    //std::cout << "jet_pt_sf_and_uncertainty size = " << jet_pt_sf_and_uncertainty.size() << std::endl;
+    // std::cout << "smear_values size = " << smear_values.size() << std::endl;
+
+    return smear_values;
 }
 
 void JetScaleResolution::InitScale(const std::string& filename, const std::string& type)
