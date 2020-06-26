@@ -7,7 +7,7 @@ DeltaRCut      0.3
 
 DiscrByOSLSType  None	#### OS or LS
 
-DiscrByCosDphi	 false
+DiscrByCosDphi	 false			# dPhi is calculated between Tau1 and Tau2 
 CosDphiCut 	 -1.00   -0.80
 
 DiscrByMassReco  true
@@ -25,9 +25,10 @@ DeltaPtDivSumPtCutValue    0.4  1.
 DiscrByDeltaPt 		   false
 DeltaPtCutValue 	   50.0   1000.0
 
-DiscrByCosDphiPtAndMet false     # Takes Tau1 as reference to calculate cos(dPhi)
+DiscrByCosDphiPtAndMet false     # dPhi between Tau1 and MET
 CosDphiPtAndMetCut  -1.00 -0.90
 
+# dPhi between leading lepton in the combination and MET
 DiscrByCosDphiLeadPtAndMet false 
 CosDphiLeadPtAndMetCut -1.00 -0.90
 
@@ -52,7 +53,8 @@ DiscrByDeltaR  1
 DeltaRCut      0.3 
 
 DiscrByOSLSType  OS
-DiscrByCosDphi	 0
+
+DiscrByCosDphi	 0				# dPhi is calculated between Muon1 and Muon2 
 CosDphiCut 	 -1.00   -0.95
 
 DiscrByMassReco  true
@@ -70,9 +72,10 @@ DeltaPtDivSumPtCutValue    0.1  1.0
 DiscrByDeltaPt 		   true
 DeltaPtCutValue 	   30.0   9999.0
 
-DiscrByCosDphiPtAndMet false     # Takes Muon1 as reference to calculate cos(dPhi)
+DiscrByCosDphiPtAndMet false     # dPhi between Muon1 and MET
 CosDphiPtAndMetCut  -1.00 -0.90
 
+# dPhi between leading lepton in the combination and MET
 DiscrByCosDphiLeadPtAndMet false 
 CosDphiLeadPtAndMetCut -1.00 -0.90
 
@@ -98,7 +101,7 @@ DeltaRCut      0.3
 
 DiscrByOSLSType  No
 
-DiscrByCosDphi	 true
+DiscrByCosDphi	 true				# dPhi is calculated between Electron1 and Electron2 
 CosDphiCut 	 -1.00   -0.95
 
 DiscrByMassReco  0
@@ -116,9 +119,10 @@ DeltaPtDivSumPtCutValue    0.1  1.0
 DiscrByDeltaPt 		   0
 DeltaPtCutValue 	   30.0   1000.0
 
-DiscrByCosDphiPtAndMet false     # Takes Electron1 as reference to calculate cos(dPhi)
+DiscrByCosDphiPtAndMet false     # dPhi between Electron1 and MET
 CosDphiPtAndMetCut  -1.00 -0.90
 
+# dPhi between leading lepton in the combination and MET
 DiscrByCosDphiLeadPtAndMet false 
 CosDphiLeadPtAndMetCut -1.00 -0.90
 
