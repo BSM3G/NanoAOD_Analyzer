@@ -146,7 +146,7 @@ public:
   void getGoodRecoFatJets(CUTS, const PartStats&, const int);
 
   void getGoodLeptonCombos(Lepton&, Lepton&, CUTS, CUTS, CUTS, const PartStats&, const int);
-  double CalculateDiLepMassDeltaPt(const TLorentzVector&, const TLorentzVector&);
+  double CalculateDiLepMassDeltaPt(const TLorentzVector&, const TLorentzVector&, const float, const float);
   void getGoodLeptonJetCombos(Lepton&, Jet&, CUTS, CUTS, CUTS, const PartStats&, const int);
   void getGoodDiJets(const PartStats&, const int);
 
@@ -189,6 +189,7 @@ public:
   bool passCutRange(double, const std::pair<double, double>&);
   bool findCut(const std::vector<std::string>&, std::string);
 
+  void updateMet(int syst=0);
   void selectMet(int syst=0);
   bool passMetFilters(std::string, int);
   void treatMuonsAsMet(int);

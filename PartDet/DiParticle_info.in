@@ -6,7 +6,8 @@ DiscrByDeltaR  true
 DeltaRCut      0.3
 
 DiscrByOSLSType  None	#### OS or LS
-DiscrByCosDphi	 false
+
+DiscrByCosDphi	 false			# dPhi is calculated between Tau1 and Tau2 
 CosDphiCut 	 -1.00   -0.80
 
 DiscrByMassReco  true
@@ -19,12 +20,30 @@ PZetaVisCutCoefficient    -3.1
 CDFzeta2DCutValue         -50.0    1000
 
 DiscrByDeltaPtDivSumPt     false
-DeltaPtDivSumPtCutValue    0.4  1.0
+DeltaPtDivSumPtCutValue    0.4  1.
+
 DiscrByDeltaPt 		   false
 DeltaPtCutValue 	   50.0   1000.0
 
-DiscrByAbsCosDphiLeadPtandMet   true
-AbsCosDphiLeadPtAndMetCut       -1.00   -0.90
+DiscrByCosDphiPtAndMet false     # dPhi between Tau1 and MET
+CosDphiPtAndMetCut  -1.00 -0.90
+
+# dPhi between leading lepton in the combination and MET
+DiscrByCosDphiLeadPtAndMet false 
+CosDphiLeadPtAndMetCut -1.00 -0.90
+
+DiscrByAbsCosDphiLeadPtandMet   false
+AbsCosDphiLeadPtAndMetCut       0.90  1.00
+
+DiscrByMtLeadPtAndMet false
+MtLeadPtAndMetCut     0.0   9000.0
+
+DiscrByDiLepMassDeltaPt false
+DiLeadMassDeltaPtCut   0.0   9000.0
+
+# Currently not implemented in the Analyzer:
+# DiscrByCosDphi_DeltaPtAndMet   false
+# CosDphi_DeltaPtMetCut  0.8  1.0
 
 ######################################
                DiMuon
@@ -34,11 +53,9 @@ DiscrByDeltaR  1
 DeltaRCut      0.3 
 
 DiscrByOSLSType  OS
-DiscrByCosDphi	 0
-CosDphiCut 	 -1.00   -0.95
 
-DiscrByCosDphi_DeltaPtAndMet   false
-CosDphi_DeltaPtMetCut  0.8  1.0
+DiscrByCosDphi	 0				# dPhi is calculated between Muon1 and Muon2 
+CosDphiCut 	 -1.00   -0.95
 
 DiscrByMassReco  true
 HowCalculateMassReco NONE     ###VectorSumOfVisProductsAndMet   or    CollinearApprox 
@@ -51,8 +68,29 @@ CDFzeta2DCutValue         -50.0    1000
 
 DiscrByDeltaPtDivSumPt     0
 DeltaPtDivSumPtCutValue    0.1  1.0
+
 DiscrByDeltaPt 		   true
 DeltaPtCutValue 	   30.0   9999.0
+
+DiscrByCosDphiPtAndMet false     # dPhi between Muon1 and MET
+CosDphiPtAndMetCut  -1.00 -0.90
+
+# dPhi between leading lepton in the combination and MET
+DiscrByCosDphiLeadPtAndMet false 
+CosDphiLeadPtAndMetCut -1.00 -0.90
+
+DiscrByAbsCosDphiLeadPtandMet   false
+AbsCosDphiLeadPtAndMetCut       0.90  1.00
+
+DiscrByMtLeadPtAndMet false
+MtLeadPtAndMetCut     0.0   9000.0
+
+DiscrByDiLepMassDeltaPt false
+DiLeadMassDeltaPtCut   0.0   9000.0
+
+# Currently not implemented in the Analyzer:
+# DiscrByCosDphi_DeltaPtAndMet   false
+# CosDphi_DeltaPtMetCut  0.8  1.0
 
 ########################################
                DiElectron
@@ -62,11 +100,9 @@ DiscrByDeltaR  1
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No
-DiscrByCosDphi	 true
-CosDphiCut 	 -1.00   -0.95
 
-DiscrByCosDphi_DeltaPtAndMet   false
-CosDphi_DeltaPtMetCut  0.8  1.0
+DiscrByCosDphi	 true				# dPhi is calculated between Electron1 and Electron2 
+CosDphiCut 	 -1.00   -0.95
 
 DiscrByMassReco  0
 HowCalculateMassReco None     ###VectorSumOfVisProductsAndMet   or    CollinearApprox 
@@ -79,9 +115,29 @@ CDFzeta2DCutValue         -50.0    9999.0
 
 DiscrByDeltaPtDivSumPt     0
 DeltaPtDivSumPtCutValue    0.1  1.0
+
 DiscrByDeltaPt 		   0
 DeltaPtCutValue 	   30.0   1000.0
 
+DiscrByCosDphiPtAndMet false     # dPhi between Electron1 and MET
+CosDphiPtAndMetCut  -1.00 -0.90
+
+# dPhi between leading lepton in the combination and MET
+DiscrByCosDphiLeadPtAndMet false 
+CosDphiLeadPtAndMetCut -1.00 -0.90
+
+DiscrByAbsCosDphiLeadPtandMet   false
+AbsCosDphiLeadPtAndMetCut       0.90  1.00
+
+DiscrByMtLeadPtAndMet false
+MtLeadPtAndMetCut     0.0   9000.0
+
+DiscrByDiLepMassDeltaPt false
+DiLeadMassDeltaPtCut   0.0   9000.0
+
+# Currently not implemented in the Analyzer:
+# DiscrByCosDphi_DeltaPtAndMet   false
+# CosDphi_DeltaPtMetCut  0.8  1.0
 
 #########################################
                DiJet
@@ -92,9 +148,12 @@ DeltaRCut 0.3
 
 DiscrByDeltaEta      true
 DeltaEtaCut         4.2  9999.0
+
 DiscrByDeltaPhi      false
 DeltaPhiCut         0    9999.0
+
 DiscrByOSEta true
+
 DiscrByCosDphi false
 CosDphiCut  -1.00 -0.80
 
