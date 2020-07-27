@@ -29,6 +29,9 @@ struct CRTester;
 
 /////fix
 #include "./btagging/BTagCalibrationStandalone.h"
+#include "./tauid/TauIDSFTool.h"
+#include "./tauid/TauESTool.h"
+#include "./tauid/TauFESTool.h"
 
 #include "Cut_enum.h"
 #include "FillInfo.h"
@@ -302,6 +305,8 @@ public:
   BTagCalibrationReader btagsfreader;
   BTagEntry::JetFlavor bjetflavor;
   BTagEntry::OperatingPoint b_workingpoint;
+
+  // Tau ID SFs 
 
   Float_t jec_rho =20.;
   std::vector< std::vector<float> > jets_jer_sfs;

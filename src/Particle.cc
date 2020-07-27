@@ -588,6 +588,10 @@ Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
   SetBranch("Tau_chargedIso", chargedIsoPtSum);
   SetBranch("Tau_neutralIso", neutralIso);
   SetBranch("Tau_puCorr", puCorr);
+
+  // ----- Tau gen-matching for ID SFs ----- //
+  SetBranch("Tau_genPartFlav", genPartFlav); // Flavour of genParticle for MC matching to status==2 taus: 1 = prompt electron, 2 = prompt muon, 3 = tau->e decay, 4 = tau->mu decay, 5 = hadronic tau decay, 0 = unknown or unmatched
+  SetBranch("Tau_genPartIdx", genPartIdx);   // (index to Genpart collection) Index into genParticle list for MC matching to status==2 taus
   
 }
 

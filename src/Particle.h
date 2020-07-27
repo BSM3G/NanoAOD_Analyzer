@@ -327,6 +327,10 @@ public:
   float chargedIsoPtSum[MAXINDEX];
   float neutralIso[MAXINDEX];
   float puCorr[MAXINDEX];
+
+  // ----- Tau gen-matching for ID SFs ----- //
+  UChar_t genPartFlav[MAXINDEX];
+  Int_t genPartIdx[MAXINDEX];
   
 };
 
