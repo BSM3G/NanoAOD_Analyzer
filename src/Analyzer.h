@@ -29,9 +29,7 @@ struct CRTester;
 
 /////fix
 #include "./btagging/BTagCalibrationStandalone.h"
-#include "./tauid/TauIDSFTool.h"
-#include "./tauid/TauESTool.h"
-#include "./tauid/TauFESTool.h"
+#include "TauIDSFTool.h"
 
 #include "Cut_enum.h"
 #include "FillInfo.h"
@@ -124,6 +122,7 @@ public:
   bool passJetVetoEEnoise2017(int);
 
   void smearLepton(Lepton&, CUTS, const PartStats&, const PartStats&, int syst=0);
+  void smearTaus(Lepton&, const PartStats&, const PartStats&, int syst=0);
   //void smearJet(Particle&, CUTS, const PartStats&, int syst=0);
   void smearJetRes(Particle&, CUTS, const PartStats&, int syst=0);
 
@@ -172,7 +171,9 @@ public:
   bool isInTheCracks(float);
   bool passedLooseJetID(int);
   bool select_mc_background();
-  double getTauDataMCScaleFactor(int updown);
+  double getTauIdSF(bool applyDMsfs, bool applyEmbedding, std::string uncertainty);
+  double getTauIdAntiEleSF(std::string uncertainty);
+  double getTauIdAntiMuSF(std::string uncertainty);
   double getWkfactor();
   double getZBoostWeight();
   double getZBoostWeightSyst(int ud); // 06.02.20
@@ -187,6 +188,9 @@ public:
   void setupJetCorrections(std::string, std::string);
   void getJetEnergyResSFs(Particle& jet, const CUTS eGenPos);
   void applyJetEnergyCorrections(Particle&, CUTS, const PartStats&, std::string, int syst=0);
+
+  void setupTauIDSFsInfo(std::string tauidalgoname, std::string year);
+  void setupTauResSFsInfo(bool);
 
   inline bool passCutRange(std::string, double, const PartStats&);
   bool passCutRange(double, const std::pair<double, double>&);
@@ -296,9 +300,6 @@ public:
   bool ecalbadcalibrationfilter = false;
   bool allmetfilters = false;
   bool passedmetfilters = false;
-
-  //BTagCalibration calib = BTagCalibration("csvv1", "Pileup/btagging.csv");
-  //BTagCalibrationReader reader = BTagCalibrationReader(BTagEntry::OP_TIGHT, "central");
   
   // B-tagging scale factors - calibration + readers
   BTagCalibration btagcalib;
@@ -307,7 +308,19 @@ public:
   BTagEntry::OperatingPoint b_workingpoint;
 
   // Tau ID SFs 
+  TauIDSFTool tau1idSFs, tau2idSFs;
+  TauIDSFTool tau1id_antiEleSFs, tau2id_antiEleSFs;
+  TauIDSFTool tau1id_antiMuSFs, tau2id_antiMuSFs;
+  TauESTool tauesSFs;
+  TauFESTool taufesSFs;
+  std::string tauidyear;
+  std::map<int, std::string> tauidwpsmap;
+  std::map<int, std::string> antielewpsmap;
+  std::map<int, std::string> antimuwpsmap;
+  std::string tauid_algo, antiele_algo, antimu_algo;
+  int tauidwp, antielewp, antimuwp;
 
+  
   Float_t jec_rho =20.;
   std::vector< std::vector<float> > jets_jer_sfs;
 

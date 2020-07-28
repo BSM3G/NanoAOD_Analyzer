@@ -2,7 +2,9 @@
             Smear
 /////////////////////////////////
 
-SmearTheParticle 0
+SmearTheParticle 1
+ApplyETauFakeRateESSF 1 
+
 PtScaleOffset 1.0
 PtSigmaOffset 1.
 EtaScaleOffset 1.
@@ -12,10 +14,9 @@ PhiSigmaOffset 1.
 EnergyScaleOffset 1.
 EnergySigmaOffset 1.
 
-MatchToGen 1
+MatchToGen 0
 GenMatchingDeltaR 0.1
 
-TauSF 0
 doEfficiencyPlots true
 
 //////////////////////////////
@@ -23,7 +24,7 @@ doEfficiencyPlots true
 ////////////////////////////
 
 # Options for TauIDAlgorithm: Tau_idMVAoldDM2017v2 or Tau_idDeepTau2017v2p1
-TauIDAlgorithm Tau_idDeepTau2017v2p1
+TauIDAlgorithm Tau_idMVAoldDM2017v2
 
 //////////////////////////////
             Tau1

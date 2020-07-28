@@ -162,12 +162,11 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 	
   // B-tagging scale factor stuff
   setupBJetSFInfo(_Jet->pstats["BJet"], year);  
-  // Here the calibration module will be defined, which is then needed to define the readers below.
-/*
-  btagsfreader.load(calib, BTagEntry::FLAV_B, "comb");
-  btagsfreaderup.load(calib, BTagEntry::FLAV_B, "comb");
-  btagsfreaderdown.load(calib, BTagEntry::FLAV_B, "comb");
-*/
+
+  // Tau scale factors stuff
+  setupTauIDSFsInfo(_Tau->pstats["TauID"].smap.at("TauIDAlgorithm"), year);
+  setupTauResSFsInfo(distats["Run"].bfind("ApplyETauFakeRateESSF"));
+
 
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
@@ -816,7 +815,8 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     //////Smearing
     smearLepton(*_Electron, CUTS::eGElec, _Electron->pstats["Smear"], distats["Electron_systematics"], i);
     smearLepton(*_Muon, CUTS::eGMuon, _Muon->pstats["Smear"], distats["Muon_systematics"], i);
-    smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
+    // smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
+    smearTaus(*_Tau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
 
     applyJetEnergyCorrections(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], year, i);
     updateMet(i);
@@ -945,36 +945,6 @@ void Analyzer::fill_efficiency() {
     }
   }
 
-  //for(Particle* part : allParticles){
-
-
-
-
-
-    //regex genName_regex(".*([A-Z][^[:space:]]+)");
-    //smatch mGen;
-    //std::string tmps=part->getName();
-    //regex_match(tmps, mGen, genName_regex);
-    ////no efficiency for gen particles
-    //if(part->getName().find("Gen") != std::string::npos)
-      //continue;
-    ////we don't want to make met efficiency plots
-    //if(particleCutMap.find(part) == particleCutMap.end())
-      //continue;
-    //if(part->cutMap.find(part->type) == part->cutMap.end())
-      //continue;
-    //for(size_t i=0; i < part->size(); i++){
-      ////make match to gen
-      //if(matchLeptonToGen(part->p4(i), part->pstats.at("Smear") ,part->cutMap.at(part->type)) == TLorentzVector(0,0,0,0)) continue;
-      ////check if the particle is part of the reco
-      //for(CUTS cut:  particleCutMap.at(part).first){
-        //bool id_particle= (find(active_part->at(cut)->begin(),active_part->at(cut)->end(),i)!=active_part->at(cut)->end());
-        //histo.addEffiency("eff_"+std::string(mGen[1])+"Pt",part->pt(i),id_particle,0);
-        //histo.addEffiency("eff_"+std::string(mGen[1])+"Eta",part->eta(i),id_particle,0);
-        //histo.addEffiency("eff_"+std::string(mGen[1])+"Phi",part->phi(i),id_particle,0);
-      //}
-    //}
-  //}
 }
 
 
@@ -986,7 +956,6 @@ bool Analyzer::fillCuts(bool fillCounter) {
   bool prevTrue = true;
 
   maxCut=0;
-  //  std::cout << active_part << std::endl;;
 
   for(size_t i = 0; i < cut_order->size(); i++) {
     std::string cut = cut_order->at(i);
@@ -997,28 +966,20 @@ bool Analyzer::fillCuts(bool fillCounter) {
     int min= cut_info->at(cut).first;
     int max= cut_info->at(cut).second;
     int nparticles = active_part->at(cut_num.at(cut))->size();
-    //if(!fillCounter) std::cout << cut << ": " << nparticles << " (" << min << ", " << max << ")" <<std::endl;
-
-    //std::cout << cut << ": " << nparticles << " (" << min << ", " << max << ")" <<std::endl;
 
     if( (nparticles >= min) && (nparticles <= max || max == -1)) {
-      //std::cout << "First condition: (nparticles >= min) && (nparticles <= max || max == -1) satisfied" << std::endl;
       if((cut_num.at(cut) == CUTS::eR1stJet || cut_num.at(cut) == CUTS::eR2ndJet) && active_part->at(cut_num.at(cut))->at(0) == -1 ) {
-        //std::cout<<"here (jets and active part)  "<<std::endl;
         prevTrue = false;
         continue;  ////dirty dirty hack
       }
       if(fillCounter && crbins == 1) {
-        //std::cout<<"here (fill counter and crbins)  "<<std::endl;
         cuts_per[i]++;
         cuts_cumul[i] += (prevTrue) ? 1 : 0;
         maxCut += (prevTrue) ? 1 : 0;
       }else{
-        //std::cout<<"here (max cut)  "<<std::endl;
         maxCut += (prevTrue) ? 1 : 0;
       }
     }else {
-      //std::cout<<"First condition not satisfied  "<<std::endl;
       prevTrue = false;
     }
   }
@@ -1040,8 +1001,6 @@ bool Analyzer::fillCuts(bool fillCounter) {
     if(isData && blinded && maxCut == SignalRegion) return false;
     cuts_per[maxCut]++;
   }
-
-  //std::cout << "prevTrue = " << prevTrue << std::endl;
 
   return prevTrue;
 }
@@ -1135,18 +1094,208 @@ bool Analyzer::select_mc_background(){
   return true;
 }
 
+// --- Function that sets up all the SFs recommended by the Tau POG for Run II legacy --- //
+void Analyzer::setupTauIDSFsInfo(std::string tauidalgoname, std::string year){
 
-double Analyzer::getTauDataMCScaleFactor(int updown){
+  static std::map<std::string, std::string> tauidyearmap = {
+    {"2016", "2016Legacy"},
+    {"2017", "2017ReReco"},
+    {"2018", "2018ReReco"}
+  };
+
+  tauidyear = tauidyearmap[year];
+
+  // Read the corresponding ID algorithm:
+  if(tauidalgoname.find("DeepTau") != std::string::npos){
+    tauid_algo = "DeepTau2017v2p1VSjet";
+    antiele_algo = "DeepTau2017v2p1VSe";
+    antimu_algo = "DeepTau2017v2p1VSmu";
+
+    tauidwpsmap = {
+      {1, "VVVLoose"}, {2, "VVLoose"}, {4, "VLoose"}, {8, "Loose"},
+      {16, "Medium"}, {32, "Tight"}, {64, "VTight"}, {128, "VVTight"}
+    };
+
+    antielewpsmap = {
+      {1, "VVVLoose"}, {2, "VVLoose"}, {4, "VLoose"}, {8, "Loose"},
+      {16, "Medium"}, {32, "Tight"}, {64, "VTight"}, {128, "VVTight"}
+    };
+
+    antimuwpsmap = {
+      {1, "VLoose"}, {2, "Loose"}, {4, "Medium"}, {8, "Tight"}
+    };
+
+  }
+  else if(tauidalgoname.find("MVA") != std::string::npos){
+    tauid_algo = "MVAoldDM2017v2";
+    antiele_algo = "antiEleMVA6";
+    antimu_algo = "antiMu3";
+
+    tauidwpsmap = {
+      {1, "VVLoose"}, {2, "VLoose"}, {4, "Loose"}, {8, "Medium"},
+      {16, "Tight"}, {32, "VTight"}, {64, "VVTight"}
+    };
+
+    antielewpsmap = {
+      {1, "VLoose"}, {2, "Loose"}, {4, "Medium"}, {8, "Tight"}, {16, "VTight"}
+    };
+
+    antimuwpsmap = {
+      {1, "Loose"}, {2, "Tight"}
+    };
+  }
+
+}
+
+void Analyzer::setupTauResSFsInfo(bool taufakeenergyscale){
+
+  // Load the corresponding modules for tau energy scale and tau fake energy scale
+  tauesSFs = TauESTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo);
+
+  if(antiele_algo.find("DeepTau") != std::string::npos && taufakeenergyscale){
+    taufesSFs = TauFESTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antiele_algo);
+  }
+
+}
+
+double Analyzer::getTauIdSF(bool applyDMsfs, bool applyEmbedding, std::string uncertainty){
   double sf=1.;
-  //for(size_t i=0; i<_Tau->size();i++){
-  for(auto i : *active_part->at(CUTS::eRTau1)){
-    if(matchTauToGen(_Tau->p4(i),0.4)!=TLorentzVector()){
 
-      if(updown==-1) sf*=  _Tau->pstats["Smear"].dmap.at("TauSF") * (1.-(0.35*_Tau->pt(i)/1000.0));
-      else if(updown==0) sf*=  _Tau->pstats["Smear"].dmap.at("TauSF");
-      else if(updown==1) sf*=  _Tau->pstats["Smear"].dmap.at("TauSF") * (1.+(0.05*_Tau->pt(i)/1000.0));
+  // Tau 1 stuff
+  if(!_Tau->pstats["Tau1"].bfind("FlipIsolationRequirement")){
+    tauidwp = _Tau->pstats["Tau1"].dmap.at("DiscrByMinIsolation");
+  }
+  else{
+    tauidwp = _Tau->pstats["Tau1"].dmap.at("DiscrByMaxIsolation");
+  }
+
+  // Load the modules according to the algorithm and working points specified for tau ID SFs
+  tau1idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
+
+  // Loop over the Tau1 list first.
+  for(auto i : *active_part->at(CUTS::eRTau1)){
+    // Look for the current muon in the eRMuon2 list. If found, skip it.
+    if(find(active_part->at(CUTS::eRTau2)->begin(), active_part->at(CUTS::eRTau2)->end(), i) != active_part->at(CUTS::eRTau2)->end() ) continue;
+
+    // Get the gen-match status of the current tau
+    int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
+    
+    if(!applyDMsfs){ // pT-dependent SFs
+      sf *= tau1idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
+    }
+    else{ // DM-dependent SFs
+      sf *= tau1idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
     }
   }
+
+  // Reset the tau id wp variable
+  tauidwp = 0;
+
+  // Tau 2 stuff
+  if(!_Tau->pstats["Tau2"].bfind("FlipIsolationRequirement")){
+    tauidwp = _Tau->pstats["Tau2"].dmap.at("DiscrByMinIsolation");
+  }
+  else{
+    tauidwp = _Tau->pstats["Tau2"].dmap.at("DiscrByMaxIsolation");
+  }  
+
+  // Load the modules according to the algorithm and working points specified for tau ID SFs
+  tau2idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
+
+  // Now, we loop over the tau2 list, to apply the SFs to the uncorrected taus from the previous list.
+  for(auto i : *active_part->at(CUTS::eRTau2)){
+    // Get the gen-match status of the current tau
+    int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
+    
+    if(!applyDMsfs){ // pT-dependent SFs
+      sf *= tau2idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
+    }
+    else{ // DM-dependent SFs
+      sf *= tau2idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
+    }
+  }
+
+  return sf;
+}
+
+double Analyzer::getTauIdAntiEleSF(std::string uncertainty){
+  
+  double sf=1.;
+
+  // Tau 1 stuff
+  antielewp = _Tau->pstats["Tau1"].dmap.at("DiscrAgainstElectron");
+  
+  // Load the modules according to the algorithm and working points specified for anti-ele tau discr. 
+  tau1id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antiele_algo, antielewpsmap[antielewp]);
+
+  // Loop over the Tau1 list first.
+  for(auto i : *active_part->at(CUTS::eRTau1)){
+    // Look for the current muon in the eRMuon2 list. If found, skip it.
+    if(find(active_part->at(CUTS::eRTau2)->begin(), active_part->at(CUTS::eRTau2)->end(), i) != active_part->at(CUTS::eRTau2)->end() ) continue;
+
+    // Get the gen-match status of the current tau
+    int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
+
+    sf *= tau1id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
+  }
+
+  // Reset the tau id wp variable
+  antielewp = 0;
+
+  // Tau 2 stuff
+  antielewp = _Tau->pstats["Tau2"].dmap.at("DiscrAgainstElectron");
+
+  // Load the modules according to the algorithm and working points specified for tau ID SFs
+  tau2id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antiele_algo, antielewpsmap[antielewp]);
+  
+  // Now, we loop over the tau2 list, to apply the SFs to the uncorrected taus from the previous list.
+  for(auto i : *active_part->at(CUTS::eRTau2)){
+    // Get the gen-match status of the current tau
+    int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
+
+    sf *= tau2id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
+  }
+
+  return sf;
+}
+
+double Analyzer::getTauIdAntiMuSF(std::string uncertainty){
+  double sf=1.;
+
+  // Tau 1 stuff
+  antimuwp = _Tau->pstats["Tau1"].dmap.at("DiscrAgainstMuon");
+  
+  // Load the modules according to the algorithm and working points specified for anti-ele tau discr. 
+  tau1id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antimu_algo, antimuwpsmap[antimuwp]);
+
+  // Loop over the Tau1 list first.
+  for(auto i : *active_part->at(CUTS::eRTau1)){
+    // Look for the current muon in the eRMuon2 list. If found, skip it.
+    if(find(active_part->at(CUTS::eRTau2)->begin(), active_part->at(CUTS::eRTau2)->end(), i) != active_part->at(CUTS::eRTau2)->end() ) continue;
+
+    // Get the gen-match status of the current tau
+    int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
+
+    sf *= tau1id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
+  }
+
+  // Reset the tau id wp variable
+  antielewp = 0;
+
+  // Tau 2 stuff
+  antimuwp = _Tau->pstats["Tau2"].dmap.at("DiscrAgainstMuon");
+
+  // Load the modules according to the algorithm and working points specified for tau ID SFs
+  tau2id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antimu_algo, antimuwpsmap[antimuwp]);
+  
+  // Now, we loop over the tau2 list, to apply the SFs to the uncorrected taus from the previous list.
+  for(auto i : *active_part->at(CUTS::eRTau2)){
+    // Get the gen-match status of the current tau
+    int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
+
+    sf *= tau2id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
+  }
+
   return sf;
 }
 
@@ -1706,6 +1855,67 @@ void Analyzer::smearLepton(Lepton& lep, CUTS eGenPos, const PartStats& stats, co
       systematics.shiftLepton(lep, lepReco, genVec, _MET->systdeltaMEx[syst], _MET->systdeltaMEy[syst], syst);
     }
   }
+}
+
+void Analyzer::smearTaus(Lepton& lep, const PartStats& stats, const PartStats& syst_stats, int syst){
+  if(isData) {
+    lep.setOrigReco();
+    return;
+  }
+
+  if(!lep.needSyst(syst)) return;
+  
+  std::string systname = syst_names.at(syst);
+  
+  if(!stats.bfind("SmearTheParticle") && systname=="orig"){
+    lep.setOrigReco();
+    return;
+  }
+
+  for(size_t i = 0; i < lep.size(); i++){
+
+    TLorentzVector tauRecoP4 = lep.RecoP4(i);
+
+    float tes_SF = 1.0, tfes_SF = 1.0;
+    double tau_pt_tesShift = tauRecoP4.Pt() * tes_SF, tau_mass_tesShift = tauRecoP4.M() * tes_SF;
+
+    int taugenmatch = static_cast<int>(_Tau->genPartFlav[i]);
+
+    if(stats.bfind("SmearTheParticle")){
+      if(systname == "orig"){
+        tes_SF = tauesSFs.getTES(tauRecoP4.Pt(), _Tau->decayModeInt[i], taugenmatch, "");
+      }
+      else{ 
+        if(systname == "Tau_Scale_Up"){
+          tes_SF = tauesSFs.getTES(tauRecoP4.Pt(), _Tau->decayModeInt[i], taugenmatch, "Up");
+        }
+        else if(systname == "Tau_Scale_Down"){
+          tes_SF = tauesSFs.getTES(tauRecoP4.Pt(), _Tau->decayModeInt[i], taugenmatch, "Down");
+        }
+      }
+    }
+    
+    if(stats.bfind("ApplyETauFakeRateESSF") && tauid_algo.find("DeepTau") != std::string::npos){
+      if(systname == "orig"){
+        tfes_SF = taufesSFs.getFES(tauRecoP4.Eta(), _Tau->decayModeInt[i], taugenmatch, "");
+      }
+      else{ 
+        if(systname == "ETauFake_Scale_Up"){
+          tfes_SF = taufesSFs.getFES(tauRecoP4.Eta(), _Tau->decayModeInt[i], taugenmatch, "Up");
+        }
+        else if(systname == "ETauFake_Scale_Down"){
+          tfes_SF = taufesSFs.getFES(tauRecoP4.Eta(), _Tau->decayModeInt[i], taugenmatch, "Down");
+        }
+      }
+    }
+    
+    tau_pt_tesShift = tauRecoP4.Pt() * tes_SF * tfes_SF;
+    tau_mass_tesShift = tauRecoP4.M() * tes_SF * tfes_SF;
+
+    // Shift the 4-momentum of the tau accordingly
+    systematics.shiftParticle(lep, tauRecoP4, tau_pt_tesShift, tau_mass_tesShift, systname, syst);
+  }
+
 }
 
 void Analyzer::setupJetCorrections(std::string year, std::string outputfilename){
@@ -3480,7 +3690,10 @@ void Analyzer::fill_histogram() {
     if(distats["Run"].bfind("UsePileUpWeight")) wgt*= pu_weight;
     if(distats["Run"].bfind("ApplyGenWeight")) wgt *= (gen_weight > 0) ? 1.0 : -1.0;
     //add weight here
-    if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauDataMCScaleFactor(0);
+    //if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdDataMCScaleFactor(0);
+    if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdSF(distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"), "");
+    if(distats["Run"].bfind("ApplyTauAntiEleSF")) wgt *= getTauIdAntiEleSF("");
+    if(distats["Run"].bfind("ApplyTauAntiMuSF")) wgt *= getTauIdAntiMuSF("");
 
     if(distats["Run"].bfind("ApplyZBoostSF") && isVSample){
       //wgt *= getZBoostWeight();
@@ -3519,17 +3732,45 @@ void Analyzer::fill_histogram() {
       wgt=backup_wgt;
 
       if(syst_names[i].find("weight")!=std::string::npos){
+        // ---------- Tau ID scale factors ---------- //
         if(syst_names[i]=="Tau_weight_Up"){
           if(distats["Run"].bfind("ApplyTauIDSF")) {
-            wgt/=getTauDataMCScaleFactor(0);
-            wgt *= getTauDataMCScaleFactor(1);
+            wgt /= getTauIdSF(distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"), "");
+            wgt *= getTauIdSF(distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"), "Up");
           }
         }else if(syst_names[i]=="Tau_weight_Down"){
           if(distats["Run"].bfind("ApplyTauIDSF")) {
-            wgt/=getTauDataMCScaleFactor(0);
-            wgt *= getTauDataMCScaleFactor(-1);
+            wgt /= getTauIdSF(distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"), "");
+            wgt *= getTauIdSF(distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"), "Down");
+            // wgt/=getTauIdDataMCScaleFactor(0);
+            //wgt *= getTauIdDataMCScaleFactor(-1);
           }
         }
+        // ---------- Tau anti-electron discr. scale factors ---------- //
+        if(syst_names[i]=="TauAntiEle_weight_Up"){
+          if(distats["Run"].bfind("ApplyTauAntiEleSF")) {
+            wgt /= getTauIdAntiEleSF("");
+            wgt *= getTauIdAntiEleSF("Up");
+          }
+        }else if(syst_names[i]=="TauAntiEle_weight_Down"){
+          if(distats["Run"].bfind("ApplyTauAntiEleSF")) {
+            wgt /= getTauIdAntiEleSF("");
+            wgt *= getTauIdAntiEleSF("Down");
+          }
+        }
+        // ---------- Tau anti-muon discr. scale factors ---------- //
+        if(syst_names[i]=="TauAntiMu_weight_Up"){
+          if(distats["Run"].bfind("ApplyTauAntiMuSF")) {
+            wgt /= getTauIdAntiMuSF("");
+            wgt *= getTauIdAntiMuSF("Up");
+          }
+        }else if(syst_names[i]=="TauAntiMu_weight_Down"){
+          if(distats["Run"].bfind("ApplyTauAntiMuSF")) {
+            wgt /= getTauIdAntiMuSF("");
+            wgt *= getTauIdAntiMuSF("Down");
+          }
+        }
+        // ---------- Pileup weights ---------- //
         if(syst_names[i]=="Pileup_weight_Up"){
           if(distats["Run"].bfind("UsePileUpWeight")) {
             wgt/=   pu_weight;

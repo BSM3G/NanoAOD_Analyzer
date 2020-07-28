@@ -12,7 +12,13 @@ SpecialMCPUCalculation false
 SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6.root
 /// SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_wanddylo_incl.root
 
-ApplyTauIDSF false
+ApplyTauIDSF true
+TauIdSFsByDM false
+TauSFforEmbeddedSamples false
+
+ApplyTauAntiEleSF true
+ApplyTauAntiMuSF true
+
 UsePileUpWeight true
 ApplyZBoostSF false
 
