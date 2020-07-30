@@ -201,11 +201,8 @@ float TauIDSFTool::getSFvsEta(double eta, int genmatch, const std::string& unc) 
 TauESTool::TauESTool(const std::string& datapath, const std::string& year, const std::string& id): ID(id){
 
   bool verbose = false;
-  //std::string datapath                = Form("%s/src/TauPOG/TauIDSFs/data",getenv("CMSSW_BASE"));
   std::vector<std::string> years      = {"2016Legacy","2017ReReco","2018ReReco"};
   std::vector<std::string> antiJetIDs = {"MVAoldDM2017v2","DeepTau2017v2p1VSjet"};
-  // std::vector<std::string> antiEleIDs = {"antiEleMVA6",   "DeepTau2017v2p1VSe"};
-  // std::vector<std::string> antiMuIDs  = {"antiMu3",       "DeepTau2017v2p1VSmu"};
 
   if(std::find(years.begin(),years.end(),year)==years.end()){
     std::cerr << std::endl << "ERROR! '"<<year<<"' is not a valid year! Please choose from ";
@@ -220,10 +217,8 @@ TauESTool::TauESTool(const std::string& datapath, const std::string& year, const
 
   if(std::find(antiJetIDs.begin(),antiJetIDs.end(),ID)!=antiJetIDs.end()){
 
-    TString filename_lowpt, filename_highpt;
-
-    filename_lowpt = Form("%s/TauES_dm_%s_%s.root",datapath.data(),ID.data(),year.data());
-    filename_highpt = Form("%s/TauES_dm_%s_%s_ptgt100.root",datapath.data(),ID.data(),year.data());
+    TString filename_lowpt = Form("%s/TauES_dm_%s_%s.root",datapath.data(),ID.data(),year.data());
+    TString filename_highpt = Form("%s/TauES_dm_%s_%s_ptgt100.root",datapath.data(),ID.data(),year.data());
 
     TFile* file_lowpt = ensureTFile(filename_lowpt,verbose);
     TFile* file_highpt = ensureTFile(filename_highpt,verbose);
@@ -319,7 +314,6 @@ float TauESTool::getTES_highpt(int dm, const std::string& unc){
 TauFESTool::TauFESTool(const std::string& datapath, const std::string& year, const std::string& id): ID(id){
 
   bool verbose = false;
-  //std::string datapath                = Form("%s/src/TauPOG/TauIDSFs/data",getenv("CMSSW_BASE"));
   std::vector<std::string> years      = {"2016Legacy","2017ReReco","2018ReReco"};
   std::vector<std::string> antiEleIDs = {"DeepTau2017v2p1VSe"};
 
@@ -334,17 +328,14 @@ TauFESTool::TauFESTool(const std::string& datapath, const std::string& year, con
     assert(0);
   }
 
-  if(std::find(antiEleIDs.begin(),antiEleIDs.end(),ID)!=antiEleIDs.end()){
+  if(ID.find("DeepTau2017v2p1VSe") != std::string::npos){
 
-    TString filename;
-    filename = Form("%s/TauFES_eta-dm_%s_%s.root",datapath.data(),ID.data(),year.data());
+    TString filename = Form("%s/TauFES_eta-dm_%s_%s.root",datapath.data(),ID.data(),year.data());
 
     TFile* file = ensureTFile(filename,verbose);
     TGraphAsymmErrors *graph = dynamic_cast<TGraphAsymmErrors* >((const_cast<TFile*>(file))->Get("fes"));
 
     DMs = {0, 1};
-
-    // std::map <int, std::vector<float> > innermap;
     std::vector<std::string> regions = {"barrel", "endcap"};
 
     for(size_t i = 0; i < regions.size(); i++){

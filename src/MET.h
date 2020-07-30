@@ -56,7 +56,6 @@ public:
   void setCurrentP(int);
   TLorentzVector getNominalP();
   std::string getName() {return GenName;};
-  // void update(PartStats&, Jet&, int);
   void update(int);
 
   void propagateJetEnergyCorr(TLorentzVector recoJet, double const& jer_sf_nom, double const& jec_param, std::string& systname, int syst);  
@@ -71,7 +70,6 @@ public:
   TLorentzVector JERCorrMet;
   TLorentzVector *cur_P;
 
-  std::vector<TLorentzVector* > systVec;
   std::vector<TLorentzVector* > systRawMetVec;
 
   std::vector<double> systdeltaMEx;
@@ -97,22 +95,12 @@ protected:
   float raw_met_pt;
   float raw_met_phi;
 
-  float met_px;
-  float met_py;
-  float met_px_shifted;
-  float met_py_shifted;
-  float def_met_px;
-  float def_met_py;
-  float t1met_px;
-  float t1met_py;
-
   //note this is only for pt and phi
   double MetUnclUp[2] = {0, 0};
   double MetUnclDown[2] = {0, 0};
   int Unclup=-1;
   int Uncldown=-1;
   mt2_bisect::mt2 mt2_event;
-  
 
 };
 

@@ -28,7 +28,7 @@ class JetRecalibrator {
 
 	public:
 		JetRecalibrator();
-		JetRecalibrator(const std::string path, const std::string globalTag, const std::string jetFlavor, const std::string type, bool doResidualJECs, int upToLevel=3, 
+		JetRecalibrator(const std::string& path, const std::string& globalTag, const std::string& jetFlavor, const std::string& type, bool doResidualJECs, int upToLevel=3, 
 			bool calculateSeparateCorrections=false, bool calculateTypeIMETCorr=false);
 
 		float getCorrection(TLorentzVector jet4vec, float jet_area, float jet_rawFactor, float rho, float delta = 0.0);
@@ -39,7 +39,7 @@ class JetRecalibrator {
 
 		bool nouncertainty = false;
 
-
+		/*
 		std::string path_str;
 		std::string globalTag_str;
 		std::string jetFlavor_str;
@@ -47,7 +47,8 @@ class JetRecalibrator {
 		int corrLevel;
 		bool separateCorr;
 		bool calcT1MetCorr;
-
+		*/
+		
 		FactorizedJetCorrector* JetCorrector;
 		JetCorrectionUncertainty* JetUncertainty;
 
@@ -57,12 +58,12 @@ class JetRecalibrator {
 		JetCorrectorParameters* ResidualJetParameters;
 
 		std::vector <JetCorrectorParameters> vPar;
-		std::vector <JetCorrectorParameters> vParL1;
-		std::vector <JetCorrectorParameters> vParL2;
-		std::vector <JetCorrectorParameters> vParL3;
-		std::vector <JetCorrectorParameters> vParL3Residuals;
+		// std::vector <JetCorrectorParameters> vParL1;
+		// std::vector <JetCorrectorParameters> vParL2;
+		// std::vector <JetCorrectorParameters> vParL3;
+		// std::vector <JetCorrectorParameters> vParL3Residuals;
 
-		std::map<std::string, FactorizedJetCorrector*> separateJetCorrectors;
+		//std::map<std::string, FactorizedJetCorrector*> separateJetCorrectors;
 
 
 };

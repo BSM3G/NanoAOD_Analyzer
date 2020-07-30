@@ -73,7 +73,7 @@ public:
   int nentries;
   void fill_efficiency();
   void fill_histogram();
-  void fill_Tree();
+  // void fill_Tree();
   void setControlRegions() { histo.setControlRegions();}
   void checkParticleDecayList(); //01.16.19
   /*----------- ReadinJSON class variables -------------*/
@@ -171,9 +171,7 @@ public:
   bool isInTheCracks(float);
   bool passedLooseJetID(int);
   bool select_mc_background();
-  double getTauIdSF(bool applyDMsfs, bool applyEmbedding, std::string uncertainty);
-  double getTauIdAntiEleSF(std::string uncertainty);
-  double getTauIdAntiMuSF(std::string uncertainty);
+  double getTauIdSFs(bool, bool, bool, bool, std::string);
   double getWkfactor();
   double getZBoostWeight();
   double getZBoostWeightSyst(int ud); // 06.02.20
@@ -189,7 +187,7 @@ public:
   void getJetEnergyResSFs(Particle& jet, const CUTS eGenPos);
   void applyJetEnergyCorrections(Particle&, CUTS, const PartStats&, std::string, int syst=0);
 
-  void setupTauIDSFsInfo(std::string tauidalgoname, std::string year);
+  void setupTauIDSFsInfo(std::string, std::string, bool, bool);
   void setupTauResSFsInfo(bool);
 
   inline bool passCutRange(std::string, double, const PartStats&);
@@ -213,9 +211,9 @@ public:
   TFile* infoFile;
   TFile* routfile;
   std::string filespace = "";
-  double hPU[200] = { };        // initialize this array to zero.
-  double hPU_up[200] = { };     // initialize this array to zero.
-  double hPU_down[200] = { };   // initialize this array to zero.
+  float hPU[200] = { };        // initialize this array to zero.
+  float hPU_up[200] = { };     // initialize this array to zero.
+  float hPU_down[200] = { };   // initialize this array to zero.
   int version=0;
   std::map<std::string,TTree* > originalTrees;
   //std::map<std::string,*TObject> otherObjects;
@@ -277,7 +275,7 @@ public:
   std::vector<bool> triggernamedecisions; // Brenda
   std::vector<int> cuts_per, cuts_cumul;
 
-  std::unordered_map< std::string,float > zBoostTree;
+  // std::unordered_map< std::string,float > zBoostTree;
 
   double maxIso, minIso;
   int leadIndex, maxCut, crbins=1;

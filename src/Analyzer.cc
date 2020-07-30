@@ -91,7 +91,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   
   routfile = new TFile(outfile.c_str(), "RECREATE", outfile.c_str(), ROOT::CompressionSettings(ROOT::kLZMA, 9));
   
-  add_metadata(infiles);
+  if(distats["Run"].bfind("AddMetaData")) add_metadata(infiles);
 
   BOOM= new TChain("Events");
   infoFile=0;
@@ -164,7 +164,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   setupBJetSFInfo(_Jet->pstats["BJet"], year);  
 
   // Tau scale factors stuff
-  setupTauIDSFsInfo(_Tau->pstats["TauID"].smap.at("TauIDAlgorithm"), year);
+  setupTauIDSFsInfo(_Tau->pstats["TauID"].smap.at("TauIDAlgorithm"), year, distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"));
   setupTauResSFsInfo(distats["Run"].bfind("ApplyETauFakeRateESSF"));
 
 
@@ -228,6 +228,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 
   ///this can be done nicer
   //put the variables that you use here:
+  /*
   zBoostTree["tau1_pt"] =0;
   zBoostTree["tau1_eta"]=0;
   zBoostTree["tau1_phi"]=0;
@@ -247,10 +248,9 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   zBoostTree["jet2_eta"]=0;
   zBoostTree["jet2_phi"]=0;
   zBoostTree["jet_mass"]=0;
-
-
+  
   histo.createTree(&zBoostTree,"TauTauTree");
-
+  */
 
   if(setCR) {
     cuts_per.resize(histo.get_folders()->size());
@@ -300,7 +300,6 @@ void Analyzer::add_metadata(std::vector<std::string> infiles){
   
   // Define all the variables needed for this function
   TFile* rfile;
-  std::string keyname;
   TTree* keytree;
 
   // Loop over the list of input files.
@@ -313,7 +312,7 @@ void Analyzer::add_metadata(std::vector<std::string> infiles){
     // Loop over all key stored in the current input file
     std::cout << "Processing key: " << std::endl;
     for(const auto&& inkey : *rfile->GetListOfKeys()){
-      keyname = inkey->GetName();
+      std::string keyname = inkey->GetName();
       std::cout << "\t" << keyname << std::endl;
 
       if(keyname == "Events"){
@@ -1095,7 +1094,7 @@ bool Analyzer::select_mc_background(){
 }
 
 // --- Function that sets up all the SFs recommended by the Tau POG for Run II legacy --- //
-void Analyzer::setupTauIDSFsInfo(std::string tauidalgoname, std::string year){
+void Analyzer::setupTauIDSFsInfo(std::string tauidalgoname, std::string year, bool applyDMsfs, bool applyEmbedding){
 
   static std::map<std::string, std::string> tauidyearmap = {
     {"2016", "2016Legacy"},
@@ -1145,6 +1144,43 @@ void Analyzer::setupTauIDSFsInfo(std::string tauidalgoname, std::string year){
     };
   }
 
+  // ----- Tau 1 stuff ----- //
+  if(!_Tau->pstats["Tau1"].bfind("FlipIsolationRequirement")){
+    tauidwp = _Tau->pstats["Tau1"].dmap.at("DiscrByMinIsolation");
+  }
+  else{
+    tauidwp = _Tau->pstats["Tau1"].dmap.at("DiscrByMaxIsolation");
+  }
+  antielewp = _Tau->pstats["Tau1"].dmap.at("DiscrAgainstElectron");
+  antimuwp = _Tau->pstats["Tau1"].dmap.at("DiscrAgainstMuon");
+
+  // Load the modules according to the algorithm and working points specified for tau ID SFs
+  tau1idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
+  tau1id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antiele_algo, antielewpsmap[antielewp]);
+  tau1id_antiMuSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antimu_algo, antimuwpsmap[antimuwp]);
+  
+
+  // Reset all wp variables
+  tauidwp = 0;
+  antielewp = 0;
+  antimuwp = 0;
+
+  
+  // ------  Tau 2 stuff  ------ //
+  if(!_Tau->pstats["Tau2"].bfind("FlipIsolationRequirement")){
+    tauidwp = _Tau->pstats["Tau2"].dmap.at("DiscrByMinIsolation");
+  }
+  else{
+    tauidwp = _Tau->pstats["Tau2"].dmap.at("DiscrByMaxIsolation");
+  }  
+  antielewp = _Tau->pstats["Tau2"].dmap.at("DiscrAgainstElectron");
+  antimuwp = _Tau->pstats["Tau2"].dmap.at("DiscrAgainstMuon");
+
+  // Load the modules according to the algorithm and working points specified for tau ID SFs
+  tau2idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
+  tau2id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antiele_algo, antielewpsmap[antielewp]);
+  tau2id_antiMuSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antimu_algo, antimuwpsmap[antimuwp]);
+
 }
 
 void Analyzer::setupTauResSFsInfo(bool taufakeenergyscale){
@@ -1158,19 +1194,9 @@ void Analyzer::setupTauResSFsInfo(bool taufakeenergyscale){
 
 }
 
-double Analyzer::getTauIdSF(bool applyDMsfs, bool applyEmbedding, std::string uncertainty){
-  double sf=1.;
-
-  // Tau 1 stuff
-  if(!_Tau->pstats["Tau1"].bfind("FlipIsolationRequirement")){
-    tauidwp = _Tau->pstats["Tau1"].dmap.at("DiscrByMinIsolation");
-  }
-  else{
-    tauidwp = _Tau->pstats["Tau1"].dmap.at("DiscrByMaxIsolation");
-  }
-
-  // Load the modules according to the algorithm and working points specified for tau ID SFs
-  tau1idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
+double Analyzer::getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAntiElesf, bool getAntiMusf, std::string uncertainty){
+  
+  double sf = 1.0;
 
   // Loop over the Tau1 list first.
   for(auto i : *active_part->at(CUTS::eRTau1)){
@@ -1180,124 +1206,38 @@ double Analyzer::getTauIdSF(bool applyDMsfs, bool applyEmbedding, std::string un
     // Get the gen-match status of the current tau
     int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
     
-    if(!applyDMsfs){ // pT-dependent SFs
-      sf *= tau1idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
+    if(getTauIDsf){
+      if(!getTauIDbyDMsfs){ // pT-dependent SFs
+        sf *= tau1idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
+      }
+      else{ // DM-dependent SFs
+        sf *= tau1idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
+      }
     }
-    else{ // DM-dependent SFs
-      sf *= tau1idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
-    }
+    else if(getAntiElesf) sf *= tau1id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
+    else if(getAntiMusf) sf *= tau1id_antiMuSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
   }
-
-  // Reset the tau id wp variable
-  tauidwp = 0;
-
-  // Tau 2 stuff
-  if(!_Tau->pstats["Tau2"].bfind("FlipIsolationRequirement")){
-    tauidwp = _Tau->pstats["Tau2"].dmap.at("DiscrByMinIsolation");
-  }
-  else{
-    tauidwp = _Tau->pstats["Tau2"].dmap.at("DiscrByMaxIsolation");
-  }  
-
-  // Load the modules according to the algorithm and working points specified for tau ID SFs
-  tau2idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
 
   // Now, we loop over the tau2 list, to apply the SFs to the uncorrected taus from the previous list.
   for(auto i : *active_part->at(CUTS::eRTau2)){
     // Get the gen-match status of the current tau
     int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
     
-    if(!applyDMsfs){ // pT-dependent SFs
-      sf *= tau2idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
+    if(getTauIDsf){    
+      if(!getTauIDbyDMsfs){ // pT-dependent SFs
+        sf *= tau2idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
+      }
+      else{ // DM-dependent SFs
+        sf *= tau2idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
+      }
     }
-    else{ // DM-dependent SFs
-      sf *= tau2idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
-    }
+    else if(getAntiElesf) sf *= tau2id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
+    else if(getAntiMusf) sf *= tau2id_antiMuSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
   }
 
   return sf;
 }
 
-double Analyzer::getTauIdAntiEleSF(std::string uncertainty){
-  
-  double sf=1.;
-
-  // Tau 1 stuff
-  antielewp = _Tau->pstats["Tau1"].dmap.at("DiscrAgainstElectron");
-  
-  // Load the modules according to the algorithm and working points specified for anti-ele tau discr. 
-  tau1id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antiele_algo, antielewpsmap[antielewp]);
-
-  // Loop over the Tau1 list first.
-  for(auto i : *active_part->at(CUTS::eRTau1)){
-    // Look for the current muon in the eRMuon2 list. If found, skip it.
-    if(find(active_part->at(CUTS::eRTau2)->begin(), active_part->at(CUTS::eRTau2)->end(), i) != active_part->at(CUTS::eRTau2)->end() ) continue;
-
-    // Get the gen-match status of the current tau
-    int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
-
-    sf *= tau1id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
-  }
-
-  // Reset the tau id wp variable
-  antielewp = 0;
-
-  // Tau 2 stuff
-  antielewp = _Tau->pstats["Tau2"].dmap.at("DiscrAgainstElectron");
-
-  // Load the modules according to the algorithm and working points specified for tau ID SFs
-  tau2id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antiele_algo, antielewpsmap[antielewp]);
-  
-  // Now, we loop over the tau2 list, to apply the SFs to the uncorrected taus from the previous list.
-  for(auto i : *active_part->at(CUTS::eRTau2)){
-    // Get the gen-match status of the current tau
-    int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
-
-    sf *= tau2id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
-  }
-
-  return sf;
-}
-
-double Analyzer::getTauIdAntiMuSF(std::string uncertainty){
-  double sf=1.;
-
-  // Tau 1 stuff
-  antimuwp = _Tau->pstats["Tau1"].dmap.at("DiscrAgainstMuon");
-  
-  // Load the modules according to the algorithm and working points specified for anti-ele tau discr. 
-  tau1id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antimu_algo, antimuwpsmap[antimuwp]);
-
-  // Loop over the Tau1 list first.
-  for(auto i : *active_part->at(CUTS::eRTau1)){
-    // Look for the current muon in the eRMuon2 list. If found, skip it.
-    if(find(active_part->at(CUTS::eRTau2)->begin(), active_part->at(CUTS::eRTau2)->end(), i) != active_part->at(CUTS::eRTau2)->end() ) continue;
-
-    // Get the gen-match status of the current tau
-    int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
-
-    sf *= tau1id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
-  }
-
-  // Reset the tau id wp variable
-  antielewp = 0;
-
-  // Tau 2 stuff
-  antimuwp = _Tau->pstats["Tau2"].dmap.at("DiscrAgainstMuon");
-
-  // Load the modules according to the algorithm and working points specified for tau ID SFs
-  tau2id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antimu_algo, antimuwpsmap[antimuwp]);
-  
-  // Now, we loop over the tau2 list, to apply the SFs to the uncorrected taus from the previous list.
-  for(auto i : *active_part->at(CUTS::eRTau2)){
-    // Get the gen-match status of the current tau
-    int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
-
-    sf *= tau2id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
-  }
-
-  return sf;
-}
 
 // ---- Function that propagates the unclustered energy uncertainty to MET ---- //
 void Analyzer::updateMet(int syst){
@@ -1595,10 +1535,6 @@ void Analyzer::setupGeneral(std::string year) {
   if(BOOM->FindBranch("Pileup_nTrueInt")!=0){
     isData=false;
   }
-
-  if(BOOM->FindBranch("Electron_mvaFall17Iso")!=0){
-    std::cout<<"This file needs the new version of the analyzer"<<std::endl;
-  } 
   
   read_info(filespace + "ElectronTau_info.in");
   read_info(filespace + "MuonTau_info.in");
@@ -1612,9 +1548,7 @@ void Analyzer::setupGeneral(std::string year) {
   // Call readinJSON and save this in the jsonlinedict we declared in Analyzer.h
   jsonlinedict = readinJSON(year);
 
-
   for(std::string trigger : inputTriggerNames){
-
     try{
       getTriggerBranchesList(trigger, distats["Run"].bfind("UseTriggerWildcard"));
     }
@@ -1622,7 +1556,6 @@ void Analyzer::setupGeneral(std::string year) {
       std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
       continue;
     }
-  
   }
 
   // Check that there are no elements on the trigger list that refer to the same trigger 
@@ -2805,10 +2738,6 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
       else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
       else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
-      else if(cut == "UseBtagSF") {
-        //double bjet_SF = reader.eval_auto_bounds("central", BTagEntry::FLAV_B, lvec.Eta(), lvec.Pt());
-        //passCuts = passCuts && (isData || ((double) rand()/(RAND_MAX)) <  bjet_SF);
-      }
     }
     if(_Jet->pstats["BJet"].bfind("RemoveBJetsFromJets") and ePos!=CUTS::eRBJet){
       passCuts = passCuts && find(active_part->at(CUTS::eRBJet)->begin(), active_part->at(CUTS::eRBJet)->end(), i) == active_part->at(CUTS::eRBJet)->end();
@@ -2871,11 +2800,6 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
       else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
       else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
       else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-
-      else if(cut == "UseBtagSF") {
-        //double bjet_SF = reader.eval_auto_bounds("central", BTagEntry::FLAV_B, lvec.Eta(), lvec.Pt());
-        //passCuts = passCuts && (isData || ((double) rand()/(RAND_MAX)) <  bjet_SF);
-      }
     }
     if(passCuts) active_part->at(ePos)->push_back(i);
     i++;
@@ -3462,7 +3386,7 @@ void Analyzer::getGoodDiJets(const PartStats& stats, const int syst) {
       return;
     }
   }
-  TLorentzVector jet1, jet2;
+  TLorentzVector jet1(0,0,0,0), jet2(0,0,0,0);
   // ----Separation cut between jets (remove overlaps)
   for(auto ij2 : *active_part->at(CUTS::eRJet2)) {
     jet2 = _Jet->p4(ij2);
@@ -3690,10 +3614,11 @@ void Analyzer::fill_histogram() {
     if(distats["Run"].bfind("UsePileUpWeight")) wgt*= pu_weight;
     if(distats["Run"].bfind("ApplyGenWeight")) wgt *= (gen_weight > 0) ? 1.0 : -1.0;
     //add weight here
-    //if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdDataMCScaleFactor(0);
-    if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdSF(distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"), "");
-    if(distats["Run"].bfind("ApplyTauAntiEleSF")) wgt *= getTauIdAntiEleSF("");
-    if(distats["Run"].bfind("ApplyTauAntiMuSF")) wgt *= getTauIdAntiMuSF("");
+    //if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdDataMCScaleFactor(0); 
+    // Arguments: getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAntiElesf, bool getAntiMusf, std::string uncertainty)
+    if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), false, false, "");
+    if(distats["Run"].bfind("ApplyTauAntiEleSF")) wgt *= getTauIdSFs(false, false, true, false, "");
+    if(distats["Run"].bfind("ApplyTauAntiMuSF")) wgt *= getTauIdSFs(false, false, false, true, "");
 
     if(distats["Run"].bfind("ApplyZBoostSF") && isVSample){
       //wgt *= getZBoostWeight();
@@ -3724,9 +3649,9 @@ void Analyzer::fill_histogram() {
       for(auto it: *groups) {
         fill_Folder(it, maxCut, histo, false);
       }
-      if(!fillCuts(false)) {
-        fill_Tree();
-      }
+      //if(!fillCuts(false)) {
+      //  fill_Tree();
+      //}
 
     }else{
       wgt=backup_wgt;
@@ -3735,39 +3660,38 @@ void Analyzer::fill_histogram() {
         // ---------- Tau ID scale factors ---------- //
         if(syst_names[i]=="Tau_weight_Up"){
           if(distats["Run"].bfind("ApplyTauIDSF")) {
-            wgt /= getTauIdSF(distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"), "");
-            wgt *= getTauIdSF(distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"), "Up");
+            // Arguments: getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAntiElesf, bool getAntiMusf, std::string uncertainty)
+            wgt /= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), false, false, "");
+            wgt *= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), false, false, "Up");
           }
         }else if(syst_names[i]=="Tau_weight_Down"){
           if(distats["Run"].bfind("ApplyTauIDSF")) {
-            wgt /= getTauIdSF(distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"), "");
-            wgt *= getTauIdSF(distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"), "Down");
-            // wgt/=getTauIdDataMCScaleFactor(0);
-            //wgt *= getTauIdDataMCScaleFactor(-1);
+            wgt /= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), false, false, "");
+            wgt *= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), false, false, "Down");
           }
         }
         // ---------- Tau anti-electron discr. scale factors ---------- //
         if(syst_names[i]=="TauAntiEle_weight_Up"){
           if(distats["Run"].bfind("ApplyTauAntiEleSF")) {
-            wgt /= getTauIdAntiEleSF("");
-            wgt *= getTauIdAntiEleSF("Up");
+            wgt /= getTauIdSFs(false, false, true, false, "");
+            wgt *= getTauIdSFs(false, false, true, false, "Up");
           }
         }else if(syst_names[i]=="TauAntiEle_weight_Down"){
           if(distats["Run"].bfind("ApplyTauAntiEleSF")) {
-            wgt /= getTauIdAntiEleSF("");
-            wgt *= getTauIdAntiEleSF("Down");
+            wgt /= getTauIdSFs(false, false, true, false, "");
+            wgt *= getTauIdSFs(false, false, true, false, "Down");
           }
         }
         // ---------- Tau anti-muon discr. scale factors ---------- //
         if(syst_names[i]=="TauAntiMu_weight_Up"){
           if(distats["Run"].bfind("ApplyTauAntiMuSF")) {
-            wgt /= getTauIdAntiMuSF("");
-            wgt *= getTauIdAntiMuSF("Up");
+            wgt /= getTauIdSFs(false, false, false, true, "");
+            wgt *= getTauIdSFs(false, false, false, true, "Up");
           }
         }else if(syst_names[i]=="TauAntiMu_weight_Down"){
           if(distats["Run"].bfind("ApplyTauAntiMuSF")) {
-            wgt /= getTauIdAntiMuSF("");
-            wgt *= getTauIdAntiMuSF("Down");
+            wgt /= getTauIdSFs(false, false, false, true, "");
+            wgt *= getTauIdSFs(false, false, false, true, "Down");
           }
         }
         // ---------- Pileup weights ---------- //
@@ -4385,6 +4309,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
   }
 }
 
+/*
 void Analyzer::fill_Tree(){
 
   if(0){
@@ -4437,6 +4362,7 @@ void Analyzer::fill_Tree(){
     histo.fillTree("TauTauTree");
   }
 }
+*/
 
 void Analyzer::initializePileupInfo(const bool& specialPU, std::string outfilename){
    // If specialPUcalculation is true, then take the name of the output file (when submitting jobs) 
@@ -4516,7 +4442,6 @@ void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHist
   TH1D* histdata_up = (TH1D*)file2->FindObjectAny((DataHistoName+"Up").c_str());
   TH1D* histdata_down = (TH1D*)file2->FindObjectAny((DataHistoName+"Do").c_str());
 
-
   histmc->Scale(1./histmc->Integral());
   histdata->Scale(1./histdata->Integral());
   if(histdata_up){
@@ -4525,7 +4450,7 @@ void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHist
   }
 
   //double factor = histmc->Integral() / histdata->Integral();
-  double value,valueUp,valueDown;
+  float value,valueUp,valueDown;
   // The bin corresponding to nTruePU = 0 will be bin = 1 and, the calculated weight will be stored 
   // in hPU[bin]. That's why when we calculate the pu_weight in setupEventGeneral, we require hPU[(int)nTruePU+1].
   for(int bin=0; bin <= histmc->GetNbinsX(); bin++) {
@@ -4552,6 +4477,7 @@ void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHist
 
   file1->Close();
   file2->Close();
+
 }
 
 void Analyzer::initializeWkfactor(std::vector<std::string> infiles) {

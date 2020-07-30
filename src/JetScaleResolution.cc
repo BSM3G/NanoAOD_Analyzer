@@ -8,13 +8,19 @@ JetScaleResolution::JetScaleResolution(){
 }
 
 JetScaleResolution::JetScaleResolution(const std::string& scalefilename, const std::string& parttype, const std::string& resolutionfile, const std::string& sfresolutionfile){
-    InitScale(scalefilename, parttype);
-    InitResolution(resolutionfile, sfresolutionfile);
-
+    // InitScale(scalefilename, parttype);
+    // InitResolution(resolutionfile, sfresolutionfile);
+    /*
     resfilename = resolutionfile;
     resfunctyfilename = sfresolutionfile;
     scaleunctyfilename = scalefilename;
     type_name = parttype;
+    */
+    jetcorrectorparams = JetCorrectorParameters(scalefilename.c_str(),parttype.c_str());
+    jesUncertainty = new JetCorrectionUncertainty(jetcorrectorparams);
+
+    jer = JME::JetResolution(resolutionfile.c_str());
+    jerSF_and_Uncertainty = JME::JetResolutionScaleFactor(sfresolutionfile.c_str());
 }
 
 double JetScaleResolution::GetScaleDelta(const double& recojetPt, const double& recojetEta){
@@ -22,16 +28,12 @@ double JetScaleResolution::GetScaleDelta(const double& recojetPt, const double& 
         return recojetPt;
     }
 
-    jetcorrectorparams = JetCorrectorParameters(scaleunctyfilename,type_name);
-
-    JetCorrectionUncertainty jesUncertainty = JetCorrectionUncertainty(jetcorrectorparams);
-
     //Call jesuncertainty with Pt being that obtained after applying nominal jet energy resolution scale factor
     // jet_pt_nom = jer_sf_nom * recojet.Pt();
-    jesUncertainty.setJetPt(recojetPt);
-    jesUncertainty.setJetEta(recojetEta);
+    jesUncertainty->setJetPt(recojetPt);
+    jesUncertainty->setJetEta(recojetEta);
 
-    double delta = jesUncertainty.getUncertainty(true);    
+    double delta = jesUncertainty->getUncertainty(true);    
 
     return delta;
 }
@@ -46,11 +48,8 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
         return nosmearvalues;
     }
 
-    jer = JME::JetResolution(resfilename);
-    jerSF_and_Uncertainty = JME::JetResolutionScaleFactor(resfunctyfilename);
-
-    auto params_sf_and_uncertainty = JME::JetParameters();
-    auto params_resolution = JME::JetParameters();
+    JME::JetParameters params_sf_and_uncertainty;
+    JME::JetParameters params_resolution;
 
     // CV: define enums to access JER scale factors and uncertainties (cf. CondFormats/JetMETObjects/interface/JetResolutionObject.h) 
     // int index_nominal = 0, index_shift_down = 1, index_shift_up = 2;
@@ -62,7 +61,6 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
         Variation var = (Variation) index;
         params_sf_and_uncertainty.setJetEta(recojet.Eta());
         params_sf_and_uncertainty.setJetPt(recojet.Pt()); // new, june 11, 2020.
-        // jet_pt_sf_and_uncertainty[index] = jerSF_and_Uncertainty.getScaleFactor(params_sf_and_uncertainty, var);
         jet_pt_sf_and_uncertainty.push_back(jerSF_and_Uncertainty.getScaleFactor(params_sf_and_uncertainty, var));
     }
 
@@ -117,45 +115,50 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
                 smearFactor = 1.0e-2;
             }
 
-            //smear_values[index] = smearFactor;
             smear_values.push_back(smearFactor);
 
         }
-
     }
-
-    /*        
-    // Return the appropriate value depending on what you want:
-    if(sigmares == 0.0){ // nominal value
-        //std::cout << "nominal = smear_values[index_nominal] = " << smear_values[index_nominal] << std::endl;
-        std::cout << "nominal = smear_values[index_nominal] = " << smear_values.at(index_nominal) << std::endl;
-        //return smear_values[index_nominal];
-        return smear_values.at(index_nominal);
-    }
-    else if(sigmares == -1.0){ // down value
-        //std::cout << "down = smear_values[down] = " << smear_values[index_shift_down] << std::endl;
-        //return smear_values[index_shift_down];
-
-        std::cout << "down = smear_values[down] = " << smear_values.at(index_shift_down) << std::endl;
-        return smear_values.at(index_shift_down);
-    }
-    else if(sigmares == 1.0){ // up value
-        std::cout << "up = smear_values[up] = " << smear_values.at(index_shift_up) << std::endl;
-        return smear_values.at(index_shift_up);
-
-        // std::cout << "up = smear_values[up] = " << smear_values[index_shift_up] << std::endl;
-        // return smear_values[index_shift_up];
-    }
-
-    return smear_values.at(0);
-    */
-
-    //std::cout << "jet_pt_sf_and_uncertainty size = " << jet_pt_sf_and_uncertainty.size() << std::endl;
-    // std::cout << "smear_values size = " << smear_values.size() << std::endl;
 
     return smear_values;
 }
 
+std::vector<std::string> string_split(const std::string& in, const std::vector<std::string> splits)
+{
+    std::vector<std::pair<size_t, size_t> > positions;
+    positions.push_back(std::pair<size_t, size_t>(0, 0));
+    for(size_t s = 0 ; s < splits.size() ; ++s)
+    {
+        size_t lastpos = 0;
+        while(lastpos < in.size())
+        {
+            lastpos = in.find(splits[s], lastpos);
+            if(lastpos == std::string::npos)
+            {
+                break;
+            }
+            else
+            {
+                positions.push_back(std::pair<size_t, size_t>(lastpos, splits[s].size()));
+                //lastpos += splits[s].size()+1;
+                lastpos += splits[s].size();
+            }
+        }
+
+    }
+    positions.push_back(std::pair<size_t, size_t>(in.size(), 0));
+    sort(positions.begin(), positions.end(), [](const std::pair<size_t, size_t>& A, const std::pair<size_t, size_t>& B){return A.first < B.first;});
+    std::vector<std::string> result;
+    for(size_t p = 0 ; p < positions.size()-1 ; ++p)
+    {
+        size_t begin = positions[p].first + positions[p].second;
+        size_t end = positions[p+1].first;
+        if(end != begin)result.push_back(in.substr(begin, end-begin));
+    }
+    return result;
+}
+
+/*
 void JetScaleResolution::InitScale(const std::string& filename, const std::string& type)
 {
     std::vector<TH1D*>* ErrP = &HptsP;
@@ -345,40 +348,5 @@ double JetScaleResolution::GetScale(const TLorentzVector& jet, bool isBjet, doub
         return(sf + sigmascale*(HptsM[etabin]->GetBinContent(ptbin)));
     }
 }
-
-std::vector<std::string> string_split(const std::string& in, const std::vector<std::string> splits)
-{
-    std::vector<std::pair<size_t, size_t> > positions;
-    positions.push_back(std::pair<size_t, size_t>(0, 0));
-    for(size_t s = 0 ; s < splits.size() ; ++s)
-    {
-        size_t lastpos = 0;
-        while(lastpos < in.size())
-        {
-            lastpos = in.find(splits[s], lastpos);
-            if(lastpos == std::string::npos)
-            {
-                break;
-            }
-            else
-            {
-                positions.push_back(std::pair<size_t, size_t>(lastpos, splits[s].size()));
-                //lastpos += splits[s].size()+1;
-                lastpos += splits[s].size();
-            }
-        }
-
-    }
-    positions.push_back(std::pair<size_t, size_t>(in.size(), 0));
-    sort(positions.begin(), positions.end(), [](const std::pair<size_t, size_t>& A, const std::pair<size_t, size_t>& B){return A.first < B.first;});
-    std::vector<std::string> result;
-    for(size_t p = 0 ; p < positions.size()-1 ; ++p)
-    {
-        size_t begin = positions[p].first + positions[p].second;
-        size_t end = positions[p+1].first;
-        if(end != begin)result.push_back(in.substr(begin, end-begin));
-    }
-    return result;
-}
-
+*/
 
