@@ -441,8 +441,8 @@ void Analyzer::setupCR(std::string var, double val) {
 
 ////destructor
 Analyzer::~Analyzer() {
-  routfile->Write();
-  routfile->Close();
+  // routfile->Write();
+  // routfile->Close();
 
   clear_values();
   delete BOOM;
@@ -1048,6 +1048,9 @@ void Analyzer::printCuts() {
   histo.fill_histogram(routfile);
   if(doSystematics)
     syst_histo.fill_histogram(routfile);
+
+  routfile->Write();
+  routfile->Close();
 
 }
 
