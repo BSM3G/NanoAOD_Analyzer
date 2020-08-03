@@ -209,7 +209,7 @@ public:
   TChain* BOOM;
   TTree* BAAM;
   TFile* infoFile;
-  TFile* routfile;
+  TFile* routfile = new TFile;
   std::string filespace = "";
   float hPU[200] = { };        // initialize this array to zero.
   float hPU_up[200] = { };     // initialize this array to zero.

@@ -89,14 +89,14 @@ const std::map<PType, float> leptonmasses = {
 Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool setCR, std::string configFolder, std::string year) : goodParts(getArray()), genName_regex(".*([A-Z][^[:space:]]+)"){
   std::cout << "setup start" << std::endl;
   
-  routfile = new TFile(outfile.c_str(), "RECREATE", outfile.c_str(), ROOT::CompressionSettings(ROOT::kLZMA, 9));
+  routfile = TFile::Open(outfile.c_str(), "RECREATE", outfile.c_str(), ROOT::CompressionSettings(ROOT::kLZMA, 9));
   
   if(distats["Run"].bfind("AddMetaData")) add_metadata(infiles);
 
   BOOM= new TChain("Events");
   infoFile=0;
 
-  for( std::string infile: infiles){
+  for(std::string infile: infiles){
     BOOM->AddFile(infile.c_str());
   }
 
@@ -693,7 +693,6 @@ bool Analyzer::passHEMveto2018(){
     TLorentzVector jetP4 = _Jet->p4(index);
 
     //std::cout << "Jet #" << index << ": pt = " << jetP4.Pt() << ", eta = " << jetP4.Eta() << ", phi = " << jetP4.Phi() << std::endl;
-
     // Check if jet is in the HEM region
     if(jetP4.Pt() >= 30.0 && jetP4.Eta() >= -3.0 && jetP4.Eta() <= -1.3 && jetP4.Phi() >= -1.57 && jetP4.Phi() <= -0.87){
       //std::cout << "....... This jet is in the HEM region" << std::endl;
@@ -1147,6 +1146,8 @@ void Analyzer::setupTauIDSFsInfo(std::string tauidalgoname, std::string year, bo
     };
   }
 
+  //std::cout << "Tau IDs: " << tauid_algo << ", " << antiele_algo << ", " << antimu_algo << std::endl;
+
   // ----- Tau 1 stuff ----- //
   if(!_Tau->pstats["Tau1"].bfind("FlipIsolationRequirement")){
     tauidwp = _Tau->pstats["Tau1"].dmap.at("DiscrByMinIsolation");
@@ -1156,6 +1157,9 @@ void Analyzer::setupTauIDSFsInfo(std::string tauidalgoname, std::string year, bo
   }
   antielewp = _Tau->pstats["Tau1"].dmap.at("DiscrAgainstElectron");
   antimuwp = _Tau->pstats["Tau1"].dmap.at("DiscrAgainstMuon");
+
+  //std::cout << "Working points 1: tau id = " << tauidwp << ", antiele = " << antielewp << ", antimu = " << antimuwp << std::endl; 
+  //std::cout << "Working points 1: tau id = " << tauidwpsmap[tauidwp] << ", antiele = " << antielewpsmap[antielewp] << ", antimu = " << antimuwpsmap[antimuwp] << std::endl; 
 
   // Load the modules according to the algorithm and working points specified for tau ID SFs
   tau1idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
@@ -1179,6 +1183,8 @@ void Analyzer::setupTauIDSFsInfo(std::string tauidalgoname, std::string year, bo
   antielewp = _Tau->pstats["Tau2"].dmap.at("DiscrAgainstElectron");
   antimuwp = _Tau->pstats["Tau2"].dmap.at("DiscrAgainstMuon");
 
+  //std::cout << "Working points 2: tau id = " << tauidwp << ", antiele = " << antielewp << ", antimu = " << antimuwp << std::endl; 
+
   // Load the modules according to the algorithm and working points specified for tau ID SFs
   tau2idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
   tau2id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antiele_algo, antielewpsmap[antielewp]);
@@ -1199,8 +1205,9 @@ void Analyzer::setupTauResSFsInfo(bool taufakeenergyscale){
 
 double Analyzer::getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAntiElesf, bool getAntiMusf, std::string uncertainty){
   
-  double sf = 1.0;
+  double sf = 1.0, sf_tauid = 1.0, sf_antiele = 1.0, sf_antimu = 1.0;
 
+  // std::cout << "Size of Tau1 collection = " << active_part->at(CUTS::eRTau1)->size() << ", Tau2 collection = " << active_part->at(CUTS::eRTau2)->size() << std::endl;
   // Loop over the Tau1 list first.
   for(auto i : *active_part->at(CUTS::eRTau1)){
     // Look for the current muon in the eRMuon2 list. If found, skip it.
@@ -1209,34 +1216,43 @@ double Analyzer::getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAnti
     // Get the gen-match status of the current tau
     int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
     
+    // std::cout << "gen match status = " << gen_match_status << std::endl;
+
     if(getTauIDsf){
       if(!getTauIDbyDMsfs){ // pT-dependent SFs
-        sf *= tau1idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
+        sf_tauid *= tau1idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
       }
       else{ // DM-dependent SFs
-        sf *= tau1idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
+        sf_tauid *= tau1idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
       }
     }
-    else if(getAntiElesf) sf *= tau1id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
-    else if(getAntiMusf) sf *= tau1id_antiMuSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
+    else if(getAntiElesf) sf_antiele *= tau1id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
+    else if(getAntiMusf) sf_antimu *= tau1id_antiMuSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
   }
+
+  // std::cout << "sf_tauid = " << sf_tauid << ", sf_antiele = " << sf_antiele << ", sf_antimu = " << sf_antimu << std::endl;
 
   // Now, we loop over the tau2 list, to apply the SFs to the uncorrected taus from the previous list.
   for(auto i : *active_part->at(CUTS::eRTau2)){
     // Get the gen-match status of the current tau
     int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
-    
+    // std::cout << "gen match status = " << gen_match_status << std::endl;
+
     if(getTauIDsf){    
       if(!getTauIDbyDMsfs){ // pT-dependent SFs
-        sf *= tau2idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
+        sf_tauid *= tau2idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
       }
       else{ // DM-dependent SFs
-        sf *= tau2idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
+        sf_tauid *= tau2idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
       }
     }
-    else if(getAntiElesf) sf *= tau2id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
-    else if(getAntiMusf) sf *= tau2id_antiMuSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
+    else if(getAntiElesf) sf_antiele *= tau2id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
+    else if(getAntiMusf) sf_antimu *= tau2id_antiMuSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
   }
+
+  //std::cout << "sf_tauid = " << sf_tauid << ", sf_antiele = " << sf_antiele << ", sf_antimu = " << sf_antimu << std::endl;
+
+  sf = sf_tauid * sf_antiele * sf_antimu;
 
   return sf;
 }
@@ -1248,14 +1264,12 @@ void Analyzer::updateMet(int syst){
   std::string systname = syst_names.at(syst);
 
   // After jet energy corrections, we need to update all MET vectors in each systematics so they are the same as that in "orig"
-  
   if(_MET->needSys(syst) != 0){
 
     TLorentzVector met_p4_nom = _MET->getNominalP();
     _MET->addP4Syst(met_p4_nom, syst);
 
   }
-
   // --- Apply MET unclustered energy uncertainty if needed (syst) ---- // 
   if(!isData){
     _MET->propagateUnclEnergyUncty(systname,syst);
@@ -1273,9 +1287,6 @@ void Analyzer::selectMet(int syst) {
   if(distats["Run"].bfind("TreatMuonsAsNeutrinos") || distats["Run"].bfind("TreatOnlyOneMuonAsNeutrino") ) treatMuonsAsMet(syst);
 
   _MET->calculateHtAndMHt(distats["Run"], *_Jet,  syst);
-
-  // std::cout << "After treating muons as MET and before selecting: Met px = " << _MET->px() << ", Met py = " << _MET->py() << ", Met pz = " << _MET->p4().Pz() << ", Met E = " << _MET->energy() << std::endl; 
-
   /////MET CUTS
 
   if(!passCutRange(_MET->pt(), distats["Run"].pmap.at("MetCut"))) return;
@@ -1371,7 +1382,6 @@ void Analyzer::treatMuonsAsMet(int syst) {
     if( ( (rnd_num % rnd_muon) % 2 == 0 && mu1size > 0) || ( (rnd_num % rnd_muon) % 2 == 1 && (mu2size == 0 && mu1size > 0) ) ){
 
       // The muon selected will be from the muon1 list. We select it randomly, using the size of this list as input.
-      
       if(mu1size > 0){
         rnd_muon = rnd_muon % mu1size;
       }
@@ -1407,89 +1417,6 @@ void Analyzer::treatMuonsAsMet(int syst) {
   _MET->update(syst);
 
 }
-
-///////////////////////////////////////////////
-////////removed for the time being/////////////
-///////////////////////////////////////////////
-
-// void Analyzer::treatMuons_Met(std::string syst) {
-
-//   //syst not implemented for muon as tau or neutrino yet
-//   if( syst!="orig" or !( distats["Run"].bfind("TreatMuonsAsNeutrinos") || distats["Run"].bfind("TreatMuonsAsTaus")) ){
-//     return;
-//   }
-
-//   //  Neutrino update before calculation
-//   _MET->addP4Syst(_MET->p4(),"muMET");
-//   _MET->systdeltaMEx["muMET"]=0;
-//   _MET->systdeltaMEy["muMET"]=0;
-
-//   if(distats["Run"].bfind("TreatMuonsAsNeutrinos")) {
-//     for(auto it : *active_part->at(CUTS::eRMuon1)) {
-//       if(find(active_part->at(CUTS::eRMuon2)->begin(), active_part->at(CUTS::eRMuon2)->end(), it) != active_part->at(CUTS::eRMuon2)->end() ) continue;
-//       _MET->systdeltaMEx["muMET"] += _Muon->p4(it).Px();
-//       _MET->systdeltaMEy["muMET"] += _Muon->p4(it).Py();
-//     }
-//     for(auto it : *active_part->at(CUTS::eRMuon2)) {
-//       _MET->systdeltaMEx["muMET"] += _Muon->p4(it).Px();
-//       _MET->systdeltaMEy["muMET"] += _Muon->p4(it).Py();
-//     }
-//   }
-//   // else if(distats["Run"].bmap.at("TreatMuonsAsTaus")) {
-
-//   //   if(active_part->at(CUTS::eRMuon1)->size() == 1) {
-
-//   //     int muon = (int)active_part->at(CUTS::eRMuon1)->at(0);
-
-//   //     double rand1 = 1;//Tau_HFrac->GetRandom();
-//   //     double rand2 = 0;//Tau_Resol->GetRandom();
-
-//   //     double ETau_Pt = _Muon->p4(muon).Pt()*rand1*(rand2+1.0);
-//   //     double ETau_Eta = _Muon->p4(muon).Eta();
-//   //     double ETau_Phi=normPhi(_Muon->p4(muon).Phi());//+DeltaNu_Phi->GetRandom());
-//   //     double ETau_Energy = 0.;
-
-
-//   //     // double theta = 2.0*TMath::ATan2(1.0,TMath::Exp(_Muon->p4(muon).Eta()));
-//   //     // double sin_theta = TMath::Sin(theta);
-//   //     // double P_tau = ETau_Pt/sin_theta;
-
-//   //     // //ETau_Energy = sqrt(pow(P_tau, 2) + pow(1.77699, 2));
-//   //     // ETau_Energy = sqrt( pow(1.77699, 2) + pow(ETau_Pt, 2) + pow(_Muon->p4(muon).Pz(), 2));
-
-//   //     /*if(ETau_Pt <= 15.0){
-//   //       while(ETau_Pt<=15.0){
-//   //       rand1 = Tau_HFrac->GetRandom();
-//   //       rand2 = Tau_Resol->GetRandom();
-//   //       ETau_Pt = _Muon->p4(muon).Pt()*rand1*(rand2+1.0);
-//   //       ENu_Pt = _Muon->p4(muon).Pt()-ETau_Pt;
-//   //       }
-//   //     }
-//   //     */
-
-//   //     TLorentzVector Emu_Tau;
-//   //     Emu_Tau.SetPtEtaPhiE(ETau_Pt, ETau_Eta, ETau_Phi, ETau_Energy);
-//   //     _Muon->cur_P->clear();
-
-//   //     if (ETau_Pt >= _Muon->pstats["Muon1"].pmap.at("PtCut").first ){
-//   //       _Muon->cur_P->push_back(Emu_Tau);
-//   //       _MET->systdeltaMEy["muMET"] += (_Muon->p4(muon).Px()-Emu_Tau.Px());
-//   //       _MET->systdeltaMEy["muMET"] += (_Muon->p4(muon).Py()-Emu_Tau.Py());
-
-//   //     }
-//   //   }
-//   //}
-//   // recalculate MET
-//   //  _MET->update("muMET");
-
-//   /////MET CUTS
-//   active_part->at(CUTS::eMET)->clear();
-
-//   if(passCutRange(_MET->pt(), distats["Run"].pmap.at("MetCut"))) {
-//     active_part->at(CUTS::eMET)->push_back(1);
-//   }
-// }
-
 
 /////Check if a given branch is not found in the file
 
@@ -1678,13 +1605,6 @@ void Analyzer::read_info(std::string filename) {
     }
   }
   info_file.close();
-  //for( std::pair<const std::basic_string<char>, PartStats> group : distats){
-    //for( std::pair<const std::basic_string<char>, double> i : group.second.dmap){
-      //if(group.first.find("Tau")!=string::npos){
-        //cout<<group.first<<" "<< i.first<< "  "<<i.second<<std::endl;
-      //}
-    //}
-  //}
 }
 
 
@@ -1856,9 +1776,6 @@ void Analyzer::smearTaus(Lepton& lep, const PartStats& stats, const PartStats& s
 
 void Analyzer::setupJetCorrections(std::string year, std::string outputfilename){
 
-   // jetScaleRes = JetScaleResolution("Pileup/Summer16_23Sep2016V4_MC_Uncertainty_AK4PFchs.txt", "",  "Pileup/Spring16_25nsV6_MC_PtResolution_AK4PFchs.txt", "Pileup/Spring16_25nsV6_MC_SF_AK4PFchs.txt");
-   //jetScaleRes = JetScaleResolution("Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_PtResolution_AK8PFPuppi.txt", "Pileup/JetResDatabase/textFiles/Summer16_25nsV1_DATA_SF_AK8PFPuppi.txt", "Pileup/JetResDatabase/textFiles/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PFchs.txt", "Total");
-
    // ------------------------ NEW: Jet Energy Scale and Resolution corrections initialization ------------------- //
    static std::map<std::string, std::string> jecTagsMC = {
      {"2016" , "Summer16_07Aug2017_V11_MC"}, 
@@ -2006,11 +1923,11 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
   std::string systname = syst_names.at(syst);
 
   // Define the deltas to be applied to MET at the end:
-  double delta_x_T1Jet = 0.0, delta_y_T1Jet = 0.0, delta_x_rawJet = 0.0, delta_y_rawJet = 0.0;
+  float delta_x_T1Jet = 0.0, delta_y_T1Jet = 0.0, delta_x_rawJet = 0.0, delta_y_rawJet = 0.0;
   // Define the jet energy threshold below which we consider it to be unclustered energy.
-  double jetUnclEnThreshold = 15.0;
+  float jetUnclEnThreshold = 15.0;
 
-  double jet_pt_L1L2L3, jet_pt_L1;
+  float jet_pt_L1L2L3 = 0.0, jet_pt_L1 = 0.0;
 
   // Get the jet energy resolution scale factors only once and before looping over jets to apply them.
   if(!isData && systname == "orig"){
@@ -2026,11 +1943,11 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     jet_pt_L1L2L3 = 0.0, jet_pt_L1 = 0.0;
 
     // Revert the calibrations applied to this jet by getting the rawFactor.
-    double jet_Pt = origJetReco.Pt(), jet_Mass = origJetReco.M();
+    float jet_Pt = origJetReco.Pt(); // , jet_Mass = origJetReco.M();
 
-    double jet_RawFactor = _Jet->rawFactor[i];
+    float jet_RawFactor = _Jet->rawFactor[i];
 
-    double jet_rawPt = jet_Pt * (1.0 - jet_RawFactor), jet_rawMass = jet_Mass * (1.0 - jet_RawFactor);
+    float jet_rawPt = jet_Pt * (1.0 - jet_RawFactor);
 
     // Re-do the JECs to make everything consistent:
     double jec = jetRecalib.getCorrection(origJetReco, _Jet->area[i], jet_RawFactor, jec_rho);
@@ -2038,7 +1955,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
     // Update the values of pt and mass with these factors
     jet_Pt = jetRecalib.correctedP4(origJetReco, jec, jet_RawFactor).Pt();
-    jet_Mass = jetRecalib.correctedP4(origJetReco, jec, jet_RawFactor).M();
+    // jet_Mass = jetRecalib.correctedP4(origJetReco, jec, jet_RawFactor).M();
     
     // Calculate the pt only for the L1 corrections since it will be used later.
     // jet_pt_L1L2L3 = jetRecalibL1.correctedP4(origJetReco, jec, jet_RawFactor).Pt();
@@ -2376,16 +2293,6 @@ TLorentzVector Analyzer::matchTauToGen(const TLorentzVector& lvec, double lDelta
 
 ////checks if reco object matchs a gen object.  If so, then reco object is for sure a correctly identified particle
 TLorentzVector Analyzer::matchJetToGen(const TLorentzVector& recoJet4Vector, const double& matchDeltaR, CUTS ePos) {
-   //for the future store gen jets
-   /*
-   for(auto it : *active_part->at(ePos)) {
-     if(lvec.DeltaR(_Gen->p4(it)) <= stats.dmap.at("GenMatchingDeltaR")) {
-       //nothing more than b quark or gluon
-       if( !( (abs(_Gen->pdg_id[it])<5) || (abs(_Gen->pdg_id[it])==9) ||  (abs(_Gen->pdg_id[it])==21) ) ) continue;
-       return _Gen->p4(it);
-     }
-   }
-   */
    for(auto it : *active_part->at(ePos)) {
     if(recoJet4Vector.DeltaR(_GenJet->p4(it)) > matchDeltaR) continue;
      return _GenJet->p4(it);
@@ -3398,9 +3305,7 @@ void Analyzer::getGoodDiJets(const PartStats& stats, const int syst) {
       jet1 = _Jet->p4(ij1);
 
       bool passCuts = true;
-      //cout<<"---------------------"<<std::endl;
       for(auto cut : stats.bset) {
-        //cout<<cut<<"    "<<passCuts<<std::endl;;
         if(!passCuts) break;
         else if(cut == "DiscrByDeltaR") passCuts = passCuts && (jet1.DeltaR(jet2) >= stats.dmap.at("DeltaRCut"));
         else if(cut == "DiscrByDeltaEta") passCuts = passCuts && passCutRange(abs(jet1.Eta() - jet2.Eta()), stats.pmap.at("DeltaEtaCut"));
@@ -3619,9 +3524,8 @@ void Analyzer::fill_histogram() {
     //add weight here
     //if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdDataMCScaleFactor(0); 
     // Arguments: getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAntiElesf, bool getAntiMusf, std::string uncertainty)
-    if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), false, false, "");
-    if(distats["Run"].bfind("ApplyTauAntiEleSF")) wgt *= getTauIdSFs(false, false, true, false, "");
-    if(distats["Run"].bfind("ApplyTauAntiMuSF")) wgt *= getTauIdSFs(false, false, false, true, "");
+    // std::cout << "ApplyTauIDSF = " << distats["Run"].bfind("ApplyTauIDSF") << ", TauIdSFsByDM = " << distats["Run"].bfind("TauIdSFsByDM") << ", ApplyTauAntiEleSF = " << distats["Run"].bfind("ApplyTauAntiEleSF") << ", ApplyTauAntiMuSF = " << distats["Run"].bfind("ApplyTauAntiMuSF") << std::endl;
+    if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("ApplyTauAntiEleSF"), distats["Run"].bfind("ApplyTauAntiMuSF"), "");
 
     if(distats["Run"].bfind("ApplyZBoostSF") && isVSample){
       //wgt *= getZBoostWeight();
@@ -3664,37 +3568,13 @@ void Analyzer::fill_histogram() {
         if(syst_names[i]=="Tau_weight_Up"){
           if(distats["Run"].bfind("ApplyTauIDSF")) {
             // Arguments: getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAntiElesf, bool getAntiMusf, std::string uncertainty)
-            wgt /= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), false, false, "");
-            wgt *= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), false, false, "Up");
+            wgt /= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("ApplyTauAntiEleSF"), distats["Run"].bfind("ApplyTauAntiMuSF"), "");
+            wgt *= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("ApplyTauAntiEleSF"), distats["Run"].bfind("ApplyTauAntiMuSF"), "Up");
           }
         }else if(syst_names[i]=="Tau_weight_Down"){
           if(distats["Run"].bfind("ApplyTauIDSF")) {
-            wgt /= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), false, false, "");
-            wgt *= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), false, false, "Down");
-          }
-        }
-        // ---------- Tau anti-electron discr. scale factors ---------- //
-        if(syst_names[i]=="TauAntiEle_weight_Up"){
-          if(distats["Run"].bfind("ApplyTauAntiEleSF")) {
-            wgt /= getTauIdSFs(false, false, true, false, "");
-            wgt *= getTauIdSFs(false, false, true, false, "Up");
-          }
-        }else if(syst_names[i]=="TauAntiEle_weight_Down"){
-          if(distats["Run"].bfind("ApplyTauAntiEleSF")) {
-            wgt /= getTauIdSFs(false, false, true, false, "");
-            wgt *= getTauIdSFs(false, false, true, false, "Down");
-          }
-        }
-        // ---------- Tau anti-muon discr. scale factors ---------- //
-        if(syst_names[i]=="TauAntiMu_weight_Up"){
-          if(distats["Run"].bfind("ApplyTauAntiMuSF")) {
-            wgt /= getTauIdSFs(false, false, false, true, "");
-            wgt *= getTauIdSFs(false, false, false, true, "Up");
-          }
-        }else if(syst_names[i]=="TauAntiMu_weight_Down"){
-          if(distats["Run"].bfind("ApplyTauAntiMuSF")) {
-            wgt /= getTauIdSFs(false, false, false, true, "");
-            wgt *= getTauIdSFs(false, false, false, true, "Down");
+            wgt /= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("ApplyTauAntiEleSF"), distats["Run"].bfind("ApplyTauAntiMuSF"), "");
+            wgt *= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("ApplyTauAntiEleSF"), distats["Run"].bfind("ApplyTauAntiMuSF"), "Down");
           }
         }
         // ---------- Pileup weights ---------- //
@@ -3794,8 +3674,13 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
   } else if(!isData && group == "FillGen") {
 
+    // Add these to the default histograms to perform quick checks if necessary.
+    histAddVal(nTruePU, "PUNTrueInt");
+    histAddVal(generatorht, "HT");
+    histAddVal(gen_weight, "Weight");
+
     int nhadtau = 0;
-    TLorentzVector genVec;
+    TLorentzVector genVec(0,0,0,0);
     int i = 0;
     for(vec_iter it=active_part->at(CUTS::eGTau)->begin(); it!=active_part->at(CUTS::eGTau)->end(); it++, i++) {
       int nu = active_part->at(CUTS::eGNuTau)->at(i);
@@ -3833,22 +3718,15 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(active_part->at(CUTS::eGHadTau)->size(), "NMatchedVisTauH");
 
     int grbj = 0;
-    TLorentzVector genVec2;
     for(auto it : *active_part->at(CUTS::eGBJet)){
-    histAddVal(_Gen->pt(it), "BJPt");
-    histAddVal(_Gen->eta(it), "BJEta");
-    grbj = grbj + 1;
+      histAddVal(_Gen->pt(it), "BJPt");
+      histAddVal(_Gen->eta(it), "BJEta");
+      grbj = grbj + 1;
     }
 
     histAddVal(active_part->at(CUTS::eGTau)->size(), "NTau");
     histAddVal(nhadtau, "NHadTau");
-
     histAddVal(active_part->at(CUTS::eGBJet)->size(), "NBJ");
-
-    // Add these to the default histograms to perform quick checks if necessary.
-    histAddVal(nTruePU, "PUNTrueInt");
-    histAddVal(generatorht, "HT");
-    histAddVal(gen_weight, "Weight");
 
     for(auto it : *active_part->at(CUTS::eGZ)) {
       histAddVal(_Gen->pt(it), "ZPt");
@@ -3864,7 +3742,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     }
     histAddVal(active_part->at(CUTS::eGW)->size(), "NW");
 
-
     for(auto it : *active_part->at(CUTS::eGMuon)) {
       histAddVal(_Gen->energy(it), "MuonEnergy");
       histAddVal(_Gen->pt(it), "MuonPt");
@@ -3876,26 +3753,20 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(gendilepmass, "ZDiLepMass");
 
     double mass=0;
-    TLorentzVector lep1;
-    TLorentzVector lep2;
+    TLorentzVector lep1(0,0,0,0), lep2(0,0,0,0);
     for(size_t igen=0; igen<_Gen->size(); igen++){
-      //if a Z boson is explicitly there
       if(abs(_Gen->pdg_id[igen])==11 or abs(_Gen->pdg_id[igen])==13 or abs(_Gen->pdg_id[igen])==15){
         if(lep1!=TLorentzVector(0,0,0,0)){
           lep2= _Gen->p4(igen);
           mass=(lep1+lep2).M();
-          //cout<<"mass  leptons "<<mass<<std::endl;
           break;
         }else{
-          //cout<<_Gen->size()<<"   "<<igen<<std::endl;
-          //if(_Gen->size()>_Gen->cur_P.size()){
-           //_Gen->init();
-          //}
           lep1= _Gen->RecoP4(igen);
         }
       }
     }
     histAddVal(mass, "LeptonMass");
+
   } else if(fillInfo[group]->type == FILLER::Single) {
     Particle* part = fillInfo[group]->part;
     CUTS ePos = fillInfo[group]->ePos;
@@ -3907,28 +3778,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(part->p4(it).Phi(), "Phi");
       histAddVal(part->p4(it).DeltaPhi(_MET->p4()), "MetDphi");
       if(part->type == PType::Tau) {
-        //if(_Tau->nProngs->at(it) == 1){
-          //histAddVal(part->pt(it), "Pt_1prong");
-        //}else if(_Tau->nProngs->at(it) == 3){
-          //histAddVal(part->pt(it), "Pt_3prong");
-        //}
-        //histAddVal(_Tau->nProngs->at(it), "NumSignalTracks");
         histAddVal(_Tau->charge(it), "Charge");
-        histAddVal(_Tau->againstElectron[it], "againstElectron");
-        histAddVal(_Tau->againstMuon[it], "againstMuon");
-        //histAddVal(_Tau->DecayMode[it], "DecayMode"); // original
-        histAddVal(_Tau->DecayModeOldDMs[it], "DecayMode");
-        histAddVal(_Tau->DecayModeNewDMs[it], "DecayModeNewDMs");
-        // histAddVal(_Tau->MVAoldDM[it], "MVAoldDM"); //original
-        histAddVal(_Tau->TauIdDiscr[it], "MVAoldDM");
-        //histAddVal(_Tau->decayMode[it], "decayMode"); // original
-        histAddVal(_Tau->decayModeInt[it], "decayMode"); 
-        histAddVal(_Tau->leadTkDeltaEta[it], "leadTkDeltaEta");
-        histAddVal(_Tau->leadTkDeltaPhi[it], "leadTkDeltaPhi");
-        histAddVal(_Tau->leadTkPtOverTauPt[it], "leadTkPtOverTauPt");
-        histAddVal(_Tau->dz[it], "dz");
-        //histAddVal(_Tau->leadChargedCandPt->at(it), "SeedTrackPt");
-        //histAddVal(_Tau->leadChargedCandDz_pv->at(it), "leadChargedCandDz");
       }
       if(part->type != PType::Jet) {
         histAddVal(calculateLeptonMetMt(part->p4(it)), "MetMt");
@@ -3940,9 +3790,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(_FatJet->tau2[it], "tau2");
         histAddVal(_FatJet->tau2[it]/_FatJet->tau1[it], "tau2Overtau1");
       }
-      //if(part->type == PType::Jet){
-      //	std::cout << "jet pt = " << part->p4(it).Pt() << ", eta = " << part->p4(it).Eta() << ", phi = " << part->p4(it).Phi() << ", mass = " << part->p4(it).M() << std::endl;
-      //}
     }
 
     if((part->type != PType::Jet ) && active_part->at(ePos)->size() > 0) {
@@ -3954,14 +3801,14 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       if(ptIndexVector.size()>0){
         histAddVal(part->pt(ptIndexVector.back().second), "FirstLeadingPt");
         histAddVal(part->eta(ptIndexVector.back().second), "FirstLeadingEta");
-	if((part->type == PType::Muon )){
-		Float_t  leadingmu_pt = (part->pt(ptIndexVector.back().second));
-		Float_t hnandfatjets = leadingmu_pt;
-		for(size_t i=0; i<active_part->at(CUTS::eRWjet)->size(); i++){
-			hnandfatjets = hnandfatjets + (_FatJet->p4(active_part->at(CUTS::eRWjet)->at(i)).Pt());
-		}
-		histAddVal(hnandfatjets, "ptak8pt");
-	}
+      	if((part->type == PType::Muon )){
+      		Float_t  leadingmu_pt = (part->pt(ptIndexVector.back().second));
+      		Float_t hnandfatjets = leadingmu_pt;
+      		for(size_t i=0; i<active_part->at(CUTS::eRWjet)->size(); i++){
+      			hnandfatjets = hnandfatjets + (_FatJet->p4(active_part->at(CUTS::eRWjet)->at(i)).Pt());
+      		}
+      		histAddVal(hnandfatjets, "ptak8pt");
+      	}
       }
       if(ptIndexVector.size()>1){
         histAddVal(part->pt(ptIndexVector.at(ptIndexVector.size()-2).second), "SecondLeadingPt");
@@ -3970,7 +3817,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     }
 
     histAddVal(active_part->at(ePos)->size(), "N");
-
 
   } else if(group == "FillMetCuts") {
     histAddVal(_MET->MHT(), "MHT");
@@ -3996,13 +3842,10 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(_Jet->p4(active_part->at(CUTS::eR2ndJet)->at(active_part->at(CUTS::eR2ndJet)->size()-1)).Eta(), "SecondEta");
     }
 
-
   } else if(group == "FillLeadingJet" && active_part->at(CUTS::eSusyCom)->size() != 0) {
 
     TLorentzVector first = _Jet->p4(active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size() - 1));
-    //cout << "first and SUS: " << first.Pt() << endl;
     TLorentzVector second = _Jet->p4(active_part->at(CUTS::eR2ndJet)->at(active_part->at(CUTS::eR2ndJet)->size() - 1));
-    //cout << "second and SUS: " << second.Pt() << endl;
 
     histAddVal(first.Pt(), "FirstPt");
     histAddVal(second.Pt(), "SecondPt");
@@ -4017,17 +3860,16 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(fabs(first.Eta() - second.Eta()), "DeltaEta");
     histAddVal(first.DeltaR(second), "DeltaR");
 
-    double dphiDijets = absnormPhi(first.Phi() - second.Phi());
-    double dphi1 = normPhi(first.Phi() - _MET->phi());
-    double dphi2 = normPhi(second.Phi() - _MET->phi());
-    double alpha = (LeadDiJet.M() > 0) ? second.Pt() / LeadDiJet.M() : 999999999.0;
+    float dphiDijets = absnormPhi(first.Phi() - second.Phi());
+    float dphi1 = normPhi(first.Phi() - _MET->phi());
+    float dphi2 = normPhi(second.Phi() - _MET->phi());
+    float alpha = (LeadDiJet.M() > 0) ? second.Pt() / LeadDiJet.M() : 999999999.0;
 
     histAddVal(dphiDijets, "LeadSublDijetDphi");
     histAddVal2(_MET->pt(),dphiDijets, "MetVsDiJetDeltaPhiLeadSubl");
     histAddVal2(fabs(first.Eta()-second.Eta()), dphiDijets, "DeltaEtaVsDeltaPhiLeadSubl");
 
     histAddVal(absnormPhi(_MET->phi() - LeadDiJet.Phi()), "MetDeltaPhi");
-
 
     histAddVal(sqrt( pow(dphi1,2.0) + pow((TMath::Pi() - dphi2),2.0) ), "R1");
     histAddVal(sqrt( pow(dphi2,2.0) + pow((TMath::Pi() - dphi1),2.0)), "R2");
@@ -4039,11 +3881,12 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(alpha, "Alpha");
 
   } else if(group == "FillDiJet"){ // Dijet combinations
-    double leaddijetmass = 0;
-    double leaddijetpt = 0;
-    double leaddijetdeltaR = 0;
-    double leaddijetdeltaEta = 0;
-    double etaproduct = 0;
+    float leaddijetmass = 0;
+    float leaddijetpt = 0;
+    float leaddijetdeltaR = 0;
+    float leaddijetdeltaEta = 0;
+    float etaproduct = 0;
+
     for(auto it : *active_part->at(CUTS::eDiJet)) {
       int p1 = (it) / _Jet->size();
       int p2 = (it) % _Jet->size();
@@ -4065,7 +3908,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(absnormPhi(jet1.Phi() - jet2.Phi()), "DeltaPhi");
       histAddVal(jet1.DeltaR(jet2), "DeltaR");
     }
-
 
     histAddVal(leaddijetmass, "LargestMass");
     histAddVal(leaddijetpt, "LargestPt");
@@ -4091,8 +3933,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     std::string digroup = group;
     digroup.erase(0,4);
 
-    TLorentzVector part1;
-    TLorentzVector part2;
+    TLorentzVector part1(0,0,0,0), part2(0,0,0,0);
 
     for(auto it : *active_part->at(ePos)) {
 
@@ -4147,9 +3988,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     std::string digroup = group;
     digroup.erase(0,4);
 
-    TLorentzVector part1;
-    TLorentzVector part2;
-    TLorentzVector llep;
+    TLorentzVector part1(0,0,0,0), part2(0,0,0,0), llep(0,0,0,0);
 
     for(auto it : *active_part->at(ePos)) {
 
@@ -4205,11 +4044,11 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       double AbscosDphiLeadLepMet = abs(cos(absnormPhi(llep.Phi() - _MET->phi())));                                                                                                                                    
       histAddVal(AbscosDphiLeadLepMet, "RecoAbsCosDphiPtLeadLepandMet"); 
 
-	  if(calculateLeptonMetMt(llep) > 0){
-	  	histAddVal(diMass1, "ReconstructableMassDeltaPt_nonzeroMt");
-	  	histAddVal(cosDphiLeadLepMet, "RecoCosDphiPtLeadLepandMet_nonzeroMt");
-	  	histAddVal(AbscosDphiLeadLepMet, "RecoAbsCosDphiPtLeadLepandMet_nonzeroMt"); 
-	  }
+  	  if(calculateLeptonMetMt(llep) > 0){
+  	  	histAddVal(diMass1, "ReconstructableMassDeltaPt_nonzeroMt");
+  	  	histAddVal(cosDphiLeadLepMet, "RecoCosDphiPtLeadLepandMet_nonzeroMt");
+  	  	histAddVal(AbscosDphiLeadLepMet, "RecoAbsCosDphiPtLeadLepandMet_nonzeroMt"); 
+  	  }
 
       double ptSum = part1.Pt() + part2.Pt();
       histAddVal(ptSum, "SumOfPt");
@@ -4237,76 +4076,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       }
       if(lep2->type != PType::Tau){
         histAddVal(isZdecay(part2, *lep2), "Part2IsZdecay");
-      }
-
-
-      //electron tau stuff:
-      if(lep1->type == PType::Electron && lep2->type == PType::Electron){
-        //loop over taus to find a match in the unisolated taus:
-        int matchedTauInd=-1;
-        TLorentzVector matchedEle;
-        TLorentzVector unmatchedEle;
-        for( size_t itau =0; itau< _Tau->size(); itau++){
-          if(part2.DeltaR(_Tau->p4(itau))<0.3){
-            //we are sure that part1 passes the tight id
-            matchedTauInd=itau;
-            matchedEle=part2;
-            unmatchedEle=part1;
-          }else if(part1.DeltaR(_Tau->p4(itau))<0.3){
-            //check if part2 passes the tight id:
-            if(find(active_part->at(CUTS::eRElec1)->begin(),active_part->at(CUTS::eRElec1)->end(),p2)!=active_part->at(CUTS::eRElec1)->end()){
-              matchedTauInd=itau;
-              matchedEle=part1;
-              unmatchedEle=part2;
-            }
-          }
-        }
-        if(matchedTauInd>=0){
-          if(find(active_part->at(CUTS::eRTau1)->begin(),active_part->at(CUTS::eRTau1)->end(),matchedTauInd)!=active_part->at(CUTS::eRTau1)->end()){
-            histAddVal(_Tau->p4(matchedTauInd).Pt(), "DiEleGoodTauMatchPt");
-            histAddVal(_Tau->p4(matchedTauInd).Pt()-matchedEle.Pt(), "DiEleGoodTauMatchDeltaPt");
-            histAddVal((_Tau->p4(matchedTauInd)+unmatchedEle).M(), "DiEleGoodTauMatchMass");
-            histAddVal((matchedEle+unmatchedEle).M(), "DiEleEleGoodMatchMass");
-            histAddVal(matchedEle.Pt(), "DiEleEleGoodMatchPt");
-            //histAddVal(_Tau->leadChargedCandPtError->at(matchedTauInd),"DiEleleadChargedCandPtErrorGoodMatched");
-            //histAddVal(_Tau->leadChargedCandValidHits->at(matchedTauInd),"DiEleleadChargedCandValidHitGoodMatched");
-            histAddVal2( matchedEle.Pt(),   (_Tau->p4(matchedTauInd).Pt()-matchedEle.Pt())/matchedEle.Pt(), "DiEleTauGoodMatchPt_vs_DeltaPt");
-            histAddVal2( matchedEle.Pt(),   matchedEle.Eta(), "DiEleTauGoodMatchPt_vs_eta");
-            // histAddVal2( _Tau->pt(matchedTauInd),   _Tau->decayMode[matchedTauInd], "DiEleTauGoodMatchPt_vs_Decay"); //original
-            histAddVal2( _Tau->pt(matchedTauInd),   _Tau->decayModeInt[matchedTauInd], "DiEleTauGoodMatchPt_vs_Decay");
-          }else{
-            histAddVal(_Tau->p4(matchedTauInd).Pt(), "DiEleTauMatchPt");
-            histAddVal(_Tau->p4(matchedTauInd).Pt()-matchedEle.Pt(), "DiEleTauMatchDeltaPt");
-            histAddVal((_Tau->p4(matchedTauInd)+unmatchedEle).M(), "DiEleTauMatchMass");
-            histAddVal((matchedEle+unmatchedEle).M(), "DiEleEleMatchMass");
-            histAddVal(matchedEle.Pt(), "DiEleEleMatchPt");
-            //histAddVal(_Tau->leadChargedCandPtError->at(matchedTauInd),"DiEleleadChargedCandPtErrorMatched");
-            //histAddVal(_Tau->leadChargedCandValidHits->at(matchedTauInd),"DiEleleadChargedCandValidHitsMatched");
-            histAddVal2( matchedEle.Pt(),   (_Tau->p4(matchedTauInd).Pt()-matchedEle.Pt())/matchedEle.Pt(), "DiEleTauMatchPt_vs_DeltaPt");
-            histAddVal2( matchedEle.Pt(),   matchedEle.Eta(), "DiEleTauMatchPt_vs_eta");
-            // histAddVal2( _Tau->pt(matchedTauInd),   _Tau->decayMode[matchedTauInd], "DiEleTauMatchPt_vs_Decay"); //original
-            histAddVal2( _Tau->pt(matchedTauInd),   _Tau->decayModeInt[matchedTauInd], "DiEleTauMatchPt_vs_Decay");
-          }
-        }else{
-          histAddVal((part1+part2).M(), "DiEleEleUnMatchMass");
-          histAddVal(part2.Pt(), "DiEleEleUnMatchPt");
-          histAddVal2( part2.Pt(),   part2.Eta(), "DiEleUnMatchPt_vs_eta");
-          if(!isData){
-            histAddVal(part2.Pt(), "DiEleEleUnMatchPt_gen_"+std::to_string(abs(matchToGenPdg(part2,0.3))));
-          }
-          int found=-1;
-          for(size_t i=0; i< _Jet->size(); i++) {
-            if(part2.DeltaR(_Jet->p4(i)) <=0.4) {
-              found=i;
-            }
-          }
-          if (found>=0){
-            //histAddVal(_Jet->chargedMultiplicity[found], "DiEleEleUnMatchJetMultiplicity");
-          }else{
-            histAddVal(-1, "DiEleEleUnMatchJetMultiplicity");
-          }
-
-        }
       }
     }
   }
