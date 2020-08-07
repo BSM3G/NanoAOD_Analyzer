@@ -10,10 +10,10 @@ MCPUHistName pileup
 
 SpecialMCPUCalculation false
 SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6.root
-/// SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_wanddylo_incl.root
+# SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_wanddylo_incl.root
 
 ApplyTauIDSF true
-TauIdSFsByDM false
+TauIdSFsByDM true # Tau ID scale factors that are decay mode (DM) - dependent. If using di-tau triggers and tau-pt > 40 GeV, this are the recommended SFs.
 TauSFforEmbeddedSamples false
 
 ApplyTauAntiEleSF true
@@ -41,9 +41,9 @@ GenDilepMassRange 80.0 100.0
 
 /// ------ Triggers ----- ///
 
-Trigger1FirstRequirement HLT_IsoMu24
-Trigger1SecondRequirement HLT_IsoMu27
-UseTriggerWildcard false
+Trigger1FirstRequirement HLT_DoubleMediumIsoPFTau
+Trigger1SecondRequirement HLT_DoubleMediumCombinedIsoPFTau
+UseTriggerWildcard true
 
 /// Trigger2FirstRequirement HLT_DoubleMediumIsoPFTau35_Trk1_eta2p1_Reg
 /// Trigger2SecondRequirement HLT_DoubleMediumIsoPFTau40_Trk1_eta2p1_Reg
@@ -67,7 +67,7 @@ HtCut 30.0
 
 JetPtForMhtAndHt 30.0        
 JetEtaForMhtAndHt 5.0        
-ApplyJetLooseIDforMhtAndHt false
+ApplyJetLooseIDforMhtAndHt true
 ApplyJetTightIDforMhtAndHt false
 
 /// --- MC selection --- ///
