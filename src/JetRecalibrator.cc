@@ -10,9 +10,9 @@
 
 JetRecalibrator::JetRecalibrator(){};
 
-JetRecalibrator::JetRecalibrator(const std::string path, const std::string globalTag, const std::string jetFlavor, std::string type, bool doResidualJECs, int upToLevel, 
-			bool calculateSeparateCorrections, bool calculateTypeIMETCorr){
+JetRecalibrator::JetRecalibrator(const std::string& path, const std::string& globalTag, const std::string& jetFlavor, const std::string& type, bool doResidualJECs, int upToLevel, bool calculateSeparateCorrections, bool calculateTypeIMETCorr){
 
+	/*
 	path_str = path;
 	globalTag_str = globalTag;
 	jetFlavor_str = jetFlavor;
@@ -20,35 +20,28 @@ JetRecalibrator::JetRecalibrator(const std::string path, const std::string globa
 	corrLevel = upToLevel;
 	separateCorr = calculateSeparateCorrections;
 	calcT1MetCorr = calculateTypeIMETCorr;
+	*/
 
-	// Make base corrections
-	// std::cout << "name of L1 jet corrector parameters: " << (path_str+globalTag_str+"_L1FastJet_"+jetFlavor_str+".txt").c_str() << std::endl;
-	// std::cout << "name of L2 jet corrector parameters: " << (path_str+globalTag_str+"_L2Relative_"+jetFlavor_str+".txt").c_str() << std::endl;
-	// std::cout << "name of L3 jet corrector parameters: " << (path_str+globalTag_str+"_L3Absolute_"+jetFlavor_str+".txt").c_str() << std::endl;
-
-	std::vector<std::string> lstrings;
-	lstrings.push_back("_L1FastJet_");
-	lstrings.push_back("_L2Relative_");
-	lstrings.push_back("_L3Absolute_");
-
+	std::vector<std::string> lstrings = { "_L1FastJet_", "_L2Relative_", "_L3Absolute_" };
 
 	for(size_t i = 0; i < lstrings.size(); i++){
-		std::ifstream file((path_str+globalTag_str+lstrings.at(i)+jetFlavor_str+".txt").c_str());
-		if(!file.good()) throw std::runtime_error(("File not found: "+path_str+globalTag_str+lstrings.at(i)+jetFlavor_str+".txt ").c_str());
+		//std::ifstream file((path_str+globalTag_str+lstrings.at(i)+jetFlavor_str+".txt").c_str());
+		std::ifstream file((path+globalTag+lstrings.at(i)+jetFlavor+".txt").c_str());
+		if(!file.good()) throw std::runtime_error(("File not found: "+path+globalTag+lstrings.at(i)+jetFlavor+".txt ").c_str());
 	}
 
-	L1JetParameters = new JetCorrectorParameters((path_str+globalTag_str+"_L1FastJet_"+jetFlavor_str+".txt").c_str()); //, "Total");
-	L2JetParameters = new JetCorrectorParameters((path_str+globalTag_str+"_L2Relative_"+jetFlavor_str+".txt").c_str()); //, "Total");
-	L3JetParameters = new JetCorrectorParameters((path_str+globalTag_str+"_L3Absolute_"+jetFlavor_str+".txt").c_str()); //, "Total");
+	L1JetParameters = new JetCorrectorParameters((path+globalTag+"_L1FastJet_"+jetFlavor+".txt").c_str()); //, "Total");
+	L2JetParameters = new JetCorrectorParameters((path+globalTag+"_L2Relative_"+jetFlavor+".txt").c_str()); //, "Total");
+	L3JetParameters = new JetCorrectorParameters((path+globalTag+"_L3Absolute_"+jetFlavor+".txt").c_str()); //, "Total");
 
 	vPar.push_back(*L1JetParameters);
 
-	if(corrLevel >= 2) vPar.push_back(*L2JetParameters);
-	if(corrLevel >= 3) vPar.push_back(*L3JetParameters);
+	if(upToLevel >= 2) vPar.push_back(*L2JetParameters);
+	if(upToLevel >= 3) vPar.push_back(*L3JetParameters);
 
 	// Add residuals if needed
-	if(doResJECs){
-		ResidualJetParameters = new JetCorrectorParameters((path_str+globalTag_str+"_L2L3Residual_"+jetFlavor_str+".txt").c_str()); //, "Total");
+	if(doResidualJECs){
+		ResidualJetParameters = new JetCorrectorParameters((path+globalTag+"_L2L3Residual_"+jetFlavor+".txt").c_str()); //, "Total");
 		vPar.push_back(*ResidualJetParameters);
 	}
 
@@ -56,38 +49,39 @@ JetRecalibrator::JetRecalibrator(const std::string path, const std::string globa
 	//https://github.com/cms-sw/cmssw/blob/02d4198c0b6615287fd88e9a8ff650aea994412e/CondFormats/JetMETObjects/test/TestCorrections.C
 	JetCorrector = new FactorizedJetCorrector(vPar);
 
-	std::ifstream uncty(path_str+globalTag_str+"_Uncertainty_"+jetFlavor_str+".txt");
-	std::ifstream unctyfake(path_str+"Uncertainty_FAKE.txt");
+	std::ifstream uncty(path+globalTag+"_Uncertainty_"+jetFlavor+".txt");
+	std::ifstream unctyfake(path+"Uncertainty_FAKE.txt");
 	if(uncty.good()) {
-		JetUncertainty = new JetCorrectionUncertainty(path_str+globalTag_str+"_Uncertainty_"+jetFlavor_str+".txt");
+		JetUncertainty = new JetCorrectionUncertainty(path+globalTag+"_Uncertainty_"+jetFlavor+".txt");
 	}
 	else if (unctyfake.good()){
-		JetUncertainty = new JetCorrectionUncertainty(path_str+"/Uncertainty_FAKE.txt");
+		JetUncertainty = new JetCorrectionUncertainty(path+"/Uncertainty_FAKE.txt");
 	}
 	else{
-		std::cout << "Missing JEC uncertainty file " << (path_str+globalTag_str).c_str() << "_Uncertainty_" << jetFlavor_str << ".txt, so jet energy uncertainties will not be available." << std::endl;
+		std::cout << "Missing JEC uncertainty file " << (path+globalTag).c_str() << "_Uncertainty_" << jetFlavor << ".txt, so jet energy uncertainties will not be available." << std::endl;
 		nouncertainty = true;
 	}
 
-	if(separateCorr || calcT1MetCorr){
+	/*
+	if(calculateSeparateCorrections || calculateTypeIMETCorr){
 
 		vParL1.push_back(*L1JetParameters);
 		separateJetCorrectors["L1"] = new FactorizedJetCorrector(vParL1);
 
-		if(corrLevel >= 2 && separateCorr){
+		if(upToLevel >= 2 && calculateSeparateCorrections){
 			vParL2.push_back(*L1JetParameters);
 			vParL2.push_back(*L2JetParameters);
 
 			separateJetCorrectors["L1L2"] = new FactorizedJetCorrector(vParL2);
 		}
-		if(corrLevel >= 3 && separateCorr){
+		if(upToLevel >= 3 && calculateSeparateCorrections){
 			vParL3.push_back(*L1JetParameters);
 			vParL3.push_back(*L2JetParameters);
 			vParL3.push_back(*L3JetParameters);
 
 			separateJetCorrectors["L1L2L3"] = new FactorizedJetCorrector(vParL3);
 		}
-		if(doResJECs && separateCorr){
+		if(doResidualJECs && calculateSeparateCorrections){
 			vParL3Residuals.push_back(*L1JetParameters);
 			vParL3Residuals.push_back(*L2JetParameters);
 			vParL3Residuals.push_back(*L3JetParameters);
@@ -96,7 +90,7 @@ JetRecalibrator::JetRecalibrator(const std::string path, const std::string globa
 			separateJetCorrectors["L1L2L3Res"] = new FactorizedJetCorrector(vParL3Residuals);
 		}
 	}
-
+	*/
 
 };
 
@@ -137,13 +131,13 @@ float JetRecalibrator::getCorrection(TLorentzVector jet4vec, float jet_area, flo
 
 TLorentzVector JetRecalibrator::correctedP4(TLorentzVector jet4vec, float corr_factor, float jet_rawFactor){
 
-	double raw = 1.0 - jet_rawFactor;
+	float raw = 1.0 - jet_rawFactor;
 	if(corr_factor <= 0.0) return jet4vec;
 
-	double newpt = jet4vec.Pt() * raw * corr_factor;
-	double newmass = jet4vec.M() * raw * corr_factor;
+	float newpt = jet4vec.Pt() * raw * corr_factor;
+	float newmass = jet4vec.M() * raw * corr_factor;
 
-	TLorentzVector correctedJet4Vec;
+	TLorentzVector correctedJet4Vec(0,0,0,0);
 	correctedJet4Vec.SetPtEtaPhiM(newpt, jet4vec.Eta(), jet4vec.Phi(), newmass);
 
 	return correctedJet4Vec;

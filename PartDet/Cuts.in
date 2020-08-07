@@ -41,8 +41,8 @@ NRecoBJet	      0   -1
 NRecoMuon2	      0   -1
 NRecoElectron1        0   -1   
 NRecoElectron2	      0   -1
-***NRecoTau1	      0   -1
-***NRecoTau2	      0   -1
+***NRecoTau1	      1   -1
+***NRecoTau2	      2   -1
 NRecoCentralJet	      0   -1
 NRecoTriggers2	      0   -1           ///only 0 or 1
 NRecoSecondLeadingJet 0   -1    ///only 0 or 1

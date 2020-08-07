@@ -199,7 +199,6 @@ Generated::Generated(TTree* _BOOM, std::string filename, std::vector<std::string
   SetBranch("GenPart_genPartIdxMother", genPartIdxMother);
   SetBranch("GenPart_status", status);
   SetBranch("GenPart_statusFlags", statusFlags);
-  //SetBranch("Gen_numDaught",numDaught); //01.15.19
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -245,7 +244,6 @@ Jet::Jet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names
   SetBranch("Jet_nMuons", nMuons);
   SetBranch("Jet_chHEF", chargedHadronEnergyFraction);
   SetBranch("Jet_chEmEF", chargedEmEnergyFraction);
-  // SetBranch("Jet_btagCSVV2", bDiscriminator);
   
   SetBranch("Jet_btagCSVV2", bDiscriminatorCSVv2);
   SetBranch("Jet_btagDeepB", bDiscriminatorDeepCSV);
@@ -379,32 +377,6 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
   cbIDele1=tmp;
   tmp=elec2.dmap.at("DiscrByCBID");
   cbIDele2=tmp;
-  
-  /*
-  tmp=elec1.dmap.at("DiscrByHLTID");
-  cbHLTIDele1=tmp;
-  tmp=elec2.dmap.at("DiscrByHLTID");
-  cbHLTIDele2=tmp;
-  */
-  /*
-  if((elec1.bfind("DoDiscrByIsolation") || elec2.bfind("DoDiscrByIsolation")) && _BOOM->FindBranch("Electron_mvaFall17Iso")!=0 ) {
-   SetBranch("Electron_miniPFRelIso_all", miniPFRelIso_all);
-   SetBranch("Electron_miniPFRelIso_chg", miniPFRelIso_chg);
-   SetBranch("Electron_mvaFall17Iso", mvaFall17Iso);
-   SetBranch("Electron_mvaFall17noIso", mvaFall17noIso);
-   SetBranch("Electron_pfRelIso03_all", pfRelIso03_all);
-   SetBranch("Electron_pfRelIso03_chg", pfRelIso03_chg);
-  }
-
-  if((elec1.bfind("DoDiscrByIsolation") || elec2.bfind("DoDiscrByIsolation")) && _BOOM->FindBranch("Electron_mvaSpring16GP")!=0 ) {
-   SetBranch("Electron_miniPFRelIso_all", miniPFRelIso_all);
-   SetBranch("Electron_miniPFRelIso_chg", miniPFRelIso_chg);
-   SetBranch("Electron_mvaSpring16GP", mvaSpring16GP);
-   SetBranch("Electron_mvaSpring16HZZ", mvaSpring16HZZ);
-   SetBranch("Electron_pfRelIso03_all", pfRelIso03_all);
-   SetBranch("Electron_pfRelIso03_chg", pfRelIso03_chg);
-  }
-  */
 
   if((elec1.bfind("DoDiscrByIsolation") || elec2.bfind("DoDiscrByIsolation"))) {
    SetBranch("Electron_miniPFRelIso_all", miniPFRelIso_all);
@@ -588,6 +560,10 @@ Taus::Taus(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
   SetBranch("Tau_chargedIso", chargedIsoPtSum);
   SetBranch("Tau_neutralIso", neutralIso);
   SetBranch("Tau_puCorr", puCorr);
+
+  // ----- Tau gen-matching for ID SFs ----- //
+  if(_BOOM->FindBranch("Tau_genPartFlav") != 0){ SetBranch("Tau_genPartFlav", genPartFlav); } // Flavour of genParticle for MC matching to status==2 taus: 1 = prompt electron, 2 = prompt muon, 3 = tau->e decay, 4 = tau->mu decay, 5 = hadronic tau decay, 0 = unknown or unmatched
+  if(_BOOM->FindBranch("Tau_genPartIdx") != 0){ SetBranch("Tau_genPartIdx", genPartIdx); } // (index to Genpart collection) Index into genParticle list for MC matching to status==2 taus
   
 }
 
@@ -621,11 +597,8 @@ bool Taus::get_Iso(int index, double onetwo, double flipisolation) const {
   }
   
   if(!flipisolation){
-    //cout<<tau_isomax_mask<<"  "<<tau_iso<<"   "<<(tau_isomax_mask& tau_iso)<<"   "<<  (tau_isomax_mask& tau_iso).count()<<std::endl; 
-    // return (tau_isomax_mask& tau_iso).count();
     return (tau_isomin_mask& tau_iso).count();
   }else{
-    // return(!((tau_isomax_mask&tau_iso).count()) and (tau_isomin_mask&tau_iso).count());
     return(!((tau_isomin_mask&tau_iso).count()) and (tau_isomax_mask&tau_iso).count());
   }
 }
@@ -637,7 +610,6 @@ bool Taus::pass_against_Elec(CUTS ePos, int index) {
     std::bitset<8> tmp(tau2ele);
     tau_ele_mask=tmp;
   }
-  //cout<<tau_ele_mask<<"  "<<tau_ele<<"   "<<(tau_ele_mask&tau_ele)<<"   "<<  (tau_ele_mask&tau_ele).count()<<std::endl; 
   return (tau_ele_mask&tau_ele).count();
 }
 
@@ -648,6 +620,5 @@ bool Taus::pass_against_Muon(CUTS ePos, int index) {
     std::bitset<8> tmp(tau2mu);
     tau_mu_mask=tmp;
   }
-  //cout<<tau_mu_mask<<"  "<<tau_mu<<"   "<<(tau_mu_mask&tau_mu)<<"   "<<  (tau_mu_mask&tau_mu).count()<<std::endl; 
   return (tau_mu_mask&tau_mu).count();
 }

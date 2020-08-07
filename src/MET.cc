@@ -6,8 +6,7 @@
 //particle is a objet that stores multiple versions of the particle candidates
 Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_names, double _MT2mass) : BOOM(_BOOM), GenName(_GenName), syst_names(_syst_names), MT2mass(_MT2mass)  {
 
-  std::cout << "Met branch = " << GenName << std::endl;
-
+  //std::cout << "Met branch = " << GenName << std::endl;
   SetBranch((GenName+"_pt").c_str(), met_pt);
   SetBranch((GenName+"_phi").c_str(), met_phi);
 
@@ -21,7 +20,6 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
   SetBranch("RawMET_pt", raw_met_pt);
   SetBranch("RawMET_phi", raw_met_phi);
 
-  // Initialize the systRawMet vector 
   // Initialize the systRawMet vector   
   for(auto name: syst_names){
     if(name == "orig") 
@@ -45,21 +43,6 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
   syst_HT.resize(syst_names.size());
   syst_MHT.resize(syst_names.size());
   syst_MHTphi.resize(syst_names.size());
-  
-
-  for( auto name : syst_names) {
-    if(name == "orig") 
-      systVec.push_back(new TLorentzVector);
-    else if(name.find("Met")!=std::string::npos){
-      systVec.push_back(new TLorentzVector);
-    }
-    else if(name.find("weight")!=std::string::npos){
-      systVec.push_back(nullptr);
-    }else if(name.find("Tau_qcd")!=std::string::npos){
-      systVec.push_back(nullptr);
-    }else
-      systVec.push_back(new TLorentzVector);
-  }
  
   if( std::find(syst_names.begin(), syst_names.end(), "MetUncl_Up") != syst_names.end() && _BOOM->GetListOfBranches()->FindObject((GenName+"_MetUnclustEnUpDeltaX").c_str()) !=0){
     SetBranch((GenName+"_MetUnclustEnUpDeltaX").c_str(), MetUnclUp[0]);
@@ -71,7 +54,6 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
     SetBranch((GenName+"_MetUnclustEnUpDeltaY").c_str(), MetUnclDown[1]);
     Uncldown = std::find(syst_names.begin(), syst_names.end(), "MetUncl_Down")- syst_names.begin();
   }
-
   activeSystematic=0;
 }
 
@@ -80,13 +62,11 @@ bool Met::needSys(int syst) const {
 }
 
 void Met::addPtEtaPhiESyst(double ipt,double ieta, double iphi, double ienergy, int syst){
-  systVec.at(syst)->SetPtEtaPhiE(ipt,ieta,iphi,ienergy);
   systRawMetVec.at(syst)->SetPtEtaPhiE(ipt,ieta,iphi,ienergy);
 }
 
 
 void Met::addP4Syst(TLorentzVector mp4, int syst){
-  systVec.at(syst)->SetPtEtaPhiE(mp4.Pt(),mp4.Eta(),mp4.Phi(),mp4.E());
   systRawMetVec.at(syst)->SetPtEtaPhiE(mp4.Pt(),mp4.Eta(),mp4.Phi(),mp4.E());
 }
 
@@ -104,14 +84,6 @@ void Met::init(){
     DefMet.SetPtEtaPhiM(def_met_pt,0,def_met_phi,def_met_pt);
   }
   RawMet.SetPtEtaPhiM(raw_met_pt,0,raw_met_phi,raw_met_pt);
-  
-  // Get the x and y components of the raw MET
-  met_px = RawMet.Px();
-  met_py = RawMet.Py();
-  def_met_px = DefMet.Px();
-  def_met_py = DefMet.Py();
-  t1met_px = Reco.Px();
-  t1met_py = Reco.Py();
 
   for(int i=0; i < (int) syst_names.size(); i++) {
      // initialize the Raw MET vector
@@ -129,12 +101,12 @@ void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jet_pt_up
 
   if(systRawMetVec.at(syst) == nullptr) return;
 
-  double jet_cosPhi = cos(recoJet.Phi());
-  double jet_sinPhi = sin(recoJet.Phi());
+  float jet_cosPhi = cos(recoJet.Phi());
+  float jet_sinPhi = sin(recoJet.Phi());
 
   // Update the nominal values:
-  met_px_shifted = systRawMetVec.at(syst)->Px();
-  met_py_shifted = systRawMetVec.at(syst)->Py();
+  float met_px_shifted = systRawMetVec.at(syst)->Px();
+  float met_py_shifted = systRawMetVec.at(syst)->Py();
 
   // update shifted values
   met_px_shifted = met_px_shifted - (jet_pt_up - jet_pt_down) * jet_cosPhi;
@@ -151,18 +123,18 @@ void Met::propagateUnclEnergyUnctyEE(double const& delta_x_T1Jet, double const& 
   if(systRawMetVec.at(syst) == nullptr) return;
 
   // Remove the L1L2L3 - L1 corrected jets in the EE region from the default MET branch
-  double new_def_met_px = DefMet.Px() + delta_x_T1Jet;
-  double new_def_met_py = DefMet.Py() + delta_y_T1Jet;
+  float new_def_met_px = DefMet.Px() + delta_x_T1Jet;
+  float new_def_met_py = DefMet.Py() + delta_y_T1Jet;
 
   DefMet.SetPxPyPzE(new_def_met_px, new_def_met_py, DefMet.Pz(), sqrt(pow(new_def_met_px,2) + pow(new_def_met_py, 2)));
 
   // Get the unclustered energy part that is removed in the v2 recipe
-  double met_unclEE_x = DefMet.Px() - T1Met.Px(); //t1met_px;
-  double met_unclEE_y = DefMet.Py() - T1Met.Py(); //t1met_py;
+  float met_unclEE_x = DefMet.Px() - T1Met.Px(); //t1met_px;
+  float met_unclEE_y = DefMet.Py() - T1Met.Py(); //t1met_py;
 
   // Finalize the v2 recipe for the rawMET by removing the unclustered part in the EE region
-  double met_px_unclshift = systRawMetVec.at(syst)->Px();
-  double met_py_unclshift = systRawMetVec.at(syst)->Py();
+  float met_px_unclshift = systRawMetVec.at(syst)->Px();
+  float met_py_unclshift = systRawMetVec.at(syst)->Py();
 
   met_px_unclshift = met_px_unclshift + delta_x_rawJet - met_unclEE_x;
   met_py_unclshift = met_py_unclshift + delta_y_rawJet - met_unclEE_y;
@@ -179,8 +151,8 @@ void Met::propagateUnclEnergyUncty(std::string& systname, int syst){
   if(systname.find("MetUncl") == std::string::npos) return;
 
   // This will only apply for the MetUncl uncertainty in MC
-  double met_px_unclEnshift = systRawMetVec.at(0)->Px(); // 0 refers to the nominal value, which at this point should already have all corrections applied
-  double met_py_unclEnshift = systRawMetVec.at(0)->Py();
+  float met_px_unclEnshift = systRawMetVec.at(0)->Px(); // 0 refers to the nominal value, which at this point should already have all corrections applied
+  float met_py_unclEnshift = systRawMetVec.at(0)->Py();
   
   if(systname.find("_Up") != std::string::npos){
 
@@ -213,9 +185,9 @@ void Met::calculateHtAndMHt(PartStats& stats, Jet& jet, int syst=0){
 
   if(systRawMetVec.at(syst) == nullptr) return;
 
-  double sumpxForMht=0;
-  double sumpyForMht=0;
-  double sumptForHt=0;
+  float sumpxForMht=0;
+  float sumpyForMht=0;
+  float sumptForHt=0;
 
   // Calculates HT and MHT.
   int i=0;
@@ -266,15 +238,13 @@ void Met::setMT2Mass(double mass){
 }
 
 TLorentzVector Met::getNominalP(){
-  // Use the information from the raw met vector instead, since this is the vector all jet corrections are propagated to.
-	TLorentzVector nominalP4;
-	nominalP4.SetPxPyPzE(systRawMetVec.at(0)->Px(), systRawMetVec.at(0)->Py(), systRawMetVec.at(0)->Pz(), systRawMetVec.at(0)->E());
+	TLorentzVector nominalP4 = *systRawMetVec.at(0); 
+	// nominalP4.SetPxPyPzE(systRawMetVec.at(0)->Px(), systRawMetVec.at(0)->Py(), systRawMetVec.at(0)->Pz(), systRawMetVec.at(0)->E());
 	return nominalP4;
 }
 
 void Met::setCurrentP(int syst){
-  // Use the information from the raw met vector instead, since this is the vector all jet corrections
-  // are propagated to.
+  // Use the information from the raw met vector instead, since this is the vector all jet corrections are propagated to.
   if(systRawMetVec.at(syst) == nullptr) {
     cur_P = systRawMetVec.at(0);
     activeSystematic = 0;
@@ -284,7 +254,6 @@ void Met::setCurrentP(int syst){
   }
 
 }
-
 
 void Met::unBranch() {
   BOOM->SetBranchStatus((GenName+"*").c_str(), 0);

@@ -3,9 +3,12 @@ obj/*o
 *txt
 TODO
 *~
+._*
+src/._*
 src/*~
 src/svfit/*~
 PartDet/*~
+PartDet/._*
 Analyzer
 Histo
 Particle
