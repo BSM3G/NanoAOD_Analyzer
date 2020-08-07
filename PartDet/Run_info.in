@@ -25,9 +25,10 @@ ApplyZBoostSF false
 isData false
 ApplyGenWeight  true
 
+ApplyHEMVeto2018 false
+
 /// ------ Data-specific cuts ------///
 FilterDataByGoldenJSON true
-ApplyHEMVeto2018 false
 
 /// ------ MC Gen-level cuts ------///
 /// --- HT filter --- ///
