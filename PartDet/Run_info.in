@@ -13,7 +13,7 @@ SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6.root
 # SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_wanddylo_incl.root
 
 ApplyTauIDSF true
-TauIdSFsByDM true # Tau ID scale factors that are decay mode (DM) - dependent. If using di-tau triggers and tau-pt > 40 GeV, this are the recommended SFs.
+TauIdSFsByDM true # Tau ID scale factors that are decay mode (DM) - dependent. If using di-tau triggers and tau-pt > 40 GeV, these are the recommended SFs.
 TauSFforEmbeddedSamples false
 
 ApplyTauAntiEleSF true
