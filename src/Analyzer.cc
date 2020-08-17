@@ -2522,7 +2522,14 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
       else if(cut == "DoDiscrByIsolation") {
         double firstIso = (stats.pmap.find("IsoSumPtCutValue") != stats.pmap.end()) ? stats.pmap.at("IsoSumPtCutValue").first : ival(ePos) - ival(CUTS::eRTau1) + 1;
         double secondIso = (stats.pmap.find("IsoSumPtCutValue") != stats.pmap.end()) ? stats.pmap.at("IsoSumPtCutValue").second : stats.bfind("FlipIsolationRequirement");
-		passCuts = passCuts && lep.get_Iso(i, firstIso, secondIso);
+		    if(stats.bfind("FailIsolation")){ 
+          passCuts = passCuts && !lep.get_Iso(i, firstIso, secondIso);
+          //if(lep.type == PType::Muon) std::cout << "FailIsolation ON, passCuts = " << passCuts << std::endl;
+        }
+        else{
+          passCuts = passCuts && lep.get_Iso(i, firstIso, secondIso);
+          //if(lep.type == PType::Muon) std::cout << "FailIsolation OFF, passCuts = " << passCuts << std::endl;
+        }
       }
       else if(cut == "DiscrIfIsZdecay" && lep.type != PType::Tau ) passCuts = passCuts && isZdecay(lvec, lep);
       else if(cut == "DiscrByMetDphi") passCuts = passCuts && passCutRange(absnormPhi(lvec.Phi() - _MET->phi()), stats.pmap.at("MetDphiCut"));
@@ -3896,6 +3903,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
       if(DiJet.M() > leaddijetmass) {
         leaddijetmass = DiJet.M();
+
         etaproduct = (jet1.Eta() * jet2.Eta() > 0) ? 1 : -1;
       }
       if(DiJet.Pt() > leaddijetpt) leaddijetpt = DiJet.Pt();
@@ -4062,6 +4070,9 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(PZetaVis, "PZetaVis");
       histAddVal2(PZetaVis,PZeta, "Zeta2D");
       histAddVal((distats.at(digroup).dmap.at("PZetaCutCoefficient") * PZeta) + (distats.at(digroup).dmap.at("PZetaVisCutCoefficient") * PZetaVis), "Zeta1D");
+
+      // Diparticle pT
+      histAddVal((part1 + part2).Pt(), "Pt");
 
       if ((active_part->at(CUTS::eR1stJet)->size()>0 && active_part->at(CUTS::eR1stJet)->at(0) != -1) && (active_part->at(CUTS::eR2ndJet)->size()>0 && active_part->at(CUTS::eR2ndJet)->at(0) != -1)) {
         TLorentzVector TheLeadDiJetVect = _Jet->p4(active_part->at(CUTS::eR1stJet)->at(0)) + _Jet->p4(active_part->at(CUTS::eR2ndJet)->at(0));

@@ -595,10 +595,12 @@ bool Taus::get_Iso(int index, double onetwo, double flipisolation) const {
     tau_isomin_mask=tau2minIso;
     tau_isomax_mask=tau2maxIso;
   }
-  
+  //std::cout << "Tau isolation = " << tau_iso << ", requirement = " << tau_isomin_mask << std::endl;
   if(!flipisolation){
+    //std::cout << "Isolation requirement passed? " << (tau_isomin_mask& tau_iso).count() << std::endl;
     return (tau_isomin_mask& tau_iso).count();
   }else{
+    //std::cout << "Isolation requirement passed? " << (tau_isomin_mask& tau_iso).count() << std::endl;
     return(!((tau_isomin_mask&tau_iso).count()) and (tau_isomax_mask&tau_iso).count());
   }
 }
