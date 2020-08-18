@@ -175,6 +175,7 @@ public:
   double getTauIdSFs(bool, bool, bool, bool, std::string);
   double getWkfactor();
   double getZBoostWeight();
+  double getZpTWeight();
   double getZBoostWeightSyst(int ud); // 06.02.20
   double getTopBoostWeight(); //01.15.19
   void setupBJetSFInfo(const PartStats&, std::string); // new function that sets up the b-tagging SF info

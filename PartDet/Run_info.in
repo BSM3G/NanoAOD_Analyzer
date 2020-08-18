@@ -10,9 +10,9 @@ MCPUHistName pileup
 
 SpecialMCPUCalculation false
 SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6.root
-# SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_wanddylo_incl.root
+/// SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_wanddylo_incl.root
 
-ApplyTauIDSF true
+ApplyTauIDSF true # Default tau ID scale factors are pT-dependent. 
 TauIdSFsByDM true # Tau ID scale factors that are decay mode (DM) - dependent. If using di-tau triggers and tau-pt > 40 GeV, this are the recommended SFs.
 TauSFforEmbeddedSamples false
 
@@ -20,15 +20,15 @@ ApplyTauAntiEleSF true
 ApplyTauAntiMuSF true
 
 UsePileUpWeight true
-ApplyZBoostSF false
+ApplyISRZBoostSF false # Z-boost weight corrections derived for ISR+stau analysis (SUS-19-002)
+ApplySUSYZBoostSF true # Official Z-boost weight corrections derived by the SUSY PAG.
 
 isData false
 ApplyGenWeight  true
 
-ApplyHEMVeto2018 false
-
 /// ------ Data-specific cuts ------///
 FilterDataByGoldenJSON true
+ApplyHEMVeto2018 false
 
 /// ------ MC Gen-level cuts ------///
 /// --- HT filter --- ///
@@ -42,12 +42,12 @@ GenDilepMassRange 80.0 100.0
 
 /// ------ Triggers ----- ///
 
-Trigger1FirstRequirement HLT_DoubleMediumIsoPFTau
-Trigger1SecondRequirement HLT_DoubleMediumCombinedIsoPFTau
+Trigger1FirstRequirement HLT_PFMETNoMu120_PFMHTNoMu120_IDTight
+# Trigger1SecondRequirement HLT_DoubleMediumCombinedIsoPFTau
 UseTriggerWildcard true
 
-/// Trigger2FirstRequirement HLT_DoubleMediumIsoPFTau35_Trk1_eta2p1_Reg
-/// Trigger2SecondRequirement HLT_DoubleMediumIsoPFTau40_Trk1_eta2p1_Reg
+# Trigger2FirstRequirement HLT_DoubleMediumIsoPFTau35_Trk1_eta2p1_Reg
+# Trigger2SecondRequirement HLT_DoubleMediumIsoPFTau40_Trk1_eta2p1_Reg
 
 ///---Treat Muon as Neutrino---///
 
@@ -59,7 +59,7 @@ TreatMuonsAsTaus 0
 ApplyMetFilters true
 MT2Mass 0.
 DiscrByMet false
-MetCut 30.0 10000.0
+MetCut 250.0 10000.0
 
 DiscrByMHT false
 MhtCut 50.0
