@@ -866,8 +866,8 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoJets(CUTS::eRJet1, _Jet->pstats["Jet1"],syst);
   getGoodRecoJets(CUTS::eRJet2, _Jet->pstats["Jet2"],syst);
   getGoodRecoJets(CUTS::eRCenJet, _Jet->pstats["CentralJet"],syst);
-  getGoodRecoJets(CUTS::eR1stJet, _Jet->pstats["FirstLeadingJet"],syst);
-  getGoodRecoJets(CUTS::eR2ndJet, _Jet->pstats["SecondLeadingJet"],syst);
+  getGoodRecoLeadJets(CUTS::eR1stJet, _Jet->pstats["FirstLeadingJet"],syst);
+  getGoodRecoLeadJets(CUTS::eR2ndJet, _Jet->pstats["SecondLeadingJet"],syst);
 
   getGoodRecoFatJets(CUTS::eRWjet, _FatJet->pstats["Wjet"],syst);
 
@@ -2625,10 +2625,13 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
   int i=0;
 
   for(auto lvec: *_Jet) {
-
+    /*
     if(ePos == CUTS::eR1stJet || ePos == CUTS::eR2ndJet){
+      if(ePos == CUTS::eR1stJet) std::cout << "I'm selecting leading jet" << std::endl;
+      else if(ePos == CUTS::eR2ndJet) std::cout << "I'm selecting the second leading jet" << std::endl;
       break;
     }
+    */
     bool passCuts = true;
     double dphi1rjets = normPhi(lvec.Phi() - _MET->phi());
     if( ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
@@ -2666,23 +2669,146 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
 
   //clean up for first and second jet
   //note the leading jet has to be selected fist!
+  /*
   if(ePos == CUTS::eR1stJet || ePos == CUTS::eR2ndJet) {
+
+    std::cout << "Number of selected good jets: " << active_part->at(CUTS::eRJet1).size() << std::endl;
 
     std::vector<std::pair<double, int> > ptIndexVector;
     for(auto it : *active_part->at(CUTS::eRJet1)) {
       ptIndexVector.push_back(std::make_pair(_Jet->pt(it),it));
+      std::cout << "Filling ptIndexVector with jet #" << it << ", pt = " << _Jet->pt(it) << std::endl;
     }
     sort(ptIndexVector.begin(),ptIndexVector.end());
+    std::cout << " ----- Sorted ptIndexVector: " << std::endl;
+    for(size_t i = 0; i < ptIndexVector.size(); i++){
+      std::cout << "Jet #" << ptIndexVector.at(i).second << ", pt = " << ptIndexVector.at(i).first << std::endl;
+    }
     if(ePos == CUTS::eR1stJet && ptIndexVector.size()>0){
+      std::cout << "Leading jet is #" << ptIndexVector.back().second << ", with pt = " << ptIndexVector.back().first << std::endl;
       active_part->at(ePos)->push_back(ptIndexVector.back().second);
     }
     else if(ePos == CUTS::eR2ndJet && ptIndexVector.size()>1){
+      std::cout << "Second leading jet is #" << ptIndexVector.at(ptIndexVector.size()-2).second << ", with pt = " << ptIndexVector.at(ptIndexVector.size()-2).first << std::endl;
       active_part->at(ePos)->push_back(ptIndexVector.at(ptIndexVector.size()-2).second);
     }
-    
+  }
+  */
+}
+
+void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int syst) {
+
+  if(!neededCuts.isPresent(ePos)) return;
+
+  if(!stats.bfind("DoDiscrByThisJet")) return;
+
+  std::string systname = syst_names.at(syst);
+  if(!_Jet->needSyst(syst)) {
+    active_part->at(ePos)=goodParts[ePos];
+    return;
   }
 
+  //note the leading jet has to be selected first!  
+  //Do this only once for the first leading jet:
+  if(ePos == CUTS::eR1stJet){
+    // std::cout << "Number of selected good jets: " << active_part->at(CUTS::eRJet1)->size() << std::endl;
+    for(auto it : *active_part->at(CUTS::eRJet1)) {
+      jetPtIndexVector.push_back(std::make_pair(_Jet->pt(it),it));
+      // std::cout << "Filling jetPtIndexVector with jet #" << it << ", pt = " << _Jet->pt(it) << std::endl;
+    }
+    sort(jetPtIndexVector.begin(),jetPtIndexVector.end());
+
+    // std::cout << " ----- Sorted ptIndexVector: " << std::endl;
+    //for(size_t i = 0; i < jetPtIndexVector.size(); i++){
+    //  std::cout << "Jet #" << jetPtIndexVector.at(i).second << ", pt = " << jetPtIndexVector.at(i).first << std::endl;
+    //}
+  }
+
+  if(ePos == CUTS::eR1stJet && jetPtIndexVector.size()>0){
+
+    //std::cout << "Leading jet is #" << jetPtIndexVector.back().second << ", with pt = " << jetPtIndexVector.back().first << std::endl;
+    bool passCuts = true;
+    int i = jetPtIndexVector.back().second;
+    TLorentzVector leadjetp4 = _Jet->p4(i);
+    double dphi1rjets = normPhi(leadjetp4.Phi() - _MET->phi());
+    // Applying cuts for FirstLeadingJet block
+    passCuts = passCuts && passCutRange(fabs(leadjetp4.Eta()), stats.pmap.at("EtaCut"));
+    passCuts = passCuts && (leadjetp4.Pt() > stats.dmap.at("PtCut"));
+
+    for( auto cut: stats.bset) {
+      if(!passCuts) break;
+      else if(cut == "Apply2017EEnoiseVeto") passCuts = passCuts && passJetVetoEEnoise2017(i);
+      /// BJet specific
+      else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
+      else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
+      else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
+      else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
+      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+      else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(leadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(leadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
+    // ----anti-overlap requirements
+      else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
+      else if (cut =="RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithElectron1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Electron, CUTS::eRElec1, stats.dmap.at("Electron1MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
+      else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
+      else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+      //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
+    }
+
+    if(passCuts){
+      //std::cout << "First leading jet passed all selections!" << std::endl;
+      active_part->at(ePos)->push_back(jetPtIndexVector.back().second);
+    }
+  }
+  else if(ePos == CUTS::eR2ndJet && jetPtIndexVector.size()>1){
+    
+    bool passCuts = true;
+    int idx = jetPtIndexVector.size() - 1;
+    if(jetPtIndexVector.size() > 2) idx -= 1;
+
+    int j = jetPtIndexVector.at(idx).second;
+    //std::cout << "Second leading jet is (" << idx << ") #" << jetPtIndexVector.at(idx).second << ", with pt = " << jetPtIndexVector.at(idx).first << std::endl;
+    
+    TLorentzVector subleadjetp4 = _Jet->p4(j);
+    double dphi1rjets = normPhi(subleadjetp4.Phi() - _MET->phi());
+    
+    // Applying cuts for SecondLeadingJet block
+    passCuts = passCuts && passCutRange(fabs(subleadjetp4.Eta()), stats.pmap.at("EtaCut"));
+    passCuts = passCuts && (subleadjetp4.Pt() > stats.dmap.at("PtCut"));
+
+    for( auto cut: stats.bset) {
+      if(!passCuts) break;
+      else if(cut == "Apply2017EEnoiseVeto") passCuts = passCuts && passJetVetoEEnoise2017(j);
+      /// BJet specific
+      else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[j] > stats.dmap.at("JetBTaggingCut")); 
+      else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[j] > stats.dmap.at("JetBTaggingCut"));
+      else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[j] > stats.dmap.at("JetBTaggingCut"));
+      else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(j);
+      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(j);
+      else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(subleadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(subleadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
+    // ----anti-overlap requirements
+      else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
+      else if (cut =="RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithElectron1s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Electron, CUTS::eRElec1, stats.dmap.at("Electron1MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
+      else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
+      else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+      //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
+    }
+
+    if(passCuts){
+      //std::cout << "Second leading jet passed all selections!" << std::endl;
+      active_part->at(ePos)->push_back(jetPtIndexVector.at(idx).second);
+    }
+  }
+  // Clean jetPtIndexVector after looping over first and second leading jets for each iteration.
+  if(ePos == CUTS::eR2ndJet) jetPtIndexVector.clear();
 }
+
 
 void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int syst) { //01.16.19   
   if(! neededCuts.isPresent(ePos)) return;

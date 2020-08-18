@@ -144,6 +144,7 @@ public:
   void getGoodGen(const PartStats&);
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
+  void getGoodRecoLeadJets(CUTS, const PartStats&, const int); 
   void getGoodRecoBJets(CUTS, const PartStats&, const int); //01.16.19
   void getGoodRecoFatJets(CUTS, const PartStats&, const int);
 
@@ -274,6 +275,8 @@ public:
   std::vector<std::string> inputTriggerNames; // Brenda: This will take the triggers from the configuration file Run_info.in
   std::vector<bool> triggernamedecisions; // Brenda
   std::vector<int> cuts_per, cuts_cumul;
+
+  std::vector<std::pair<double, int> > jetPtIndexVector;
 
   // std::unordered_map< std::string,float > zBoostTree;
 
