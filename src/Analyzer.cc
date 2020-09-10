@@ -3769,6 +3769,46 @@ double Analyzer::getZpTWeight() {
   return zPtBoost;
 }
 
+// These are weights derived by the VBF SUSY team - Run II (Kyungmin Park)
+double Analyzer::getZpTWeight_vbfSusy() {
+    double zPtBoost = 1.;
+
+    if((active_part->at(CUTS::eGElec)->size() + active_part->at(CUTS::eGTau)->size() + active_part->at(CUTS::eGMuon)->size()) >=1 && (active_part->at(CUTS::eGZ)->size() ==1 || active_part->at(CUTS::eGW)->size() ==1)){
+      double zPT = 0;
+
+      if(active_part->at(CUTS::eGZ)->size() ==1) {
+          zPT = _Gen->pt(active_part->at(CUTS::eGZ)->at(0));
+      }
+      if(active_part->at(CUTS::eGW)->size() ==1) {
+          zPT = _Gen->pt(active_part->at(CUTS::eGW)->at(0));
+      }
+
+    //std::cout << "Z mass " << zMass << std::endl;
+    //std::cout << "Z pT " << zPT << std::endl;
+
+    // Correction factors derived from 0-lepton channel Zjets CR (2018)
+    if (0 <= zPT && zPT < 20) zPtBoost = 0.94;
+    else if(20 <= zPT && zPT < 40) zPtBoost = 1.21;
+    else if(40 <= zPT && zPT < 60) zPtBoost = 1.20;
+    else if(60 <= zPT && zPT < 80) zPtBoost = 1.18;
+    else if(80 <= zPT && zPT < 100) zPtBoost = 1.14;
+    else if(100 <= zPT && zPT < 120) zPtBoost = 1.05;
+    else if(120 <= zPT && zPT < 140) zPtBoost = 1.01;
+    else if(140 <= zPT && zPT < 160) zPtBoost = 0.99;
+    else if(160 <= zPT && zPT < 180) zPtBoost = 0.97;
+    else if(180 <= zPT && zPT < 200) zPtBoost = 0.94;
+    else if(200 <= zPT && zPT < 220) zPtBoost = 0.91;
+    else if(220 <= zPT && zPT < 240) zPtBoost = 0.91;
+    else if(240 <= zPT && zPT < 260) zPtBoost = 0.87;
+    else if(260 <= zPT && zPT < 280) zPtBoost = 0.87;
+    else if(280 <= zPT && zPT < 300) zPtBoost = 0.86;
+    else if(300 <= zPT && zPT < 5000) zPtBoost = 0.84; 
+
+  }
+
+    return zPtBoost;
+}
+
 
 ////Grabs a list of the groups of histograms to be filled and asked Fill_folder to fill up the histograms
 void Analyzer::fill_histogram() {
@@ -3798,15 +3838,19 @@ void Analyzer::fill_histogram() {
       boosters[1] = getZBoostWeightSyst(-1);  //06.02.20                                                                                                                                                    
       boosters[2] = getZBoostWeightSyst(1);  //06.02.20
     }
+    else if(distats["Run"].bfind("ApplySUSYZBoostSF") && isVSample){
+      wgt *= getZpTWeight();
+    }
+    else if(distats["Run"].bfind("ApplyVBFSusyZBoostSF") && isVSample){
+      wgt *= getZpTWeight_vbfSusy();
+    }
     if(distats["Run"].bfind("ApplyWKfactor")){
       wgt *= getWkfactor();
     }
     // Apply Z-boost weights from the SUSY PAG for Run II analyses
-    if(distats["Run"].bfind("ApplySUSYZBoostSF") && isVSample){
-      wgt *= getZpTWeight();
-    }
     if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // September 10, 2020 - Brenda FE
-      // std::cout << "Prefiring weight = " << prefiringwgtprod.getPrefiringWeight("") << std::endl;
+      //std::cout << "Prefiring weight = " << prefiringwgtprod.getPrefiringWeight("") << std::endl;
+      //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
       wgt *= prefiringwgtprod.getPrefiringWeight(""); // nominal value
     }
 
@@ -3866,6 +3910,7 @@ void Analyzer::fill_histogram() {
         if(syst_names[i]=="L1Prefiring_weight_Up"){
           if(distats["Run"].bfind("ApplyL1PrefiringWeight")){
             wgt /= prefiringwgtprod.getPrefiringWeight("");
+            //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
             wgt *= prefiringwgtprod.getPrefiringWeight("Up");
           }
         } else if(syst_names[i]=="L1Prefiring_weight_Down"){
