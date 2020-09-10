@@ -12,16 +12,17 @@ SpecialMCPUCalculation false
 SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6.root
 /// SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_wanddylo_incl.root
 
-ApplyTauIDSF true # Default tau ID scale factors are pT-dependent. 
-TauIdSFsByDM true # Tau ID scale factors that are decay mode (DM) - dependent. If using di-tau triggers and tau-pt > 40 GeV, this are the recommended SFs.
+
+ApplyTauIDSF false
+TauIdSFsByDM false # Tau ID scale factors that are decay mode (DM) - dependent. If using di-tau triggers and tau-pt > 40 GeV, these are the recommended SFs.
 TauSFforEmbeddedSamples false
 
-ApplyTauAntiEleSF true
-ApplyTauAntiMuSF true
+ApplyTauAntiEleSF false
+ApplyTauAntiMuSF false
 
 UsePileUpWeight true
 ApplyISRZBoostSF false # Z-boost weight corrections derived for ISR+stau analysis (SUS-19-002)
-ApplySUSYZBoostSF true # Official Z-boost weight corrections derived by the SUSY PAG.
+ApplySUSYZBoostSF false # Official Z-boost weight corrections derived by the SUSY PAG.
 
 isData false
 ApplyGenWeight  true
