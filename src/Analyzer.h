@@ -38,6 +38,7 @@ struct CRTester;
 #include "DepGraph.h"
 #include "JetScaleResolution.h"
 #include "JetRecalibrator.h"
+#include "L1ECALPrefiringWgtProd.h"
 #include "CondFormats/JetMETObjects/interface/JetResolution.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
@@ -230,6 +231,7 @@ public:
   Jet* _Jet;
   FatJet* _FatJet;
   Met* _MET;
+  Photon* _Photon;
   Histogramer histo;
   Histogramer syst_histo;
   std::unordered_map<CUTS, std::vector<int>*, EnumHash>* active_part;
@@ -322,6 +324,8 @@ public:
   std::string tauid_algo, antiele_algo, antimu_algo;
   int tauidwp, antielewp, antimuwp;
 
+  // Prefiring weights
+  L1ECALPrefiringWgtProd prefiringwgtprod;
   
   Float_t jec_rho =20.;
   std::vector< std::vector<float> > jets_jer_sfs;

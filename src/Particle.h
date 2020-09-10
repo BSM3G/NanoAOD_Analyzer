@@ -117,7 +117,7 @@ protected:
 class Photon : public Particle {
 public:
   Photon();
-  Photon(TTree*, std::string, std::vector<std::string>);
+  Photon(TTree*, std::string, std::vector<std::string>, std::string);
 
   float hoverE[MAXINDEX];
   float phoR[MAXINDEX];
@@ -187,7 +187,7 @@ public:
 	
   float chargedEmEnergyFraction[MAXINDEX];
   float chargedHadronEnergyFraction[MAXINDEX];
-  float neutralEmEmEnergyFraction[MAXINDEX];
+  float neutralEmEnergyFraction[MAXINDEX];
   float neutralHadEnergyFraction[MAXINDEX];
   int jetId[MAXINDEX];
   int nMuons[MAXINDEX];

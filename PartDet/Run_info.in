@@ -27,6 +27,9 @@ ApplySUSYZBoostSF false # Official Z-boost weight corrections derived by the SUS
 isData false
 ApplyGenWeight  true
 
+ApplyL1PrefiringWeight true
+UseJetEMPt false
+
 /// ------ Data-specific cuts ------///
 FilterDataByGoldenJSON true
 ApplyHEMVeto2018 false

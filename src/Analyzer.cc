@@ -152,6 +152,8 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 
   _FatJet   = new FatJet(BOOM, filespace + "FatJet_info.in", syst_names, year);
 
+  _Photon   = new Photon(BOOM, filespace + "Photon_info.in", syst_names, year);
+
   if(year.compare("2017") == 0){
     _MET      = new Met(BOOM, "METFixEE2017" , syst_names, distats["Run"].dmap.at("MT2Mass"));
   }
@@ -167,16 +169,20 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   setupTauIDSFsInfo(_Tau->pstats["TauID"].smap.at("TauIDAlgorithm"), year, distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"));
   setupTauResSFsInfo(distats["Run"].bfind("ApplyETauFakeRateESSF"));
 
+  // L1 prefiring weights only for 2016 or 2017
+  if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
+    prefiringwgtprod = L1ECALPrefiringWgtProd((PUSPACE+"L1Prefiring").c_str(), year, distats["Run"].bfind("UseJetEMPt"));
+  }
 
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
     _Gen = new Generated(BOOM, filespace + "Gen_info.in", syst_names);
     _GenHadTau = new GenHadronicTaus(BOOM, filespace + "Gen_info.in", syst_names);
     _GenJet = new GenJets(BOOM, filespace + "Gen_info.in", syst_names);
-     allParticles= {_Gen,_GenHadTau,_GenJet,_Electron,_Muon,_Tau,_Jet,_FatJet};
+     allParticles= {_Gen,_GenHadTau,_GenJet,_Electron,_Muon,_Tau,_Jet,_FatJet,_Photon};
   } else {
     std::cout<<"This is Data if not, change the flag!"<<std::endl;
-    allParticles= {_Electron,_Muon,_Tau,_Jet,_FatJet};
+    allParticles= {_Electron,_Muon,_Tau,_Jet,_FatJet,_Photon};
   }
 
   particleCutMap[CUTS::eGElec]=_Electron;
@@ -223,7 +229,6 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   systematics = Systematics(distats);
 
   setupJetCorrections(year, outfile);
-
 
 
   ///this can be done nicer
@@ -460,6 +465,8 @@ Analyzer::~Analyzer() {
   delete _Muon;
   delete _Tau;
   delete _Jet;
+  delete _FatJet;
+  delete _Photon;
   if(!isData){
     delete _Gen;
     delete _GenHadTau;
@@ -745,6 +752,14 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   // Call the new function setupEventGeneral: this will set generatorht, pu weight and genweight
   setupEventGeneral(event);
 
+  // Call the L1 weight producer here, only for 2016 or 2017
+
+  if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
+    // Reset weights for each event before producing them
+    prefiringwgtprod.resetWeights();
+
+    prefiringwgtprod.produceWeights(*_Photon, *_Jet);
+  }
   
   if(!isData){ // Do everything that corresponds only to MC
 
@@ -2120,7 +2135,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     
     // --------------------- Propagation of JER/JES to MET --------------------- //
 
-    double jetTotalEmEF = _Jet->neutralEmEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
+    double jetTotalEmEF = _Jet->neutralEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
     
     // Propagate this correction to the MET: nominal values.
     if(jet_pt_L1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
@@ -3790,6 +3805,10 @@ void Analyzer::fill_histogram() {
     if(distats["Run"].bfind("ApplySUSYZBoostSF") && isVSample){
       wgt *= getZpTWeight();
     }
+    if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // September 10, 2020 - Brenda FE
+      // std::cout << "Prefiring weight = " << prefiringwgtprod.getPrefiringWeight("") << std::endl;
+      wgt *= prefiringwgtprod.getPrefiringWeight(""); // nominal value
+    }
 
     wgt *= getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]); //01.16.19
   }else  wgt=1.;
@@ -3841,6 +3860,18 @@ void Analyzer::fill_histogram() {
           if(distats["Run"].bfind("UsePileUpWeight")) {
             wgt/=   pu_weight;
             wgt *=  hPU_down[(int)(nTruePU+1)];
+          }
+        }
+        // --------- Prefiring weights ----------- //
+        if(syst_names[i]=="L1Prefiring_weight_Up"){
+          if(distats["Run"].bfind("ApplyL1PrefiringWeight")){
+            wgt /= prefiringwgtprod.getPrefiringWeight("");
+            wgt *= prefiringwgtprod.getPrefiringWeight("Up");
+          }
+        } else if(syst_names[i]=="L1Prefiring_weight_Down"){
+          if(distats["Run"].bfind("ApplyL1PrefiringWeight")){
+            wgt /= prefiringwgtprod.getPrefiringWeight("");
+            wgt *= prefiringwgtprod.getPrefiringWeight("Down");
           }
         }
       }

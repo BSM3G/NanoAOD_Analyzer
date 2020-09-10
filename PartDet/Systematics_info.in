@@ -6,11 +6,7 @@ useSystematics 0
 
 Tau_weight_Normal    0		
 Tau_weight_Up	     0
-Tau_weight_Down      0	
-Tau_Scale_Up	     0
-Tau_Scale_Down     	 0	
-ETauFake_Scale_Up	 0
-ETauFake_Scale_Down	 0	
+Tau_weight_Down      0		
 
 MetUncl_Up           0
 MetUncl_Down         0
@@ -30,6 +26,9 @@ Btag_Up		     0
 Btag_Down	     0
 ISR_weight_up	     0
 ISR_weight_down	     0
+
+L1Prefiring_weight_Up   0
+L1Prefiring_weight_Down 0
 
 ################################
         Muon_systematics

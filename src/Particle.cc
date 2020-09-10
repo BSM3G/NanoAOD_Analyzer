@@ -176,7 +176,7 @@ void Particle::getPartStats(std::string filename) {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-Photon::Photon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names) : Particle(_BOOM, "Photon", filename, syst_names) {
+Photon::Photon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Particle(_BOOM, "Photon", filename, syst_names) {
   SetBranch("Photon_hoe", hoverE);
   SetBranch("Photon_r9", phoR);
   SetBranch("Photon_sieie", sigmaIEtaIEta);
@@ -239,7 +239,7 @@ Jet::Jet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names
   
   SetBranch("Jet_jetId", jetId);
   SetBranch("Jet_neHEF", neutralHadEnergyFraction);
-  SetBranch("Jet_neEmEF", neutralEmEmEnergyFraction);
+  SetBranch("Jet_neEmEF", neutralEmEnergyFraction);
   SetBranch("Jet_nConstituents", numberOfConstituents);
   SetBranch("Jet_nMuons", nMuons);
   SetBranch("Jet_chHEF", chargedHadronEnergyFraction);
