@@ -12,13 +12,12 @@ SpecialMCPUCalculation false
 SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6.root
 /// SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_wanddylo_incl.root
 
-
-ApplyTauIDSF false
-TauIdSFsByDM false # Tau ID scale factors that are decay mode (DM) - dependent. If using di-tau triggers and tau-pt > 40 GeV, these are the recommended SFs.
+ApplyTauIDSF true
+TauIdSFsByDM false # Tau ID scale factors that are decay mode (DM) - dependent. If using di-tau triggers and tau-pt > 40 GeV, this are the recommended SFs.
 TauSFforEmbeddedSamples false
 
-ApplyTauAntiEleSF false
-ApplyTauAntiMuSF false
+ApplyTauAntiEleSF true
+ApplyTauAntiMuSF true
 
 UsePileUpWeight true
 ApplyISRZBoostSF false # Z-boost weight corrections derived for ISR+stau analysis (SUS-19-002)
@@ -47,12 +46,12 @@ GenDilepMassRange 80.0 100.0
 
 /// ------ Triggers ----- ///
 
-Trigger1FirstRequirement HLT_PFMETNoMu120_PFMHTNoMu120_IDTight
-# Trigger1SecondRequirement HLT_DoubleMediumCombinedIsoPFTau
-UseTriggerWildcard true
+Trigger1FirstRequirement HLT_IsoMu24
+Trigger1SecondRequirement HLT_IsoMu24
+UseTriggerWildcard false
 
-# Trigger2FirstRequirement HLT_DoubleMediumIsoPFTau35_Trk1_eta2p1_Reg
-# Trigger2SecondRequirement HLT_DoubleMediumIsoPFTau40_Trk1_eta2p1_Reg
+/// Trigger2FirstRequirement HLT_DoubleMediumIsoPFTau35_Trk1_eta2p1_Reg
+/// Trigger2SecondRequirement HLT_DoubleMediumIsoPFTau40_Trk1_eta2p1_Reg
 
 ///---Treat Muon as Neutrino---///
 
@@ -64,7 +63,7 @@ TreatMuonsAsTaus 0
 ApplyMetFilters true
 MT2Mass 0.
 DiscrByMet false
-MetCut 250.0 10000.0
+MetCut 30.0 10000.0
 
 DiscrByMHT false
 MhtCut 50.0

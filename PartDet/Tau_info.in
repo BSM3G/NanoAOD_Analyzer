@@ -47,7 +47,7 @@ DoDiscrByIsolation true
 // DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
 DiscrByMinIsolation 32
 DiscrByMaxIsolation 2
-FailIsolation true
+FailIsolation false
 FlipIsolationRequirement false
 DiscrByProngType true
 ProngType  1or3hps
@@ -106,7 +106,7 @@ DoDiscrByIsolation true
 // DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
 DiscrByMinIsolation 32
 DiscrByMaxIsolation 2
-FailIsolation true
+FailIsolation false
 FlipIsolationRequirement false
 DiscrByProngType true
 ProngType  1or3hps

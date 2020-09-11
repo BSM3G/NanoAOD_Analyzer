@@ -291,6 +291,7 @@ public:
   float nTruePU = 0;
   int bestVertices = 0;
   float gen_weight = 0;
+  float prefiring_wgt = 1.0;
   float generatorht = 0;
   float gendilepmass = 0;
 

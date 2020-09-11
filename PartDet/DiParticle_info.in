@@ -147,7 +147,7 @@ DiscrByDeltaR true
 DeltaRCut 0.3
 
 DiscrByDeltaEta      true
-DeltaEtaCut         4.2  9999.0
+DeltaEtaCut         3.8  9999.0
 
 DiscrByDeltaPhi      false
 DeltaPhiCut         0    9999.0

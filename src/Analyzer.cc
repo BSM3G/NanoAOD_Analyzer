@@ -3849,6 +3849,7 @@ void Analyzer::fill_histogram() {
     }
     // Apply Z-boost weights from the SUSY PAG for Run II analyses
     if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // September 10, 2020 - Brenda FE
+      prefiring_wgt = prefiringwgtprod.getPrefiringWeight("");
       //std::cout << "Prefiring weight = " << prefiringwgtprod.getPrefiringWeight("") << std::endl;
       //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
       wgt *= prefiringwgtprod.getPrefiringWeight(""); // nominal value
@@ -4008,7 +4009,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(nTruePU, "PUNTrueInt");
     histAddVal(generatorht, "HT");
     histAddVal(gen_weight, "Weight");
-    histAddVal(prefiringwgtprod.getPrefiringWeight(""), "PrefiringWeight");
+    histAddVal(prefiring_wgt, "PrefiringWeight");
 
     int nhadtau = 0;
     TLorentzVector genVec(0,0,0,0);

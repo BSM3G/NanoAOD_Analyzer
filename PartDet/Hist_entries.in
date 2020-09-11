@@ -385,7 +385,6 @@ Muon1Tau1PZetaVis                    100     0      100
 Muon1Tau1Zeta1D                      150  -300      300
 Muon1Tau1Pt 					   500     0.    1000.
 Muon1Tau1DiJetReconstructableMass    100     0     5000
-
 Muon1PtVsTau1Pt                      100     0      500      100     0     500
 Muon1Tau1Zeta2D                      100     0      100      200  -100     100
 Muon1MetDeltaPhiVsMuon1Tau1CosDphi    72     0       +3.15   220    -1.1     1.1
