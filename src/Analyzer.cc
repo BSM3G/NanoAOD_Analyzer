@@ -895,7 +895,7 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoJets(CUTS::eRCenJet, _Jet->pstats["CentralJet"],syst);
   getGoodRecoLeadJets(CUTS::eR1stJet, _Jet->pstats["FirstLeadingJet"],syst);
   getGoodRecoLeadJets(CUTS::eR2ndJet, _Jet->pstats["SecondLeadingJet"],syst);
-
+  
   getGoodRecoFatJets(CUTS::eRWjet, _FatJet->pstats["Wjet"],syst);
 
   ///VBF Susy cut on leadin jets
@@ -2734,6 +2734,9 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
     active_part->at(ePos)=goodParts[ePos];
     return;
   }
+ 
+  // Clean jetPtIndexVector after looping over first and second leading jets for each iteration. 
+  if(ePos == CUTS::eR1stJet && jetPtIndexVector.size() != 0) jetPtIndexVector.clear();
 
   //note the leading jet has to be selected first!  
   //Do this only once for the first leading jet:
@@ -2745,17 +2748,19 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
     }
     sort(jetPtIndexVector.begin(),jetPtIndexVector.end());
 
+    // std::cout << " ----- Jet collection size = " << active_part->at(CUTS::eRJet1)->size() << std::endl;
     // std::cout << " ----- Sorted ptIndexVector: " << std::endl;
-    //for(size_t i = 0; i < jetPtIndexVector.size(); i++){
-    //  std::cout << "Jet #" << jetPtIndexVector.at(i).second << ", pt = " << jetPtIndexVector.at(i).first << std::endl;
-    //}
+    // for(size_t i = 0; i < jetPtIndexVector.size(); i++){
+    //   std::cout << "Jet #" << jetPtIndexVector.at(i).second << ", pt = " << jetPtIndexVector.at(i).first << std::endl;
+    // }
   }
 
   if(ePos == CUTS::eR1stJet && jetPtIndexVector.size()>0){
 
-    //std::cout << "Leading jet is #" << jetPtIndexVector.back().second << ", with pt = " << jetPtIndexVector.back().first << std::endl;
+    // std::cout << "Leading jet is #" << jetPtIndexVector.back().second << ", with pt = " << jetPtIndexVector.back().first << std::endl;
     bool passCuts = true;
-    int i = jetPtIndexVector.back().second;
+    // int i = jetPtIndexVector.back().second;
+    int i = jetPtIndexVector.at(jetPtIndexVector.size()-1).second;
     TLorentzVector leadjetp4 = _Jet->p4(i);
     double dphi1rjets = normPhi(leadjetp4.Phi() - _MET->phi());
     // Applying cuts for FirstLeadingJet block
@@ -2792,11 +2797,10 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
   else if(ePos == CUTS::eR2ndJet && jetPtIndexVector.size()>1){
     
     bool passCuts = true;
-    int idx = jetPtIndexVector.size() - 1;
-    if(jetPtIndexVector.size() > 2) idx -= 1;
-
+    int idx = jetPtIndexVector.size() - 2;
+    
     int j = jetPtIndexVector.at(idx).second;
-    //std::cout << "Second leading jet is (" << idx << ") #" << jetPtIndexVector.at(idx).second << ", with pt = " << jetPtIndexVector.at(idx).first << std::endl;
+    // std::cout << "Second leading jet is (" << idx << ") #" << jetPtIndexVector.at(idx).second << ", with pt = " << jetPtIndexVector.at(idx).first << std::endl;
     
     TLorentzVector subleadjetp4 = _Jet->p4(j);
     double dphi1rjets = normPhi(subleadjetp4.Phi() - _MET->phi());
@@ -2832,8 +2836,6 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
       active_part->at(ePos)->push_back(jetPtIndexVector.at(idx).second);
     }
   }
-  // Clean jetPtIndexVector after looping over first and second leading jets for each iteration.
-  if(ePos == CUTS::eR2ndJet) jetPtIndexVector.clear();
 }
 
 
