@@ -4,13 +4,6 @@
 
 SmearTheParticle 0
 PtScaleOffset 1.
-PtSigmaOffset 1.
-EtaScaleOffset 1.
-EtaSigmaOffset 1.
-PhiScaleOffset 1.
-PhiSigmaOffset 1.
-EnergyScaleOffset 1.
-EnergySigmaOffset 1.
 
 MatchToGen 0
 GenMatchingDeltaR 0.1
