@@ -6,13 +6,6 @@ SmearTheParticle 1
 ApplyETauFakeRateESSF 1
 
 PtScaleOffset 1.0
-PtSigmaOffset 1.
-EtaScaleOffset 1.
-EtaSigmaOffset 1.
-PhiScaleOffset 1.
-PhiSigmaOffset 1.
-EnergyScaleOffset 1.
-EnergySigmaOffset 1.
 
 MatchToGen 0
 GenMatchingDeltaR 0.2
