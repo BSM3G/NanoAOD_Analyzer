@@ -1189,7 +1189,12 @@ void Analyzer::setupTauIDSFsInfo(std::string tauidalgoname, std::string year, bo
   //std::cout << "Working points 1: tau id = " << tauidwpsmap[tauidwp] << ", antiele = " << antielewpsmap[antielewp] << ", antimu = " << antimuwpsmap[antimuwp] << std::endl; 
 
   // Load the modules according to the algorithm and working points specified for tau ID SFs
-  tau1idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
+  if(tauidwp != 0){
+    tau1idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
+  }
+  else{
+    failtau1iso = true; 
+  }
   tau1id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antiele_algo, antielewpsmap[antielewp]);
   tau1id_antiMuSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antimu_algo, antimuwpsmap[antimuwp]);
   
@@ -1213,7 +1218,12 @@ void Analyzer::setupTauIDSFsInfo(std::string tauidalgoname, std::string year, bo
   //std::cout << "Working points 2: tau id = " << tauidwp << ", antiele = " << antielewp << ", antimu = " << antimuwp << std::endl; 
 
   // Load the modules according to the algorithm and working points specified for tau ID SFs
-  tau2idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
+  if(tauidwp != 0){
+    tau2idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
+  }
+  else{
+    failtau2iso = true;
+  }
   tau2id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antiele_algo, antielewpsmap[antielewp]);
   tau2id_antiMuSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antimu_algo, antimuwpsmap[antimuwp]);
 
@@ -1232,7 +1242,7 @@ void Analyzer::setupTauResSFsInfo(bool taufakeenergyscale){
 
 double Analyzer::getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAntiElesf, bool getAntiMusf, std::string uncertainty){
   
-  double sf = 1.0, sf_tauid = 1.0, sf_antiele = 1.0, sf_antimu = 1.0;
+  double sf = 1.0, sf_tauid = 1.0, sf_antiele = 1.0, sf_antimu = 1.0; 
 
   // std::cout << "Size of Tau1 collection = " << active_part->at(CUTS::eRTau1)->size() << ", Tau2 collection = " << active_part->at(CUTS::eRTau2)->size() << std::endl;
   // Loop over the Tau1 list first.
@@ -1245,7 +1255,7 @@ double Analyzer::getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAnti
     
     // std::cout << "gen match status = " << gen_match_status << std::endl;
 
-    if(getTauIDsf){
+    if(getTauIDsf && !failtau1iso){
       if(!getTauIDbyDMsfs){ // pT-dependent SFs
         sf_tauid *= tau1idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
       }
@@ -1253,6 +1263,7 @@ double Analyzer::getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAnti
         sf_tauid *= tau1idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
       }
     }
+    else if(getTauIDsf && failtau1iso) sf_tauid = 1.0;
     else if(getAntiElesf) sf_antiele *= tau1id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
     else if(getAntiMusf) sf_antimu *= tau1id_antiMuSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
   }
@@ -1265,7 +1276,7 @@ double Analyzer::getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAnti
     int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
     // std::cout << "gen match status = " << gen_match_status << std::endl;
 
-    if(getTauIDsf){    
+    if(getTauIDsf && !failtau2iso){    
       if(!getTauIDbyDMsfs){ // pT-dependent SFs
         sf_tauid *= tau2idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
       }
@@ -1273,6 +1284,7 @@ double Analyzer::getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAnti
         sf_tauid *= tau2idSFs.getSFvsDM(_Tau->pt(i), _Tau->decayModeInt[i], gen_match_status, uncertainty);
       }
     }
+    else if(getTauIDsf && failtau2iso) sf_tauid = 1.0;
     else if(getAntiElesf) sf_antiele *= tau2id_antiEleSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
     else if(getAntiMusf) sf_antimu *= tau2id_antiMuSFs.getSFvsEta(_Tau->eta(i), gen_match_status, uncertainty);
   }
@@ -2549,14 +2561,7 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
       else if(cut == "DoDiscrByIsolation") {
         double firstIso = (stats.pmap.find("IsoSumPtCutValue") != stats.pmap.end()) ? stats.pmap.at("IsoSumPtCutValue").first : ival(ePos) - ival(CUTS::eRTau1) + 1;
         double secondIso = (stats.pmap.find("IsoSumPtCutValue") != stats.pmap.end()) ? stats.pmap.at("IsoSumPtCutValue").second : stats.bfind("FlipIsolationRequirement");
-		    if(stats.bfind("FailIsolation")){ 
-          passCuts = passCuts && !lep.get_Iso(i, firstIso, secondIso);
-          //if(lep.type == PType::Muon) std::cout << "FailIsolation ON, passCuts = " << passCuts << std::endl;
-        }
-        else{
-          passCuts = passCuts && lep.get_Iso(i, firstIso, secondIso);
-          //if(lep.type == PType::Muon) std::cout << "FailIsolation OFF, passCuts = " << passCuts << std::endl;
-        }
+        passCuts = passCuts && lep.get_Iso(i, firstIso, secondIso);
       }
       else if(cut == "DiscrIfIsZdecay" && lep.type != PType::Tau ) passCuts = passCuts && isZdecay(lvec, lep);
       else if(cut == "DiscrByMetDphi") passCuts = passCuts && passCutRange(absnormPhi(lvec.Phi() - _MET->phi()), stats.pmap.at("MetDphiCut"));

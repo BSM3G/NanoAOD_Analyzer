@@ -595,13 +595,32 @@ bool Taus::get_Iso(int index, double onetwo, double flipisolation) const {
     tau_isomin_mask=tau2minIso;
     tau_isomax_mask=tau2maxIso;
   }
-  //std::cout << "Tau isolation = " << tau_iso << ", requirement = " << tau_isomin_mask << std::endl;
-  if(!flipisolation){
-    //std::cout << "Isolation requirement passed? " << (tau_isomin_mask& tau_iso).count() << std::endl;
-    return (tau_isomin_mask& tau_iso).count();
-  }else{
-    //std::cout << "Isolation requirement passed? " << (tau_isomin_mask& tau_iso).count() << std::endl;
-    return(!((tau_isomin_mask&tau_iso).count()) and (tau_isomax_mask&tau_iso).count());
+
+  // Bitset operation: 
+  // foo = 0110; bar = 0011
+  // foo&bar = 0010
+  // (foo&bar).count() = 1 (number of ones in the bitset)
+
+  if(!flipisolation && (tau_isomin_mask.count() == 0)){ // Requiring a non-isolated tau 
+    // std::cout << "Tau isolation (1) = " << tau_iso << ", requirement = " << tau_isomin_mask << std::endl;
+    // std::cout << "(no flip isolation) Isolation requirement passed? " << (tau_isomin_mask == tau_iso) << std::endl;
+    return (tau_isomin_mask == tau_iso);
+  }
+  else if(flipisolation && (tau_isomax_mask.count() == 0)){ // Requiring a non-isolated tau by flipping isolation
+    // std::cout << "Tau isolation (2) = " << tau_iso << ", min requirement = " << tau_isomin_mask << ", max requirement = " << tau_isomax_mask << std::endl;
+    // std::cout << "(flip isolation) Isolation requirement passed? " << (tau_isomax_mask == tau_iso) << std::endl;
+    return (!((tau_isomin_mask&tau_iso).count()) and (tau_isomax_mask == tau_iso));
+  }
+  else{
+    if(!flipisolation){
+      // std::cout << "Tau isolation (3) = " << tau_iso << ", requirement = " << tau_isomin_mask << std::endl;
+      // std::cout << "(no flip isolation) Isolation requirement passed? " << (tau_isomin_mask& tau_iso).count() << std::endl;
+      return (tau_isomin_mask&tau_iso).count();
+    }else{
+      // std::cout << "Tau isolation (4) = " << tau_iso << ", min requirement = " << tau_isomin_mask << ", max requirement = " << tau_isomax_mask << std::endl;
+      // std::cout << "(flip isolation) Isolation requirement passed? " << ((!((tau_isomin_mask&tau_iso).count())) && ((tau_isomax_mask&tau_iso).count())) << std::endl;
+      return(!((tau_isomin_mask&tau_iso).count()) and (tau_isomax_mask&tau_iso).count());
+    }
   }
 }
 

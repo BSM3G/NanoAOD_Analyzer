@@ -325,6 +325,7 @@ public:
   std::map<int, std::string> antimuwpsmap;
   std::string tauid_algo, antiele_algo, antimu_algo;
   int tauidwp, antielewp, antimuwp;
+  bool failtau1iso = false, failtau2iso = false;
 
   // Prefiring weights
   L1ECALPrefiringWgtProd prefiringwgtprod;
