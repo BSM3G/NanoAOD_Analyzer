@@ -259,6 +259,9 @@ Jet::Jet(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names
     SetBranch("Jet_partonFlavour", partonFlavour);
   }
   
+  if(_BOOM->FindBranch("Jet_genJetIdx")!=0){
+    SetBranch("Jet_genJetIdx", genJetIdx); // index of matched gen jet in the GenJet collection.
+  }
   
 }
 

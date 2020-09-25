@@ -73,7 +73,7 @@ public:
   void writeout();
   int nentries;
   void fill_efficiency();
-  void fill_histogram();
+  void fill_histogram(std::string);
   // void fill_Tree();
   void setControlRegions() { histo.setControlRegions();}
   void checkParticleDecayList(); //01.16.19
@@ -177,7 +177,7 @@ public:
   double getWkfactor();
   double getZBoostWeight();
   double getZpTWeight();
-  double getZpTWeight_vbfSusy();
+  double getZpTWeight_vbfSusy(std::string);
   double getZBoostWeightSyst(int ud); // 06.02.20
   double getTopBoostWeight(); //01.15.19
   void setupBJetSFInfo(const PartStats&, std::string); // new function that sets up the b-tagging SF info

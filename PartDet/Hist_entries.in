@@ -30,10 +30,9 @@ NVertices   100   0.  100.
 
 FillGen 1
 
-PUNTrueInt    		99 0. 99. // nTruePU - change the number of bins accordingly for each year's datatset
-GenHT       		4000 0. 4000.
-GenWeight  			10000 -50000. 50000. 
-PrefiringWeight 	100  0. 1.0
+PUNTrueInt    99 0. 99. // nTruePU - change the number of bins accordingly for each year's datatset
+GenHT       4000 0. 4000.
+GenWeight  10000 -50000. 50000. 
 
 GenVisHadTauPt 				100   0.     250.
 GenVisHadTauEta 			72  -3.6      +3.6
@@ -250,8 +249,9 @@ DiJetPt              1000   0  5000
 
 LargestDiJetMass        1000   0  5000
 LargestDiJetPt          1000   0  5000
-LargestDiJetEtaProduct     4  -2     2
+LargestDiJetDeltaEta	200    0.   10.
 LargestDiJetDeltaR       200   0    10.
+LargestMassDiJetEtaProduct     4  -2     2
 LargestMassDiJetDeltaEta     200   0    10.
 
 //------------------------------------------------//
@@ -385,6 +385,7 @@ Muon1Tau1PZetaVis                    100     0      100
 Muon1Tau1Zeta1D                      150  -300      300
 Muon1Tau1Pt 					   500     0.    1000.
 Muon1Tau1DiJetReconstructableMass    100     0     5000
+
 Muon1PtVsTau1Pt                      100     0      500      100     0     500
 Muon1Tau1Zeta2D                      100     0      100      200  -100     100
 Muon1MetDeltaPhiVsMuon1Tau1CosDphi    72     0       +3.15   220    -1.1     1.1

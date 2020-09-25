@@ -197,6 +197,7 @@ public:
   float rawFactor[MAXINDEX];
   int matchingMuonIdx1[MAXINDEX];
   int matchingMuonIdx2[MAXINDEX];
+  int genJetIdx[MAXINDEX];
   
  protected:
 
