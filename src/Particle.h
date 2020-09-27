@@ -252,6 +252,7 @@ public:
   float mvaFall17V2Iso_WP80[MAXINDEX];
   float mvaFall17V2Iso_WP90[MAXINDEX];
   float mvaFall17V2Iso_WPL[MAXINDEX];
+  float mvaFall17V1noIso[MAXINDEX];
   float mvaFall17V2noIso[MAXINDEX];
   float mvaFall17V2noIso_WP80[MAXINDEX];
   float mvaFall17V2noIso_WP90[MAXINDEX];
@@ -262,6 +263,12 @@ public:
   int cutBased[MAXINDEX];
   bool isPassHEEPId[MAXINDEX];
 
+  bool conversionVeto[MAXINDEX];
+  UChar_t lostHits[MAXINDEX];
+  float ip3d[MAXINDEX];
+  float sip3d[MAXINDEX];
+  float dxy[MAXINDEX];
+  float dz[MAXINDEX];
 };
 
 
@@ -283,6 +290,12 @@ public:
   bool isGlobal[MAXINDEX];
   bool isPFCand[MAXINDEX];
   bool isTracker[MAXINDEX];
+  float ip3d[MAXINDEX];
+  float sip3d[MAXINDEX];
+  float dxy[MAXINDEX];
+  float dz[MAXINDEX];
+  bool looseId[MAXINDEX];
+
 };
 
 class Taus : public Lepton {

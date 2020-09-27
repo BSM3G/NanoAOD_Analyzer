@@ -412,6 +412,18 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
   if(elec1.bfind("DoDiscrByHEEPID") || elec2.bfind("DoDiscrByHEEPID")) {
     SetBranch("Electron_cutBased_HEEP", isPassHEEPId);
   }
+
+  if(elec1.bfind("DoDiscrBySUSYSoftID") || elec2.bfind("DoDiscrBySUSYSoftID")){
+    SetBranch("Electron_pfRelIso03_all", pfRelIso03_all);
+    SetBranch("Electron_mvaFall17V2noIso", mvaFall17V2noIso);
+    SetBranch("Electron_mvaFall17V1noIso", mvaFall17V1noIso);
+    SetBranch("Electron_ip3d", ip3d);
+    SetBranch("Electron_sip3d", sip3d);
+    SetBranch("Electron_dxy", dxy);
+    SetBranch("Electron_dz", dz);
+    SetBranch("Electron_lostHits", lostHits);
+    SetBranch("Electron_convVeto", conversionVeto);
+  }
 }
 
 bool Electron::get_Iso(int index, double min, double max) const {
@@ -445,9 +457,19 @@ Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
     SetBranch("Muon_pfRelIso04_all"  , pfRelIso04_all);
   }
 
-   SetBranch("Muon_isGlobal", isGlobal);
-   SetBranch("Muon_isPFcand", isPFCand);
-   SetBranch("Muon_isTracker", isTracker);
+  SetBranch("Muon_isGlobal", isGlobal);
+  SetBranch("Muon_isPFcand", isPFCand);
+  SetBranch("Muon_isTracker", isTracker);
+
+  if(mu1.bfind("DoDiscrBySUSYSoftID") || mu2.bfind("DoDiscrBySUSYSoftID")){
+    SetBranch("Muon_pfRelIso03_all"  , pfRelIso03_all);
+    SetBranch("Muon_ip3d", ip3d);
+    SetBranch("Muon_sip3d", sip3d);
+    SetBranch("Muon_dxy", dxy);
+    SetBranch("Muon_dz", dz);
+    SetBranch("Muon_looseId", looseId);
+    SetBranch("Muon_softId", soft);
+   }
 
 }
 
