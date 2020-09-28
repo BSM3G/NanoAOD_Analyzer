@@ -373,6 +373,7 @@ double Lepton::charge(uint index)const     {return _charge[index];}
 
 Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Lepton(_BOOM, "Electron", filename, syst_names) {
   type = PType::Electron;
+
   auto& elec1 = pstats["Elec1"];
   auto& elec2 = pstats["Elec2"];
   
@@ -416,7 +417,8 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
   if(elec1.bfind("DoDiscrBySUSYSoftID") || elec2.bfind("DoDiscrBySUSYSoftID")){
     SetBranch("Electron_pfRelIso03_all", pfRelIso03_all);
     SetBranch("Electron_mvaFall17V2noIso", mvaFall17V2noIso);
-    SetBranch("Electron_mvaFall17V1noIso", mvaFall17V1noIso);
+    SetBranch("Electron_mvaFall17V2noIso_WP80", mvaFall17V2noIso_WP80);
+    SetBranch("Electron_mvaFall17V2noIso_WP90", mvaFall17V2noIso_WP90);
     SetBranch("Electron_ip3d", ip3d);
     SetBranch("Electron_sip3d", sip3d);
     SetBranch("Electron_dxy", dxy);
@@ -429,6 +431,100 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
 bool Electron::get_Iso(int index, double min, double max) const {
   //std::cout << pfRelIso03_all[index] << std::endl;
   return (miniPFRelIso_all[index] >= min && miniPFRelIso_all[index] < max);
+}
+
+bool Electron::customSoftTightEleMVAId(int index, double pt, double eta, std::string year) const{
+
+  bool passCutId = true;
+
+  if(year.compare("2016") == 0){    
+    if(pt > 5.0 && pt <= 10.0){
+      passCutId = passCutId && mvaFall17V2noIso_WP80[index];
+    }
+    else if(pt > 10.0 && pt < 40.0){
+      if(abs(eta) < 0.8){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 3.447 + 0.063*(pt - 25.0);
+      }
+      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 2.552 + 0.058*(pt - 25.0);
+      }
+      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 1.555 + 0.075*(pt - 25.0);
+      }
+    }
+    else if(pt >= 40.0){
+      if(abs(eta) < 0.8){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 4.392;
+      }
+      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 3.392;
+      }
+      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 2.680;
+      }
+      
+    }
+  }
+
+
+  if(year.compare("2017") == 0){    
+    if(pt > 5.0 && pt <= 10.0){
+      passCutId = passCutId && mvaFall17V2noIso_WP90[index];
+    }
+    else if(pt > 10.0 && pt < 40.0){
+      if(abs(eta) < 0.8){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.2 + 0.032*(pt - 10.0);
+      }
+      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.1 + 0.025*(pt - 10.0);
+      }
+      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.1 + 0.028*(pt - 10.0);
+      }
+    }
+    else if(pt >= 40.0){
+      if(abs(eta) < 0.8){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.68;
+      }
+      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.475;
+      }
+      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.32;
+      }
+      
+    }
+  }
+
+  if(year.compare("2018") == 0){    
+    if(pt > 5.0 && pt <= 10.0){
+      passCutId = passCutId && mvaFall17V2noIso_WP80[index];
+    }
+    else if(pt > 10.0 && pt < 40.0){
+      if(abs(eta) < 0.8){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 4.277 + 0.112*(pt - 25.0);
+      }
+      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 3.152 + 0.060*(pt - 25.0);
+      }
+      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 2.359 + 0.087*(pt - 25.0);
+      }
+    }
+    else if(pt >= 40.0){
+      if(abs(eta) < 0.8){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 4.277;
+      }
+      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 3.152;
+      }
+      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 2.359;
+      }
+      
+    }
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

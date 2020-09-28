@@ -149,6 +149,9 @@ public:
   void getGoodRecoBJets(CUTS, const PartStats&, const int); //01.16.19
   void getGoodRecoFatJets(CUTS, const PartStats&, const int);
 
+  bool discrBySUSYSoftElectrons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
+  bool discrBySUSYSoftMuons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
+
   void getGoodLeptonCombos(Lepton&, Lepton&, CUTS, CUTS, CUTS, const PartStats&, const int);
   double CalculateDiLepMassDeltaPt(const TLorentzVector&, const TLorentzVector&, const float, const float);
   void getGoodLeptonJetCombos(Lepton&, Jet&, CUTS, CUTS, CUTS, const PartStats&, const int);

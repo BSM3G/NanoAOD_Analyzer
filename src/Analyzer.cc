@@ -2626,6 +2626,37 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
   return;
 }
 
+bool Analyzer::discrBySUSYSoftElectrons(const Lepton& lep, const CUTS ePos, const CUTS eGenPos, const PartStats& stats, const int syst){
+
+  bool passCuts = true;  
+  if(stats.bfind("ApplyLooseNotTight")){
+    // Selection: 3D impact parameter
+    passCuts = passCuts && _Electron->ip3d[index] < 0.0175;
+    passCuts = passCuts && _Electron->sip3d[index] < 2.5;
+    passCuts = passCuts && _Electron->dxy[index] < 0.05;
+    passCuts = passCuts && _Electron->dz[index] < 0.1;
+
+    // Isolation requirements
+    passCuts = passCuts && ((_Electron->pfRelIso03_all[index] * _Electron->pt(index)) < (20.0 + (300.0/ _Electron->pt(index))) ); // absolute isolation
+    passCuts = passCuts && _Electron->pfRelIso03_all[index] < 1.0; // relative isolation
+
+    // Electron MVA custom ID
+    
+
+  }
+  else if(stats.bfind("ApplyTight")){
+
+  }
+
+}
+
+bool Analyzer::getGoodSUSYSoftMuons(const Lepton& lep, const CUTS ePos, const CUTS eGenPos, const PartStats& stats, const int syst){
+
+  
+}
+
+
+
 bool Analyzer::passJetVetoEEnoise2017(int jet_index){
    // Get the jet pT and raw factors to calculate the raw jet pt:
    TLorentzVector jet_RecoP4 = _Jet->RecoP4(jet_index);
