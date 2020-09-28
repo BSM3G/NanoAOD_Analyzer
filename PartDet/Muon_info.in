@@ -25,13 +25,17 @@ doEfficiencyPlots true
 //----RECO CUTS----//
 
 EtaCut 2.1
-PtCut 30.0 9999.9
+PtCut 20.0 9999.9
 
 DoDiscrByTightID 1
 DoDiscrBySoftID 0
 
 DoDiscrByIsolation 1
 IsoSumPtCutValue 0.0 0.15
+
+DoDiscrBySUSYSoftID false
+ApplyLooseNotTightID 0
+ApplyTightID 1
 
 //----MET TOPOLOGY CUTS----//
 
@@ -40,8 +44,8 @@ DiscrIfIsZdecay 0
 DiscrByMetDphi 0
 MetDphiCut 1.0 3.15
 
-DiscrByMetMt 1
-MetMtCut 0. 50.
+DiscrByMetMt 0
+MetMtCut 0. 100.
 
 ////////////////////////////////
              Muon2
@@ -58,6 +62,10 @@ DoDiscrBySoftID 0
 DoDiscrByIsolation 1
 IsoSumPtCutValue 0.0 0.15
 
+DoDiscrBySUSYSoftID false
+ApplyLooseNotTightID 0
+ApplyTightID 1
+
 //----MET TOPOLOGY CUTS----//
 
 DiscrIfIsZdecay 0
@@ -65,5 +73,5 @@ DiscrIfIsZdecay 0
 DiscrByMetDphi 0
 MetDphiCut 1.0 3.15
 
-DiscrByMetMt 1
-MetMtCut 0. 50.
+DiscrByMetMt 0
+MetMtCut 0. 100.

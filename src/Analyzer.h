@@ -95,6 +95,7 @@ public:
 
   }
 // private:
+  std::string runyear;
   void CRfillCuts();
   ///// Functions /////
   //void fill_Folder(std::string, const int, std::string syst="");
@@ -149,8 +150,8 @@ public:
   void getGoodRecoBJets(CUTS, const PartStats&, const int); //01.16.19
   void getGoodRecoFatJets(CUTS, const PartStats&, const int);
 
-  bool discrBySUSYSoftElectrons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
-  bool discrBySUSYSoftMuons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
+  bool discrBySUSYSoftElectrons(int, bool, bool);
+  bool discrBySUSYSoftMuons(int, bool, bool);
 
   void getGoodLeptonCombos(Lepton&, Lepton&, CUTS, CUTS, CUTS, const PartStats&, const int);
   double CalculateDiLepMassDeltaPt(const TLorentzVector&, const TLorentzVector&, const float, const float);

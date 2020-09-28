@@ -81,6 +81,10 @@ const std::map<PType, float> leptonmasses = {
      {PType::Tau, 1.777}
 };
 
+		// SUSY SOFT IDs: Apply a veto to this jet to which we further apply pt and eta cuts and b-tagging cuts (Loose WPs from DeepCSV in all years, custom in 2016):
+const std::map<std::string, float> susysoftlepidloosebtagdiscr = {
+	{"2016", 0.4}, {"2017", 0.1522}, {"2018", 0.1241}
+};
 //////////////////////////////////////////////////////
 //////////////////PUBLIC FUNCTIONS////////////////////
 //////////////////////////////////////////////////////
@@ -732,6 +736,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     std::cout << "Could not read the event from the following file: "<<BOOM->GetFile()->GetNewUrl().Data() << std::endl;
   }
 
+  runyear = year;
   for(Particle* ipart: allParticles){
     ipart->init();
   }
@@ -2548,6 +2553,7 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
 
   int i = 0;
   for(auto lvec: lep) {
+
     bool passCuts = true;
     if (fabs(lvec.Eta()) > stats.dmap.at("EtaCut")) passCuts = passCuts && false;
     else if (lvec.Pt() < stats.pmap.at("PtCut").first || lvec.Pt() > stats.pmap.at("PtCut").second) passCuts = passCuts && false;
@@ -2570,6 +2576,9 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
       else if(lep.type == PType::Muon){
         if(cut == "DoDiscrByTightID") passCuts = passCuts && _Muon->tight[i];
         else if(cut == "DoDiscrBySoftID") passCuts = passCuts && _Muon->soft[i];
+        else if(cut == "DoDiscrBySUSYSoftID"){
+        	passCuts = passCuts && discrBySUSYSoftMuons(i, stats.bfind("ApplyLooseNotTightID"), stats.bfind("ApplyTightID"));
+        }
       }
       ////electron cuts
       else if(lep.type == PType::Electron){
@@ -2588,8 +2597,12 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
           
           else if(stats.bfind("DiscrBymvaWPL")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WPL[i];
         }
-        else if(cut == "DoDiscrByHEEPID")
-         passCuts = passCuts && _Electron->isPassHEEPId[i];
+        else if(cut == "DoDiscrByHEEPID"){
+        	passCuts = passCuts && _Electron->isPassHEEPId[i];
+        }
+        else if(cut == "DoDiscrBySUSYSoftID"){
+        	passCuts = passCuts && discrBySUSYSoftElectrons(i, stats.bfind("ApplyLooseNotTightID"), stats.bfind("ApplyTightID"));
+        }
       }
       else if(lep.type == PType::Tau){
         if(cut == "DoDiscrByCrackCut") passCuts = passCuts && !isInTheCracks(lvec.Eta());
@@ -2626,33 +2639,145 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
   return;
 }
 
-bool Analyzer::discrBySUSYSoftElectrons(const Lepton& lep, const CUTS ePos, const CUTS eGenPos, const PartStats& stats, const int syst){
+bool Analyzer::discrBySUSYSoftElectrons(int index, bool applyloosenottight, bool applytight){
 
-  bool passCuts = true;  
-  if(stats.bfind("ApplyLooseNotTight")){
-    // Selection: 3D impact parameter
-    passCuts = passCuts && _Electron->ip3d[index] < 0.0175;
-    passCuts = passCuts && _Electron->sip3d[index] < 2.5;
-    passCuts = passCuts && _Electron->dxy[index] < 0.05;
-    passCuts = passCuts && _Electron->dz[index] < 0.1;
+	bool passCuts = true;
 
-    // Isolation requirements
-    passCuts = passCuts && ((_Electron->pfRelIso03_all[index] * _Electron->pt(index)) < (20.0 + (300.0/ _Electron->pt(index))) ); // absolute isolation
-    passCuts = passCuts && _Electron->pfRelIso03_all[index] < 1.0; // relative isolation
+	// std::cout << "Electron pt = " << _Electron->pt(index) << ", |eta| = " << fabs(_Electron->eta(index)) << ", dxy = " << _Electron->dxy[index] << ", dz = " << _Electron->dz[index] << std::endl; 
+	// Apply kinematic cuts (pt and eta)
+	passCuts = passCuts && _Electron->pt(index) >= 5.0;
+	passCuts = passCuts && fabs( _Electron-> eta(index) ) <= 2.5;
 
-    // Electron MVA custom ID
-    
+	passCuts = passCuts && fabs(_Electron->dxy[index]) < 0.05;
+	passCuts = passCuts && fabs(_Electron->dz[index]) < 0.1;
 
-  }
-  else if(stats.bfind("ApplyTight")){
+	// std::cout << "passCuts = " << passCuts << std::endl;
 
-  }
+	if(applyloosenottight){
 
+		// std::cout << "applying loosenottight" << std::endl;
+		// std::cout << "Electron ip3d = " << _Electron->ip3d[index] << ", sip3d = " << _Electron->sip3d[index] << ", abs. iso. = " << (_Electron->pfRelIso03_all[index] * _Electron->pt(index)) << " (req < " << (20.0 + (300.0 / _Electron->pt(index) ) ) << "), rel. iso = " << _Electron->pfRelIso03_all[index] << std::endl;
+
+		// Selection: 3D impact parameter
+		passCuts = passCuts && _Electron->ip3d[index] < 0.0175;
+		passCuts = passCuts && _Electron->sip3d[index] < 2.5;
+
+		// Isolation requirements
+		passCuts = passCuts && ((_Electron->pfRelIso03_all[index] * _Electron->pt(index)) < (20.0 + (300.0 / _Electron->pt(index) ) ) ); // absolute isolation
+		passCuts = passCuts && _Electron->pfRelIso03_all[index] < 1.0; // relative isolation
+
+		// Electron MVA custom ID
+		// std::cout << "Applying custom electron MVA ID "<< std::endl << _Electron->customSoftLooseEleMVAId(index, _Electron->p4(index), runyear) << std::endl;
+		passCuts = passCuts && _Electron->customSoftLooseEleMVAId(index, _Electron->p4(index), runyear);
+
+		// std::cout << "passCuts = " << passCuts << std::endl;
+	}
+	else if(applytight){
+
+		// std::cout << "applying tight" << std::endl;
+		// std::cout << "Electron ip3d = " << _Electron->ip3d[index] << ", sip3d = " << _Electron->sip3d[index] << ", abs. iso. = " << (_Electron->pfRelIso03_all[index] * _Electron->pt(index)) << " (req < " << (20.0 + (300.0 / _Electron->pt(index) ) ) << "), rel. iso = " << _Electron->pfRelIso03_all[index] << std::endl;
+
+		// Selection: 3D impact parameter
+		passCuts = passCuts && _Electron->ip3d[index] < 0.01;
+		passCuts = passCuts && _Electron->sip3d[index] < 2.0;
+
+		// Isolation requirements
+		passCuts = passCuts && ((_Electron->pfRelIso03_all[index] * _Electron->pt(index)) < 5.0 ); // absolute isolation
+		passCuts = passCuts && _Electron->pfRelIso03_all[index] < 0.5; // relative isolation
+
+		// Electron MVA custom ID
+		// std::cout << "Applying custom electron MVA ID "<< std::endl << _Electron->customSoftTightEleMVAId(index, _Electron->p4(index), runyear) << std::endl;
+		passCuts = passCuts && _Electron->customSoftTightEleMVAId(index, _Electron->p4(index), runyear);
+
+		// Additional b-jet veto.
+		int elejetidx = _Electron->associatedJetIndex[index]; // get the index of the jet collection which is associated with the current jet.
+		// std::cout << "Associated jet index = " << elejetidx << std::endl;
+		// Apply a veto to this jet to which we further apply pt and eta cuts and b-tagging cuts (Loose WPs from DeepCSV in all years, custom in 2016):
+
+		if(elejetidx != -1){
+			// std::cout << "Associated jet pt = " << _Jet->pt(elejetidx) << ", |eta| = " << fabs(_Jet->eta(elejetidx)) << ", b-tag discr. = " << _Jet->bDiscriminatorDeepCSV[elejetidx] << std::endl;
+			bool associatedBJet = _Jet->pt(elejetidx) > _Jet->pstats["BJet"].dmap.at("PtCut") && passCutRange(fabs(_Jet->eta(elejetidx)), _Jet->pstats["BJet"].pmap.at("EtaCut")) && _Jet->bDiscriminatorDeepCSV[elejetidx] > susysoftlepidloosebtagdiscr.at(runyear);
+			// std::cout << "Is this an associated b-jet? " << associatedBJet << std::endl;
+			passCuts = passCuts && !associatedBJet;
+		}
+
+		// std::cout << "passCuts = " << passCuts << std::endl;
+	}
+
+	// Missing pixel hits
+	int missingPixelHits = static_cast<unsigned>(_Electron->lostHits[index]);
+	// std::cout << "Electron lost hits = " << missingPixelHits << ", conversion veto = " << _Electron->conversionVeto[index] << std::endl;
+
+	passCuts = passCuts && (missingPixelHits == 0);
+	// Conversion vertex veto
+	passCuts = passCuts && _Electron->conversionVeto[index];
+
+	// std::cout << "passCuts = " << passCuts << std::endl;
+	// std::cout << "------------" << std::endl;
+	return passCuts;
 }
 
-bool Analyzer::getGoodSUSYSoftMuons(const Lepton& lep, const CUTS ePos, const CUTS eGenPos, const PartStats& stats, const int syst){
+bool Analyzer::discrBySUSYSoftMuons(int index, bool applyloosenottight, bool applytight){
 
-  
+	bool passCuts = true;
+	// Apply kinematic cuts (pt and eta)
+	// std::cout << "Muon pt = " << _Muon->pt(index) << ", |eta| = " << fabs(_Muon->eta(index)) << ", dxy = " << _Muon->dxy[index] << ", dz = " << _Muon->dz[index] << std::endl; 
+	passCuts = passCuts && _Muon->pt(index) >= 3.5;
+	passCuts = passCuts && fabs( _Muon-> eta(index) ) <= 2.4;
+
+	passCuts = passCuts && fabs(_Muon->dxy[index]) < 0.05;
+	passCuts = passCuts && fabs(_Muon->dz[index]) < 0.1;
+
+	// std::cout << "passCuts = " << passCuts << std::endl;
+
+	if(applyloosenottight){
+		// std::cout << "applying loosenottight" << std::endl;
+
+		// std::cout << "Muon ip3d = " << _Muon->ip3d[index] << ", sip3d = " << _Muon->sip3d[index] << ", abs. iso. = " << (_Muon->pfRelIso03_all[index] * _Muon->pt(index)) << " (req < " << (20.0 + (300.0 / _Muon->pt(index) ) ) << "), rel. iso = " << _Muon->pfRelIso03_all[index] << std::endl;
+		// Selection: 3D impact parameter
+		passCuts = passCuts && _Muon->ip3d[index] < 0.0175;
+		passCuts = passCuts && _Muon->sip3d[index] < 2.5;
+
+		// Isolation requirements
+		passCuts = passCuts && ((_Muon->pfRelIso03_all[index] * _Muon->pt(index)) < (20.0 + (300.0 / _Muon->pt(index) ) ) ); // absolute isolation
+		passCuts = passCuts && _Muon->pfRelIso03_all[index] < 1.0; // relative isolation
+
+		// std::cout << "passCuts = " << passCuts << std::endl;
+	}
+	else if(applytight){
+
+		// std::cout << "applying tight" << std::endl;
+		// std::cout << "Muon ip3d = " << _Muon->ip3d[index] << ", sip3d = " << _Muon->sip3d[index] << ", abs. iso. = " << (_Muon->pfRelIso03_all[index] * _Muon->pt(index)) << "(req < 5), rel. iso = " << _Muon->pfRelIso03_all[index] << std::endl;
+
+		// Selection: 3D impact parameter
+		passCuts = passCuts && _Muon->ip3d[index] < 0.01;
+		passCuts = passCuts && _Muon->sip3d[index] < 2.0;
+
+		// Isolation requirements
+		passCuts = passCuts && ((_Muon->pfRelIso03_all[index] * _Muon->pt(index)) < 5.0 ); // absolute isolation
+		passCuts = passCuts && _Muon->pfRelIso03_all[index] < 0.5; // relative isolation
+
+		// Additional b-jet veto.
+		int mujetidx = _Muon->associatedJetIndex[index]; // get the index of the jet collection which is associated with the current jet.
+		// std::cout << "Associated jet index = " << mujetidx << std::endl;
+		if(mujetidx != -1){
+			// std::cout << "Associated jet pt = " << _Jet->pt(mujetidx) << ", |eta| = " << fabs(_Jet->eta(mujetidx)) << ", b-tag discr. = " << _Jet->bDiscriminatorDeepCSV[mujetidx] << std::endl;
+			bool associatedBJet = _Jet->pt(mujetidx) > _Jet->pstats["BJet"].dmap.at("PtCut") && passCutRange(fabs(_Jet->eta(mujetidx)), _Jet->pstats["BJet"].pmap.at("EtaCut")) && _Jet->bDiscriminatorDeepCSV[mujetidx] > susysoftlepidloosebtagdiscr.at(runyear);
+			// std::cout << "Is this an associated b-jet? " << associatedBJet << std::endl;
+			passCuts = passCuts && !associatedBJet;
+		}
+		// std::cout << "passCuts = " << passCuts << std::endl;
+	}
+
+	// Soft and loose ID muon POG requirements
+	// std::cout << "Additional ID requirements: passLoose = " << _Muon->looseId[index] << ", passSoft = " << _Muon->soft[index] << std::endl;
+	passCuts = passCuts && _Muon->looseId[index];
+	passCuts = passCuts && _Muon->soft[index];
+
+	// std::cout << "passCuts = " << passCuts << std::endl;
+	// std::cout << "----------" << std::endl;
+
+	return passCuts;
 }
 
 

@@ -1,6 +1,7 @@
 #include "Particle.h"
 #include <bitset>
 #include <signal.h>
+#include <cmath>
 
 #define SetBranch(name, variable) BOOM->SetBranchStatus(name, 1);  BOOM->SetBranchAddress(name, &variable);
 
@@ -425,6 +426,7 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
     SetBranch("Electron_dz", dz);
     SetBranch("Electron_lostHits", lostHits);
     SetBranch("Electron_convVeto", conversionVeto);
+    SetBranch("Electron_jetIdx", associatedJetIndex);
   }
 }
 
@@ -433,97 +435,225 @@ bool Electron::get_Iso(int index, double min, double max) const {
   return (miniPFRelIso_all[index] >= min && miniPFRelIso_all[index] < max);
 }
 
-bool Electron::customSoftTightEleMVAId(int index, double pt, double eta, std::string year) const{
+bool Electron::customSoftLooseEleMVAId(int index, TLorentzVector electronp4, std::string year) const{
 
   bool passCutId = true;
 
-  if(year.compare("2016") == 0){    
-    if(pt > 5.0 && pt <= 10.0){
+  // std::cout << "Electron custom MVA id year = " << year << std::endl;
+  // std::cout << "mvaFall17V2noIso = " << mvaFall17V2noIso[index] << std::endl;
+
+  if(year.compare("2016") == 0){
+
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
+      if(abs(electronp4.Eta()) < 1.479){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.97;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+    }
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.97;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.80;
+      }
+    }
+    else if(electronp4.Pt() >= 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.85;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.20;
+      }
+    }
+  }
+
+  if(year.compare("2017") == 0){    
+
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
+      if(abs(electronp4.Eta()) < 1.479){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.80;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.75;
+      }
+    }
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.20;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.20;
+      }
+    }
+    else if(electronp4.Pt() >= 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.40;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.40;
+      }
+    }
+  }
+
+  if(year.compare("2018") == 0){  
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
+      if(abs(electronp4.Eta()) < 1.479){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+    }
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.90;
+      }
+    }
+    else if(electronp4.Pt() >= 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.80;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.00;
+      }
+    }
+  }
+
+  // std::cout << "passCutId = " << passCutId << std::endl;
+
+  return passCutId;
+
+}
+
+bool Electron::customSoftTightEleMVAId(int index, TLorentzVector electronp4, std::string year) const{
+
+  bool passCutId = true;
+  double rawMvaIdScore = 0.0;
+  double normMvaIdScore = (double) mvaFall17V2noIso[index];
+
+  // std::cout << "Electron custom MVA id year = " << year << std::endl;
+  // std::cout << "mvaFall17V2noIso = " << normMvaIdScore << std::endl;
+
+  if(year.compare("2016") == 0){
+
+  	if(normMvaIdScore > -1.0 && normMvaIdScore < 1.0){
+  		// std::cout << "score between -1 and 1" << std::endl;
+  		rawMvaIdScore = -0.5 * log( (1.0 - normMvaIdScore) / (1.0 + normMvaIdScore) );
+  	}
+  	else{
+  		// std::cout << "score equal to -1 or 1" << std::endl;
+  		rawMvaIdScore = normMvaIdScore * 99999.9;
+  	}
+
+  	// std::cout << "mvaFall17V2noIso (raw) = " << rawMvaIdScore << std::endl;
+
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
       passCutId = passCutId && mvaFall17V2noIso_WP80[index];
     }
-    else if(pt > 10.0 && pt < 40.0){
-      if(abs(eta) < 0.8){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 3.447 + 0.063*(pt - 25.0);
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 3.447 + 0.063*(electronp4.Pt() - 25.0);
       }
-      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 2.552 + 0.058*(pt - 25.0);
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 2.552 + 0.058*(electronp4.Pt() - 25.0);
       }
-      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 1.555 + 0.075*(pt - 25.0);
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 1.555 + 0.075*(electronp4.Pt() - 25.0);
       }
     }
-    else if(pt >= 40.0){
-      if(abs(eta) < 0.8){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 4.392;
+    else if(electronp4.Pt() >= 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 4.392;
       }
-      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 3.392;
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 3.392;
       }
-      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 2.680;
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 2.680;
       }
       
     }
   }
 
-
   if(year.compare("2017") == 0){    
-    if(pt > 5.0 && pt <= 10.0){
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
       passCutId = passCutId && mvaFall17V2noIso_WP90[index];
     }
-    else if(pt > 10.0 && pt < 40.0){
-      if(abs(eta) < 0.8){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 0.2 + 0.032*(pt - 10.0);
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.2 + 0.032*(electronp4.Pt() - 10.0);
       }
-      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 0.1 + 0.025*(pt - 10.0);
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.1 + 0.025*(electronp4.Pt() - 10.0);
       }
-      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
-        passCutId = passCutId && mvaFall17V2noIso[index] > -0.1 + 0.028*(pt - 10.0);
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.1 + 0.028*(electronp4.Pt() - 10.0);
       }
     }
-    else if(pt >= 40.0){
-      if(abs(eta) < 0.8){
+    else if(electronp4.Pt() >= 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
         passCutId = passCutId && mvaFall17V2noIso[index] > 0.68;
       }
-      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
         passCutId = passCutId && mvaFall17V2noIso[index] > 0.475;
       }
-      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
         passCutId = passCutId && mvaFall17V2noIso[index] > 0.32;
       }
       
     }
   }
 
-  if(year.compare("2018") == 0){    
-    if(pt > 5.0 && pt <= 10.0){
+  if(year.compare("2018") == 0){  
+
+  	if(normMvaIdScore > -1.0 && normMvaIdScore < 1.0){
+  		// std::cout << "score between -1 and 1" << std::endl;
+  		rawMvaIdScore = -0.5 * log( (1.0 - normMvaIdScore) / (1.0 + normMvaIdScore) );
+  	}
+  	else{
+  		// std::cout << "score equal to -1 or 1" << std::endl;
+  		rawMvaIdScore = normMvaIdScore * 99999.9;
+  	}
+
+  	// std::cout << "mvaFall17V2noIso (raw) = " << rawMvaIdScore << std::endl;
+
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
       passCutId = passCutId && mvaFall17V2noIso_WP80[index];
     }
-    else if(pt > 10.0 && pt < 40.0){
-      if(abs(eta) < 0.8){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 4.277 + 0.112*(pt - 25.0);
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 4.277 + 0.112*(electronp4.Pt() - 25.0);
       }
-      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 3.152 + 0.060*(pt - 25.0);
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 3.152 + 0.060*(electronp4.Pt() - 25.0);
       }
-      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 2.359 + 0.087*(pt - 25.0);
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 2.359 + 0.087*(electronp4.Pt() - 25.0);
       }
     }
-    else if(pt >= 40.0){
-      if(abs(eta) < 0.8){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 4.277;
+    else if(electronp4.Pt() >= 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 4.277;
       }
-      else if(abs(eta) >= 0.8 && abs(eta) < 1.479){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 3.152;
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 3.152;
       }
-      else if(abs(eta) >= 1.479 && abs(eta) < 2.5){
-        passCutId = passCutId && mvaFall17V2noIso[index] > 2.359;
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 2.359;
       }
       
     }
   }
+
+  // std::cout << "passCutId = " << passCutId << std::endl;
+
+  return passCutId;
 
 }
 
@@ -565,6 +695,7 @@ Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
     SetBranch("Muon_dz", dz);
     SetBranch("Muon_looseId", looseId);
     SetBranch("Muon_softId", soft);
+    SetBranch("Muon_jetIdx", associatedJetIndex);
    }
 
 }
