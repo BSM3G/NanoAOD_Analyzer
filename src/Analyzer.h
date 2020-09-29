@@ -38,6 +38,7 @@ struct CRTester;
 #include "DepGraph.h"
 #include "JetScaleResolution.h"
 #include "JetRecalibrator.h"
+#include "L1ECALPrefiringWgtProd.h"
 #include "CondFormats/JetMETObjects/interface/JetResolution.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
@@ -72,7 +73,7 @@ public:
   void writeout();
   int nentries;
   void fill_efficiency();
-  void fill_histogram();
+  void fill_histogram(std::string);
   // void fill_Tree();
   void setControlRegions() { histo.setControlRegions();}
   void checkParticleDecayList(); //01.16.19
@@ -144,6 +145,7 @@ public:
   void getGoodGen(const PartStats&);
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
+  void getGoodRecoLeadJets(CUTS, const PartStats&, const int); 
   void getGoodRecoBJets(CUTS, const PartStats&, const int); //01.16.19
   void getGoodRecoFatJets(CUTS, const PartStats&, const int);
 
@@ -174,6 +176,8 @@ public:
   double getTauIdSFs(bool, bool, bool, bool, std::string);
   double getWkfactor();
   double getZBoostWeight();
+  double getZpTWeight();
+  double getZpTWeight_vbfSusy(std::string);
   double getZBoostWeightSyst(int ud); // 06.02.20
   double getTopBoostWeight(); //01.15.19
   void setupBJetSFInfo(const PartStats&, std::string); // new function that sets up the b-tagging SF info
@@ -228,6 +232,7 @@ public:
   Jet* _Jet;
   FatJet* _FatJet;
   Met* _MET;
+  Photon* _Photon;
   Histogramer histo;
   Histogramer syst_histo;
   std::unordered_map<CUTS, std::vector<int>*, EnumHash>* active_part;
@@ -275,6 +280,8 @@ public:
   std::vector<bool> triggernamedecisions; // Brenda
   std::vector<int> cuts_per, cuts_cumul;
 
+  std::vector<std::pair<double, int> > jetPtIndexVector;
+
   // std::unordered_map< std::string,float > zBoostTree;
 
   double maxIso, minIso;
@@ -284,6 +291,7 @@ public:
   float nTruePU = 0;
   int bestVertices = 0;
   float gen_weight = 0;
+  float prefiring_wgt = 1.0;
   float generatorht = 0;
   float gendilepmass = 0;
 
@@ -317,7 +325,10 @@ public:
   std::map<int, std::string> antimuwpsmap;
   std::string tauid_algo, antiele_algo, antimu_algo;
   int tauidwp, antielewp, antimuwp;
+  bool failtau1iso = false, failtau2iso = false;
 
+  // Prefiring weights
+  L1ECALPrefiringWgtProd prefiringwgtprod;
   
   Float_t jec_rho =20.;
   std::vector< std::vector<float> > jets_jer_sfs;

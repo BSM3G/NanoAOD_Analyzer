@@ -150,7 +150,7 @@ int main (int argc, char* argv[]) {
     testing.fill_efficiency();
     //if (i < 25)
     //{testing.writeParticleDecayList(i);}  //01.16.19:  This will write the particle decay list for the first 25 events.
-    testing.fill_histogram();
+    testing.fill_histogram(year);
     
     //spechialAna.analyze();                // Special analyzer
     

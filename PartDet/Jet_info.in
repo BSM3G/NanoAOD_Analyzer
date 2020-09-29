@@ -19,29 +19,29 @@ TauMatchingDeltaR  0.3
 EtaCut 0. 5.0
 PtCut 30.0
 
-ApplyLooseID 0
-ApplyTightID 1
+ApplyLooseID 1
+ApplyTightID 0
 
 RemoveOverlapWithMuon1s 1
-RemoveOverlapWithMuon2s 0
+RemoveOverlapWithMuon2s 1
 Muon1MatchingDeltaR  0.4
-Muon2MatchingDeltaR  0.3
+Muon2MatchingDeltaR  0.4
 
-RemoveOverlapWithElectron1s 0
-RemoveOverlapWithElectron2s 0
-Electron1MatchingDeltaR  0.3
-Electron2MatchingDeltaR  0.3
+RemoveOverlapWithElectron1s 1
+RemoveOverlapWithElectron2s 1
+Electron1MatchingDeltaR  0.4
+Electron2MatchingDeltaR  0.4
 
-RemoveOverlapWithTau1s 0
-RemoveOverlapWithTau2s 0
-Tau1MatchingDeltaR  0.3
-Tau2MatchingDeltaR 0.3
+RemoveOverlapWithTau1s 1
+RemoveOverlapWithTau2s 1
+Tau1MatchingDeltaR  0.4
+Tau2MatchingDeltaR 0.4
 
-RemoveOverlapWithJs 1
+RemoveOverlapWithJs 0
 JMatchingDeltaR 0.8
 
-RemoveOverlapWithBs 1
-BJMatchingDeltaR 0.3
+RemoveOverlapWithBs 0
+BJMatchingDeltaR 0.4
 
 Apply2017EEnoiseVeto false
 
@@ -52,29 +52,29 @@ Apply2017EEnoiseVeto false
 EtaCut 0. 5.0
 PtCut 30.0
 
-ApplyLooseID 0
-ApplyTightID 1
+ApplyLooseID 1
+ApplyTightID 0
 
-RemoveOverlapWithMuon1s 0
-RemoveOverlapWithMuon2s 0
+RemoveOverlapWithMuon1s 1
+RemoveOverlapWithMuon2s 1
 Muon1MatchingDeltaR  0.4
-Muon2MatchingDeltaR  0.3
+Muon2MatchingDeltaR  0.4
 
-RemoveOverlapWithElectron1s 0
-RemoveOverlapWithElectron2s 0
-Electron1MatchingDeltaR  0.3
-Electron2MatchingDeltaR  0.3
+RemoveOverlapWithElectron1s 1
+RemoveOverlapWithElectron2s 1
+Electron1MatchingDeltaR  0.4
+Electron2MatchingDeltaR  0.4
 
-RemoveOverlapWithTau1s 0
-RemoveOverlapWithTau2s 0
-Tau1MatchingDeltaR  0.3
-Tau2MatchingDeltaR 0.3
+RemoveOverlapWithTau1s 1
+RemoveOverlapWithTau2s 1
+Tau1MatchingDeltaR  0.4
+Tau2MatchingDeltaR 0.4
 
-RemoveOverlapWithJs 1
+RemoveOverlapWithJs 0
 JMatchingDeltaR 0.8
 
-RemoveOverlapWithBs 1
-BJMatchingDeltaR 0.3
+RemoveOverlapWithBs 0
+BJMatchingDeltaR 0.4
 
 Apply2017EEnoiseVeto false
 
@@ -84,22 +84,22 @@ Apply2017EEnoiseVeto false
 
 PtCut 30.0
 
-ApplyLooseID 0
-ApplyTightID 1
+ApplyLooseID 1
+ApplyTightID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 0
 Muon1MatchingDeltaR 0.4
 Muon2MatchingDeltaR 0.3
 
-RemoveOverlapWithElectron1s 0
+RemoveOverlapWithElectron1s 1
 RemoveOverlapWithElectron2s 0
-Electron1MatchingDeltaR 0.3
+Electron1MatchingDeltaR 0.4
 Electron2MatchingDeltaR 0.3
 
-RemoveOverlapWithTau1s 0
+RemoveOverlapWithTau1s 1
 RemoveOverlapWithTau2s 0
-Tau1MatchingDeltaR 0.3
+Tau1MatchingDeltaR 0.4
 Tau2MatchingDeltaR 0.3
 
 Apply2017EEnoiseVeto false
@@ -108,27 +108,27 @@ Apply2017EEnoiseVeto false
 	 FirstLeadingJet
 ###################################
 
-DoDiscrByThisJet 1
+DoDiscrByThisJet 0
 
 EtaCut 0.0 5.0
 PtCut 30.0
 
-ApplyLooseID 0
-ApplyTightID 1
+ApplyLooseID 1
+ApplyTightID 0
 
 RemoveOverlapWithMuon1s 1 
 RemoveOverlapWithMuon2s 0
 Muon1MatchingDeltaR 0.4 
 Muon2MatchingDeltaR 0.3
 
-RemoveOverlapWithElectron1s 0
+RemoveOverlapWithElectron1s 1
 RemoveOverlapWithElectron2s 0
-Electron1MatchingDeltaR 0.3
+Electron1MatchingDeltaR 0.4
 Electron2MatchingDeltaR 0.3
 
-RemoveOverlapWithTau1s 0
+RemoveOverlapWithTau1s 1
 RemoveOverlapWithTau2s 0
-Tau1MatchingDeltaR 0.3
+Tau1MatchingDeltaR 0.4
 Tau2MatchingDeltaR 0.3
 
 Apply2017EEnoiseVeto false
@@ -137,27 +137,27 @@ Apply2017EEnoiseVeto false
 	 SecondLeadingJet
 ###################################
 
-DoDiscrByThisJet 1
+DoDiscrByThisJet 0
 
 EtaCut 0.0 5.0
 PtCut 30.0
 
-ApplyLooseID 0
-ApplyTightID 1
+ApplyLooseID 1
+ApplyTightID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 0
 Muon1MatchingDeltaR 0.4
 Muon2MatchingDeltaR 0.3
 
-RemoveOverlapWithElectron1s 0
+RemoveOverlapWithElectron1s 1
 RemoveOverlapWithElectron2s 0
-Electron1MatchingDeltaR 0.3
+Electron1MatchingDeltaR 0.4
 Electron2MatchingDeltaR 0.3
 
-RemoveOverlapWithTau1s 0
+RemoveOverlapWithTau1s 1
 RemoveOverlapWithTau2s 0
-Tau1MatchingDeltaR 0.3
+Tau1MatchingDeltaR 0.4
 Tau2MatchingDeltaR 0.3
 
 Apply2017EEnoiseVeto false
@@ -167,22 +167,22 @@ Apply2017EEnoiseVeto false
 ##################################
 
 EtaCut 0.0 2.4
-PtCut 30.0
+PtCut 20.0
 
 RemoveOverlapWithMuon1s 1
-RemoveOverlapWithMuon2s 0
+RemoveOverlapWithMuon2s 1
 Muon1MatchingDeltaR 0.4
-Muon2MatchingDeltaR 0.3
+Muon2MatchingDeltaR 0.4
 
-RemoveOverlapWithElectron1s 0
-RemoveOverlapWithElectron2s 0
-Electron1MatchingDeltaR 0.3
-Electron2MatchingDeltaR 0.3
+RemoveOverlapWithElectron1s 1
+RemoveOverlapWithElectron2s 1
+Electron1MatchingDeltaR 0.4
+Electron2MatchingDeltaR 0.4
 
-RemoveOverlapWithTau1s 0
-RemoveOverlapWithTau2s 0
-Tau1MatchingDeltaR 0.3
-Tau2MatchingDeltaR 0.3
+RemoveOverlapWithTau1s 1
+RemoveOverlapWithTau2s 1
+Tau1MatchingDeltaR 0.4
+Tau2MatchingDeltaR 0.4
 
 Apply2017EEnoiseVeto false
 

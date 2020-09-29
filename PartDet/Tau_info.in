@@ -17,6 +17,7 @@ EnergySigmaOffset 1.
 MatchToGen 0
 GenMatchingDeltaR 0.2
 
+TauSF 0
 doEfficiencyPlots true
 
 //////////////////////////////
@@ -24,7 +25,7 @@ doEfficiencyPlots true
 ////////////////////////////
 
 # Options for TauIDAlgorithm: Tau_idMVAoldDM2017v2 or Tau_idDeepTau2017v2p1
-TauIDAlgorithm Tau_idMVAoldDM2017v2
+TauIDAlgorithm Tau_idDeepTau2017v2p1
 
 //////////////////////////////
             Tau1
@@ -42,26 +43,26 @@ DoDiscrByLeadTrack false
 LeadTrackThreshold 5.0
 
 DoDiscrByIsolation true
-# MVA: 1 = VVLoose, 2 = VLoose, 4 = Loose, 8 = Medium, 16 = Tight, 32 = VTight, 64 = VVTight
-# DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
-DiscrByMinIsolation 16
-DiscrByMaxIsolation 2
+// MVA: 1 = VVLoose, 2 = VLoose, 4 = Loose, 8 = Medium, 16 = Tight, 32 = VTight, 64 = VVTight
+// DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
+DiscrByMinIsolation 32
+DiscrByMaxIsolation 0
 FlipIsolationRequirement false
 DiscrByProngType true
 ProngType  1or3hps
-decayModeFindingNewDMs false
-decayModeFinding true
+decayModeFindingNewDMs true
+decayModeFinding false
 
 DoDiscrAgainstElectron true
-# MVA: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight, 16 = VTight
-# DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
-DiscrAgainstElectron 8
+// MVA: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight, 16 = VTight
+// DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
+DiscrAgainstElectron 32
 SelectTausThatAreElectrons false
 
 DoDiscrAgainstMuon true
-# MVA: 1 = Loose, 2 = Tight
-# DeepTau: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight
-DiscrAgainstMuon 2
+// MVA: 1 = Loose, 2 = Tight
+// DeepTau: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight
+DiscrAgainstMuon 8
 SelectTausThatAreMuons false
 
 DoDiscrByCrackCut false
@@ -100,26 +101,26 @@ DoDiscrByLeadTrack false
 LeadTrackThreshold 5.0
 
 DoDiscrByIsolation true
-# MVA: 1 = VVLoose, 2 = VLoose, 4 = Loose, 8 = Medium, 16 = Tight, 32 = VTight, 64 = VVTight
-# DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
-DiscrByMinIsolation 16
-DiscrByMaxIsolation 2
+// MVA: 1 = VVLoose, 2 = VLoose, 4 = Loose, 8 = Medium, 16 = Tight, 32 = VTight, 64 = VVTight
+// DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
+DiscrByMinIsolation 32
+DiscrByMaxIsolation 0
 FlipIsolationRequirement false
 DiscrByProngType true
 ProngType  1or3hps
-decayModeFindingNewDMs false
-decayModeFinding true
+decayModeFindingNewDMs true
+decayModeFinding false
 
 DoDiscrAgainstElectron true
-# MVA: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight, 16 = VTight
-# DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
-DiscrAgainstElectron 8
+// MVA: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight, 16 = VTight
+// DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
+DiscrAgainstElectron 32
 SelectTausThatAreElectrons false
 
 DoDiscrAgainstMuon true
-# MVA: 1 = Loose, 2 = Tight
-# DeepTau: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight
-DiscrAgainstMuon 2
+// MVA: 1 = Loose, 2 = Tight
+// DeepTau: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight
+DiscrAgainstMuon 8
 SelectTausThatAreMuons false
 
 DoDiscrByCrackCut 0

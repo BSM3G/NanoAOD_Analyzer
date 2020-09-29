@@ -40,8 +40,8 @@ DiscrIfIsZdecay 0
 DiscrByMetDphi 0
 MetDphiCut 1.0 3.15
 
-DiscrByMetMt 0
-MetMtCut 0. 100.
+DiscrByMetMt 1
+MetMtCut 0. 50.
 
 ////////////////////////////////
              Muon2
@@ -65,5 +65,5 @@ DiscrIfIsZdecay 0
 DiscrByMetDphi 0
 MetDphiCut 1.0 3.15
 
-DiscrByMetMt 0
-MetMtCut 0. 100.
+DiscrByMetMt 1
+MetMtCut 0. 50.
