@@ -844,6 +844,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     smearTaus(*_Tau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
 
     applyJetEnergyCorrections(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], year, i);
+    applyJetEnergyCorrections(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], year, i);
     updateMet(i);
 
   }
