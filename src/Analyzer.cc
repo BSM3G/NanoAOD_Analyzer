@@ -285,7 +285,8 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   }
 
   // Check if this is a W/Z+jets sample for the purposes of applying Z-pt corrections.
-  if((infiles[0].find("WJets") != std::string::npos) || (infiles[0].find("DY") != std::string::npos)){
+  if((infiles[0].find("WJets") != std::string::npos) || (infiles[0].find("DY") != std::string::npos) || (infiles[0].find("EWKWPlus") != std::string::npos) 
+    || (infiles[0].find("EWKWMinus") != std::string::npos) || (infiles[0].find("Z2Jets") != std::string::npos)){
     isVSample = true;
   }
   else{
@@ -753,6 +754,9 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   setupEventGeneral(event);
 
   // Call the L1 weight producer here, only for 2016 or 2017
+
+  // std::cout << "Number of photons (default) = " << _Photon->size() << std::endl;
+  // std::cout << "Number of jets (default) = " << _Jet->size() << std::endl; 
 
   if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
     // Reset weights for each event before producing them
