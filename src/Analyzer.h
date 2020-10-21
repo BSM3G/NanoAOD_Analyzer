@@ -123,6 +123,10 @@ public:
   bool passHEMveto2018();
   bool passJetVetoEEnoise2017(int);
 
+  bool skimSignalMC(int);
+  std::string inputSignalModel="", inputSignalMassParam="";
+  bool finalInputSignal = false;
+
   void smearLepton(Lepton&, CUTS, const PartStats&, const PartStats&, int syst=0);
   void smearTaus(Lepton&, const PartStats&, const PartStats&, int syst=0);
   //void smearJet(Particle&, CUTS, const PartStats&, int syst=0);
