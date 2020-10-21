@@ -725,6 +725,29 @@ bool Analyzer::passHEMveto2018(){
 
 }
 
+bool Analyzer::skimSignalMC(int event){
+  // Check if we should use this function at all... to be called only for signal samples
+  if(! distats["SignalMC"].bfind("isSignalMC") ) return true;
+
+  // Construct the name of the branch:
+  std::string signalBranchName = ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str();
+  
+  // std::cout << "Name of the branch: " << signalBranchName << std::endl;
+  bool isInputSignal = false;
+  
+  TBranch *signalBranch = BOOM->GetBranch(signalBranchName.c_str());
+  signalBranch->SetStatus(1);
+  signalBranch->SetAddress(&isInputSignal);
+
+  BOOM->GetEntry(event);
+
+  finalInputSignal = isInputSignal;
+
+  signalBranch->ResetAddress();
+  // std::cout << "Input signal: " << signalBranchName << ", isInputSignal? " << finalInputSignal << std::endl;
+  return finalInputSignal;
+}
+
 ///Function that does most of the work.  Calculates the number of each particle
 void Analyzer::preprocess(int event, std::string year){ // This function no longer needs to get the JSON dictionary as input.
 
@@ -795,6 +818,14 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
          clear_values();
          return;
        }
+     }
+
+     // -- For signal samples -- //
+     if(distats["SignalMC"].bfind("isSignalMC")){
+      if(skimSignalMC(event) == false){
+        clear_values();
+        return;
+      }
      }
 
   }
@@ -1518,6 +1549,7 @@ void Analyzer::setupGeneral(std::string year) {
   read_info(filespace + "VBFCuts_info.in");
   read_info(filespace + "Run_info.in");
   read_info(filespace + "Systematics_info.in");
+  read_info(filespace + "SignalMC_info.in");
 	
   // Call readinJSON and save this in the jsonlinedict we declared in Analyzer.h
   jsonlinedict = readinJSON(year);
@@ -1631,6 +1663,22 @@ void Analyzer::read_info(std::string filename) {
         for(auto trigger : stemp){
           if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
             inputTriggerNames.push_back(trigger);
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("ModelTag") != std::string::npos){
+        for(auto model: stemp){
+          if(model.find("ModelTag") == std::string::npos and "=" != model){
+            inputSignalModel = model;
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("MassParameters") != std::string::npos){
+        for(auto massparam: stemp){
+          if(massparam.find("MassParameters") == std::string::npos and "=" != massparam){
+            inputSignalMassParam = massparam;
           }
         }
         continue;
@@ -4134,6 +4182,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
   if(group == "FillRun" && (&ihisto==&histo)) {
     if(crbins != 1) {
       for(int i = 0; i < crbins; i++) {
+        std::cout << "nominal, crbins !=1" << std::endl;
         ihisto.addVal(false, group, i, "Events", 1);
         if(distats["Run"].bfind("ApplyGenWeight")) {
           //put the weighted events in bin 3
@@ -4143,18 +4192,77 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       }
     }
     else{
-      ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1);
-      if(distats["Run"].bfind("ApplyGenWeight")) {
-        //put the weighted events in bin 3
-        ihisto.addVal(2, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0);
-      }
+	    
+      if(distats["SignalMC"].bfind("isSignalMC")){ // For signal samples (unskimmed)
+        if(finalInputSignal){
+          
+	    	  // Bin 1 will contain only the events that correspond to a certain signal mass point
+          ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1); 
+          
+          if(distats["Run"].bfind("ApplyGenWeight")) {
+            
+            if(finalInputSignal){
+              // Bin 3 contains the number of raw signal MC events passing a particular cut, same as bin1 but without any weights.
+              ihisto.addVal(2, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+            }
+            // Bin 4 contains number of raw MC events for a given signal point for which the gen_weight is positive.
+            ihisto.addVal(3, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+          }
+        }
+        // Bin 5 contains the full number of events analyzed in the signal sample (including all signal points)
+        ihisto.addVal(4,group,ihisto.get_maxfolder(),"Events",1.0); 
+	    }
+	    else if(!distats["SignalMC"].bfind("isSignalMC") || isData ){ // For backgrounds or data.
+        // Bin 1 contains the number of events analyzed in a given sample.
+	    	ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1);
+
+        if(distats["Run"].bfind("ApplyGenWeight")) {
+          // Bin 3 contains the raw (unweighted) number of events (data or MC) passing a certain selection.
+          ihisto.addVal(2, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0);
+        }
+	    }
       ihisto.addVal(wgt, group, ihisto.get_maxfolder(), "Weight", 1);
       ihisto.addVal(nTruePU, group, ihisto.get_maxfolder(), "PUWeight", 1);
     }
+
+    // In all cases: Bin 2 contains the weighted number of events passing a certain selection.
     histAddVal(true, "Events");
     histAddVal(bestVertices, "NVertices");
+
   } else if(group == "FillRun" && issyst) {
-    // This is for systematics.
+
+    if(distats["SignalMC"].bfind("isSignalMC")){ // For signal samples (unskimmed)
+      if(finalInputSignal){
+        
+        // Bin 1 will contain only the events that correspond to a certain signal mass point
+        syst_histo.addVal(false, group,max, "Events", 1); 
+        
+        if(distats["Run"].bfind("ApplyGenWeight")) {
+          
+          if(finalInputSignal){
+            // Bin 3 contains the number of raw signal MC events passing a particular cut, same as bin1 but without any weights.
+            syst_histo.addVal(2, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+          }
+          // Bin 4 contains number of raw MC events for a given signal point for which the gen_weight is positive.
+          syst_histo.addVal(3, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+        }
+      }
+      // Bin 5 contains the full number of events analyzed in the signal sample (including all signal points)
+      syst_histo.addVal(4,group,max,"Events",1.0); 
+    }
+    else if(!distats["SignalMC"].bfind("isSignalMC")){ // For backgrounds 
+      // Bin 1 contains the number of events analyzed in a given sample.
+      syst_histo.addVal(false, group,max, "Events", 1);
+
+      if(distats["Run"].bfind("ApplyGenWeight")) {
+        // Bin 3 contains the raw (unweighted) number of events (data or MC) passing a certain selection.
+        syst_histo.addVal(2, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0);
+      }
+    }
+    syst_histo.addVal(wgt, group, max, "Weight", 1);
+    syst_histo.addVal(nTruePU, group, max, "PUWeight", 1);
+
+    // In all cases: Bin 2 contains the weighted number of events passing a certain selection.
     histAddVal(true, "Events");
     histAddVal(bestVertices, "NVertices");
 
