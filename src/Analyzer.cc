@@ -727,7 +727,7 @@ bool Analyzer::passHEMveto2018(){
 
 bool Analyzer::skimSignalMC(int event){
   // Check if we should use this function at all... to be called only for signal samples
-  if(! distats["SignalMC"].bfind("isSignalMC") ) return true;
+  if(! isSignalMC ) return true;
 
   // Construct the name of the branch:
   std::string signalBranchName = ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str();
@@ -821,7 +821,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
      }
 
      // -- For signal samples -- //
-     if(distats["SignalMC"].bfind("isSignalMC")){
+     if(isSignalMC){
       if(skimSignalMC(event) == false){
         clear_values();
         return;
@@ -1572,6 +1572,20 @@ void Analyzer::setupGeneral(std::string year) {
   std::cout << "Full list of triggers to be probed: " << std::endl;
   for(std::string name : triggerBranchesList){
     std::cout << name << std::endl;
+  }
+  std::cout << " ---------------------------------------------------------------------- " << std::endl;
+
+  // Check if it is a signal MC sample:
+  // isSignalMC = distats["SignalMC"].bfind("isSignalMC");
+
+  // double check 
+  if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) == 0){
+   isSignalMC = false;
+   std::cout << "This is not a signal MC sample." << std::endl;
+  }
+  else if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) != 0){
+   isSignalMC = true;
+   std::cout << "This is a signal MC sample!" << std::endl;
   }
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
 }
@@ -4193,7 +4207,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     }
     else{
 	    
-      if(distats["SignalMC"].bfind("isSignalMC")){ // For signal samples (unskimmed)
+      if(isSignalMC){ // For signal samples (unskimmed)
         if(finalInputSignal){
           
 	    	  // Bin 1 will contain only the events that correspond to a certain signal mass point
@@ -4212,7 +4226,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         // Bin 5 contains the full number of events analyzed in the signal sample (including all signal points)
         ihisto.addVal(4,group,ihisto.get_maxfolder(),"Events",1.0); 
 	    }
-	    else if(!distats["SignalMC"].bfind("isSignalMC") || isData ){ // For backgrounds or data.
+	    else if(!isSignalMC || isData ){ // For backgrounds or data.
         // Bin 1 contains the number of events analyzed in a given sample.
 	    	ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1);
 
@@ -4231,7 +4245,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
   } else if(group == "FillRun" && issyst) {
 
-    if(distats["SignalMC"].bfind("isSignalMC")){ // For signal samples (unskimmed)
+    if(isSignalMC){ // For signal samples (unskimmed)
       if(finalInputSignal){
         
         // Bin 1 will contain only the events that correspond to a certain signal mass point
@@ -4250,7 +4264,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       // Bin 5 contains the full number of events analyzed in the signal sample (including all signal points)
       syst_histo.addVal(4,group,max,"Events",1.0); 
     }
-    else if(!distats["SignalMC"].bfind("isSignalMC")){ // For backgrounds 
+    else if(!isSignalMC){ // For backgrounds 
       // Bin 1 contains the number of events analyzed in a given sample.
       syst_histo.addVal(false, group,max, "Events", 1);
 
