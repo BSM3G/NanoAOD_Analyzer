@@ -294,7 +294,7 @@ public:
 
   double maxIso, minIso;
   int leadIndex, maxCut, crbins=1;
-  bool isData, CalculatePUSystematics, doSystematics;
+  bool isData, isSignalMC, CalculatePUSystematics, doSystematics;
 
   float nTruePU = 0;
   int bestVertices = 0;
