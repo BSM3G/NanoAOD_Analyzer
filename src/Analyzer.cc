@@ -2091,10 +2091,19 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     jet_RawFactor = 0.0;
 
     // get the proper jet pts for type-I MET, only correct the non-mu fraction of the jet
-    // if the corrected pt > 15 GeV (unclEnThreshold), use the corrected jet, otherwise use raw
-    // condition ? result_if_true : result_if_false
-    double jet_pt_noMuL1L2L3 = jet_Pt * jec > jetUnclEnThreshold ? jet_Pt * jec : jet_Pt;
-    double jet_pt_noMuL1 = jet_Pt * jecL1 > jetUnclEnThreshold ? jet_Pt * jecL1 : jet_Pt;
+    double jet_pt_noMuL1L2L3 = 0.0, jet_pt_noMuL1 = 0.0;
+    if(year.compare("2017") == 0){
+       // This step is only needed for v2 MET in 2017. Only correct the non-mu fraction of the jet.
+       // If the corrected pt > 15 GeV (unclEnThreshold), use the corrected jet, otherwise use raw.
+       // condition ? result_if_true : result_if_false
+       jet_pt_noMuL1L2L3 = jet_Pt * jec > jetUnclEnThreshold ? jet_Pt * jec : jet_Pt;
+       jet_pt_noMuL1 = jet_Pt * jecL1 > jetUnclEnThreshold ? jet_Pt * jecL1 : jet_Pt;
+    }
+    else{
+       // For 2016 and 2018, simply apply the corrections as usual.
+       jet_pt_noMuL1L2L3 = jet_Pt * jec;
+       jet_pt_noMuL1 = jet_Pt * jecL1;
+    }
 
     // Apply the JER corrections if desired to MC    
     // Define the JER scale factors:
@@ -2216,8 +2225,9 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
     double jetTotalEmEF = _Jet->neutralEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
     
-    // Propagate this correction to the MET: nominal values.
-    if(jet_pt_L1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
+    // Propagate JER and JES corrections and uncertainties to MET.
+    // Only propagate JECs to MET if the corrected pt without the muon is above the unclustered energy threshold.
+    if(jet_pt_noMuL1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
 
       if(!(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_rawPt < 50.0)){
         
