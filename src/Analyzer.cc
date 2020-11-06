@@ -231,32 +231,6 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   setupJetCorrections(year, outfile);
 
 
-  ///this can be done nicer
-  //put the variables that you use here:
-  /*
-  zBoostTree["tau1_pt"] =0;
-  zBoostTree["tau1_eta"]=0;
-  zBoostTree["tau1_phi"]=0;
-  zBoostTree["tau2_pt"] =0;
-  zBoostTree["tau2_eta"]=0;
-  zBoostTree["tau2_phi"]=0;
-  zBoostTree["met"]     =0;
-  zBoostTree["mt_tau1"] =0;
-  zBoostTree["mt_tau2"] =0;
-  zBoostTree["mt2"]     =0;
-  zBoostTree["cosDphi1"]=0;
-  zBoostTree["cosDphi2"]=0;
-  zBoostTree["jet1_pt"] =0;
-  zBoostTree["jet1_eta"]=0;
-  zBoostTree["jet1_phi"]=0;
-  zBoostTree["jet2_pt"] =0;
-  zBoostTree["jet2_eta"]=0;
-  zBoostTree["jet2_phi"]=0;
-  zBoostTree["jet_mass"]=0;
-  
-  histo.createTree(&zBoostTree,"TauTauTree");
-  */
-
   if(setCR) {
     cuts_per.resize(histo.get_folders()->size());
     cuts_cumul.resize(histo.get_folders()->size());
@@ -293,19 +267,9 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     isVSample = false;
   }
 
-  //std::cout << "isVSample = " << isVSample << std::endl;
-  
-  //if(distats["Run"].bfind("InitializeMCSelection")){
-     // std::cout << "MC selection initialized." << std::endl;
-     //initializeMCSelection(infiles);
-  //}
-
-
   initializeWkfactor(infiles);
   setCutNeeds();
   
-  
-
   std::cout << "setup complete" << std::endl << std::endl;
   start = std::chrono::system_clock::now();
 }
@@ -457,9 +421,6 @@ void Analyzer::setupCR(std::string var, double val) {
 
 ////destructor
 Analyzer::~Analyzer() {
-  // routfile->Write();
-  // routfile->Close();
-
   clear_values();
   delete BOOM;
   delete _Electron;
@@ -483,16 +444,6 @@ Analyzer::~Analyzer() {
     delete goodParts[e];
     goodParts[e]=nullptr;
   }
-  //for(auto &it: syst_parts) {
-    //for(auto e: Enum<CUTS>()) {
-      //if( it[e] != nullptr) {
-      //if(it.find(e) != it.end()){
-        //delete it[e];
-        //it[e]=nullptr;
-      //}
-      //}
-    //}
-  //}
   for(auto it: testVec){
     delete it;
     it=nullptr;
@@ -2031,8 +1982,16 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     // get the proper jet pts for type-I MET, only correct the non-mu fraction of the jet
     // if the corrected pt > 15 GeV (unclEnThreshold), use the corrected jet, otherwise use raw
     // condition ? result_if_true : result_if_false
-    double jet_pt_noMuL1L2L3 = jet_Pt * jec > jetUnclEnThreshold ? jet_Pt * jec : jet_Pt;
-    double jet_pt_noMuL1 = jet_Pt * jecL1 > jetUnclEnThreshold ? jet_Pt * jecL1 : jet_Pt;
+    double jet_pt_noMuL1L2L3 = 0.0, jet_pt_noMuL1 = 0.0;
+
+    if(year.compare("2017") == 0){
+      jet_pt_noMuL1L2L3 = jet_Pt * jec > jetUnclEnThreshold ? jet_Pt * jec : jet_Pt;
+      jet_pt_noMuL1 = jet_Pt * jecL1 > jetUnclEnThreshold ? jet_Pt * jecL1 : jet_Pt;
+    }
+    else{
+      jet_pt_noMuL1L2L3 = jet_Pt * jec;
+      jet_pt_noMuL1 = jet_Pt * jecL1;      
+    }
 
     // Apply the JER corrections if desired to MC    
     // Define the JER scale factors:
@@ -2155,7 +2114,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     double jetTotalEmEF = _Jet->neutralEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
     
     // Propagate this correction to the MET: nominal values.
-    if(jet_pt_L1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
+    if(jet_pt_noMuL1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
 
       if(!(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_rawPt < 50.0)){
         
@@ -2671,7 +2630,7 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
     */
     bool passCuts = true;
     double dphi1rjets = normPhi(lvec.Phi() - _MET->phi());
-    if( ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
+    if(ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
     else  passCuts = passCuts && passCutRange(fabs(lvec.Eta()), stats.pmap.at("EtaCut"));
     passCuts = passCuts && (lvec.Pt() > stats.dmap.at("PtCut")) ;
 
@@ -2694,7 +2653,8 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
       else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
       else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-      else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+      else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
+      
     }
     if(_Jet->pstats["BJet"].bfind("RemoveBJetsFromJets") and ePos!=CUTS::eRBJet){
       passCuts = passCuts && find(active_part->at(CUTS::eRBJet)->begin(), active_part->at(CUTS::eRBJet)->end(), i) == active_part->at(CUTS::eRBJet)->end();
@@ -2806,7 +2766,7 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-        else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+        else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
         //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
       }
     }
@@ -2855,8 +2815,7 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-        else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
-        //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
+        else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
       }
     }
 
@@ -4258,6 +4217,10 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     Particle* part = fillInfo[group]->part;
     CUTS ePos = fillInfo[group]->ePos;
 
+    // Added variable to calculate minimum deltaPhi between particle and MET
+    float minDeltaPhiMet = 9999.9;
+
+    // int i = 0;
     for(auto it : *active_part->at(ePos)) {
       histAddVal(part->p4(it).Energy(), "Energy");
       histAddVal(part->p4(it).Pt(), "Pt");
@@ -4277,6 +4240,24 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(_FatJet->tau2[it], "tau2");
         histAddVal(_FatJet->tau2[it]/_FatJet->tau1[it], "tau2Overtau1");
       }
+      if(part->type == PType::Jet){
+        // Find out if this is the closest jet to the MET
+        float deltaPhiMet = absnormPhi(part->p4(it).Phi() - _MET->phi());
+        // std::cout << "jet #" << i << ", dPhi(j,MET) = " <<  normPhi(part->p4(it).Phi() - _MET->phi()) << std::endl;
+        // std::cout << "minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
+        histAddVal(deltaPhiMet, "AbsDPhiMet");
+        histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "DPhiMet");
+
+        if(deltaPhiMet < minDeltaPhiMet){
+          minDeltaPhiMet = deltaPhiMet;
+        }
+        // i++;
+      }
+    }
+
+    if(part->type == PType::Jet){
+      // std::cout << "the minimum minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
+      histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
     }
 
     if((part->type != PType::Jet ) && active_part->at(ePos)->size() > 0) {
