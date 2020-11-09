@@ -2950,7 +2950,8 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
       else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
       else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-      else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+      // else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+      else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
     }
     if(_Jet->pstats["BJet"].bfind("RemoveBJetsFromJets") and ePos!=CUTS::eRBJet){
       passCuts = passCuts && find(active_part->at(CUTS::eRBJet)->begin(), active_part->at(CUTS::eRBJet)->end(), i) == active_part->at(CUTS::eRBJet)->end();
@@ -3051,16 +3052,34 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
-        else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-        else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
-        else if(cut == "ApplyPileupJetID"){
-          if(leadjetp4.Pt() > 50.0) continue;
-          if(!stats.bfind("FailPUJetID")){
-            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
-          }
-          else{
-            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-          }
+        else if(cut == "ApplyLooseID"){
+            // std::cout << "applying loose jet ID to jet with pt = " << lvec.Pt() << std::endl;
+            if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){
+                // std::cout << "PU jet ID flag on, this jet is below 50 GeV... applying PU jet ID instead." << std::endl;
+                if(!stats.bfind("FailPUJetID")){
+                    passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+                } else {
+                    passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+                }
+            }
+            else{
+                // if(stats.bfind("ApplyPileupJetID")){ std::cout << "PU jet ID flag on but this jet is above 50 GeV, applying loose ID instead." << std::endl; }
+                // else{ std::cout << "PU jet ID flag off, simply applying loose ID" << std::endl;}
+                passCuts = passCuts && _Jet->passedLooseJetID(i); 
+            }
+        }
+        else if(cut == "ApplyTightID"){ 
+            if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){
+                if(!stats.bfind("FailPUJetID")){
+                // std::cout << "PUJetIDCut = " << stats.dmap.at("PUJetIDCut") << ", PUJetID = " << _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")) << std::endl;
+                   passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+                } else {
+                // std::cout << "FailPUJetID = " << stats.dmap.at("FailPUJetID") << ", PUJetID = " << _Jet->getPileupJetID(i, 0) << std::endl;
+                   passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+                }
+            } else {
+                passCuts = passCuts && _Jet->passedTightJetID(i);
+            } 
         }
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(leadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(leadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
@@ -3071,7 +3090,8 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-        else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+        // else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+        else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
         //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
       }
     }
@@ -3109,16 +3129,34 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[j] > stats.dmap.at("JetBTaggingCut")); 
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[j] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[j] > stats.dmap.at("JetBTaggingCut"));
-        else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(j);
-        else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(j);
-        else if(cut == "ApplyPileupJetID"){
-          if(subleadjetp4.Pt() > 50.0) continue;
-          if(!stats.bfind("FailPUJetID")){
-            passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
-          }
-          else{
-            passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
-          }
+        else if(cut == "ApplyLooseID"){
+            // std::cout << "applying loose jet ID to jet with pt = " << lvec.Pt() << std::endl;
+            if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
+                // std::cout << "PU jet ID flag on, this jet is below 50 GeV... applying PU jet ID instead." << std::endl;
+                if(!stats.bfind("FailPUJetID")){
+                    passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut"));
+                } else {
+                    passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
+                }
+            }
+            else{
+                // if(stats.bfind("ApplyPileupJetID")){ std::cout << "PU jet ID flag on but this jet is above 50 GeV, applying loose ID instead." << std::endl; }
+                // else{ std::cout << "PU jet ID flag off, simply applying loose ID" << std::endl;}
+                passCuts = passCuts && _Jet->passedLooseJetID(j); 
+            }
+        }
+        else if(cut == "ApplyTightID"){ 
+            if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
+                if(!stats.bfind("FailPUJetID")){
+                // std::cout << "PUJetIDCut = " << stats.dmap.at("PUJetIDCut") << ", PUJetID = " << _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")) << std::endl;
+                   passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+                } else {
+                // std::cout << "FailPUJetID = " << stats.dmap.at("FailPUJetID") << ", PUJetID = " << _Jet->getPileupJetID(i, 0) << std::endl;
+                   passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
+                }
+            } else {
+                passCuts = passCuts && _Jet->passedTightJetID(j);
+            } 
         }
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(subleadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(subleadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
@@ -3129,7 +3167,8 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-        else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+        // else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+        else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
         //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
       }
     }
@@ -3168,16 +3207,34 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
       else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
-      else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
-      else if(cut == "ApplyPileupJetID"){
-        if(lvec.Pt() > 50.0) continue; // Only apply this cut to low pt jets
-        if(!stats.bfind("FailPUJetID")){
-          passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
-        }
-        else{
-          passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-        }
+      else if(cut == "ApplyLooseID"){
+          // std::cout << "applying loose jet ID to jet with pt = " << lvec.Pt() << std::endl;
+          if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+              // std::cout << "PU jet ID flag on, this jet is below 50 GeV... applying PU jet ID instead." << std::endl;
+              if(!stats.bfind("FailPUJetID")){
+                  passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+              } else {
+                  passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              }
+          }
+          else{
+              // if(stats.bfind("ApplyPileupJetID")){ std::cout << "PU jet ID flag on but this jet is above 50 GeV, applying loose ID instead." << std::endl; }
+              // else{ std::cout << "PU jet ID flag off, simply applying loose ID" << std::endl;}
+              passCuts = passCuts && _Jet->passedLooseJetID(i); 
+          }
+      }
+      else if(cut == "ApplyTightID"){ 
+          if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+              if(!stats.bfind("FailPUJetID")){
+              // std::cout << "PUJetIDCut = " << stats.dmap.at("PUJetIDCut") << ", PUJetID = " << _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")) << std::endl;
+                 passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+              } else {
+              // std::cout << "FailPUJetID = " << stats.dmap.at("FailPUJetID") << ", PUJetID = " << _Jet->getPileupJetID(i, 0) << std::endl;
+                 passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              }
+          } else {
+              passCuts = passCuts && _Jet->passedTightJetID(i);
+          } 
       }
     // ----anti-overlap requirements
       else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
@@ -4600,6 +4657,9 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     Particle* part = fillInfo[group]->part;
     CUTS ePos = fillInfo[group]->ePos;
 
+    // Added variable to calculate minimum deltaPhi between particle and MET
+    float minDeltaPhiMet = 9999.9;
+
     for(auto it : *active_part->at(ePos)) {
       histAddVal(part->p4(it).Energy(), "Energy");
       histAddVal(part->p4(it).Pt(), "Pt");
@@ -4619,6 +4679,23 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(_FatJet->tau2[it], "tau2");
         histAddVal(_FatJet->tau2[it]/_FatJet->tau1[it], "tau2Overtau1");
       }
+      if(part->type == PType::Jet){
+        // Find out if this is the closest jet to the MET
+        float deltaPhiMet = absnormPhi(part->p4(it).Phi() - _MET->phi());
+        // std::cout << "jet #" << i << ", dPhi(j,MET) = " <<  normPhi(part->p4(it).Phi() - _MET->phi()) << std::endl;
+        // std::cout << "minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
+        histAddVal(deltaPhiMet, "AbsDPhiMet");
+        histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "DPhiMet");
+
+        if(deltaPhiMet < minDeltaPhiMet){
+          minDeltaPhiMet = deltaPhiMet;
+        }
+      }
+    }
+
+    if(part->type == PType::Jet){
+      // std::cout << "the minimum minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
+      histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
     }
 
     if((part->type != PType::Jet ) && active_part->at(ePos)->size() > 0) {
