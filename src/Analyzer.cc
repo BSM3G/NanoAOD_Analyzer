@@ -234,33 +234,6 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 
   setupJetCorrections(year, outfile);
 
-
-  ///this can be done nicer
-  //put the variables that you use here:
-  /*
-  zBoostTree["tau1_pt"] =0;
-  zBoostTree["tau1_eta"]=0;
-  zBoostTree["tau1_phi"]=0;
-  zBoostTree["tau2_pt"] =0;
-  zBoostTree["tau2_eta"]=0;
-  zBoostTree["tau2_phi"]=0;
-  zBoostTree["met"]     =0;
-  zBoostTree["mt_tau1"] =0;
-  zBoostTree["mt_tau2"] =0;
-  zBoostTree["mt2"]     =0;
-  zBoostTree["cosDphi1"]=0;
-  zBoostTree["cosDphi2"]=0;
-  zBoostTree["jet1_pt"] =0;
-  zBoostTree["jet1_eta"]=0;
-  zBoostTree["jet1_phi"]=0;
-  zBoostTree["jet2_pt"] =0;
-  zBoostTree["jet2_eta"]=0;
-  zBoostTree["jet2_phi"]=0;
-  zBoostTree["jet_mass"]=0;
-  
-  histo.createTree(&zBoostTree,"TauTauTree");
-  */
-
   if(setCR) {
     cuts_per.resize(histo.get_folders()->size());
     cuts_cumul.resize(histo.get_folders()->size());
@@ -297,19 +270,9 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     isVSample = false;
   }
 
-  //std::cout << "isVSample = " << isVSample << std::endl;
-  
-  //if(distats["Run"].bfind("InitializeMCSelection")){
-     // std::cout << "MC selection initialized." << std::endl;
-     //initializeMCSelection(infiles);
-  //}
-
-
   initializeWkfactor(infiles);
   setCutNeeds();
   
-  
-
   std::cout << "setup complete" << std::endl << std::endl;
   start = std::chrono::system_clock::now();
 }
@@ -461,8 +424,6 @@ void Analyzer::setupCR(std::string var, double val) {
 
 ////destructor
 Analyzer::~Analyzer() {
-  // routfile->Write();
-  // routfile->Close();
 
   clear_values();
   delete BOOM;
@@ -487,16 +448,6 @@ Analyzer::~Analyzer() {
     delete goodParts[e];
     goodParts[e]=nullptr;
   }
-  //for(auto &it: syst_parts) {
-    //for(auto e: Enum<CUTS>()) {
-      //if( it[e] != nullptr) {
-      //if(it.find(e) != it.end()){
-        //delete it[e];
-        //it[e]=nullptr;
-      //}
-      //}
-    //}
-  //}
   for(auto it: testVec){
     delete it;
     it=nullptr;
@@ -4989,6 +4940,67 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
       // Diparticle pT
       histAddVal((part1 + part2).Pt(), "Pt");
+
+      // DeltaPhi variables
+      float minDPhi1Met = 9999.9, minDPhi2Met = 9999.9;
+
+      if(active_part->at(CUTS::eRJet1)->size() > 0){
+
+        for(size_t i = 0; i < active_part->at(CUTS::eRJet1)->size(); i++){
+          TLorentzVector jet1P4 = _Jet->p4(active_part->at(CUTS::eRJet1)->at(i));
+          float dPhi1Met = normPhi(jet1P4.Phi() - _MET->phi());
+          float absdPhi1Met = absnormPhi(jet1P4.Phi() - _MET->phi());
+
+          histAddVal(dPhi1Met, "Jet1MetDPhi");
+          histAddVal(absdPhi1Met, "Jet1MetAbsDPhi");
+
+          if(lep2->charge(p2) * lep1->charge(p1) < 0){
+            histAddVal(dPhi1Met, "Jet1MetDPhiOS");
+            histAddVal(absdPhi1Met, "Jet1MetAbsDPhiOS");
+          }
+          else if(lep2->charge(p2) * lep1->charge(p1) > 0){
+            histAddVal(dPhi1Met, "Jet1MetDPhiLS");
+            histAddVal(absdPhi1Met, "Jet1MetAbsDPhiLS");            
+          }
+
+          if(absdPhi1Met < minDPhi1Met){
+            minDPhi1Met = absdPhi1Met;
+          }
+        }
+
+        histAddVal(minDPhi1Met, "Jet1MetMinAbsDPhi");
+        if(lep2->charge(p2) * lep1->charge(p1) < 0){ histAddVal(minDPhi1Met, "Jet1MetMinAbsDPhiOS"); }
+        else if(lep2->charge(p2) * lep1->charge(p1) > 0){ histAddVal(minDPhi1Met, "Jet1MetMinAbsDPhiLS"); }
+      }
+
+      if(active_part->at(CUTS::eRJet2)->size() > 0){
+
+        for(size_t i = 0; i < active_part->at(CUTS::eRJet2)->size(); i++){
+          TLorentzVector jet2P4 = _Jet->p4(active_part->at(CUTS::eRJet2)->at(i));
+          float dPhi2Met = normPhi(jet2P4.Phi() - _MET->phi());
+          float absdPhi2Met = absnormPhi(jet2P4.Phi() - _MET->phi());
+
+          histAddVal(dPhi2Met, "Jet2MetDPhi");
+          histAddVal(absdPhi2Met, "Jet2MetAbsDPhi");
+
+          if(lep2->charge(p2) * lep1->charge(p1) < 0){
+            histAddVal(dPhi2Met, "Jet2MetDPhiOS");
+            histAddVal(absdPhi2Met, "Jet2MetAbsDPhiOS");
+          }
+          else if(lep2->charge(p2) * lep1->charge(p1) > 0){
+            histAddVal(dPhi2Met, "Jet2MetDPhiLS");
+            histAddVal(absdPhi2Met, "Jet2MetAbsDPhiLS");            
+          }
+
+          if(absdPhi2Met < minDPhi2Met){
+            minDPhi2Met = absdPhi2Met;
+          }
+        }
+
+        histAddVal(minDPhi2Met, "Jet2MetMinAbsDPhi");
+        if(lep2->charge(p2) * lep1->charge(p1) < 0){ histAddVal(minDPhi2Met, "Jet2MetMinAbsDPhiOS"); }
+        else if(lep2->charge(p2) * lep1->charge(p1) > 0){ histAddVal(minDPhi2Met, "Jet2MetMinAbsDPhiLS"); }
+      }
 
       if ((active_part->at(CUTS::eR1stJet)->size()>0 && active_part->at(CUTS::eR1stJet)->at(0) != -1) && (active_part->at(CUTS::eR2ndJet)->size()>0 && active_part->at(CUTS::eR2ndJet)->at(0) != -1)) {
         TLorentzVector TheLeadDiJetVect = _Jet->p4(active_part->at(CUTS::eR1stJet)->at(0)) + _Jet->p4(active_part->at(CUTS::eR2ndJet)->at(0));

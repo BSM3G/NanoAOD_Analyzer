@@ -172,9 +172,9 @@ Jet2Energy   200   0.   500.
 Jet2Pt       200   0.   500.
 Jet2Eta      100  -5.0   +5.0
 Jet2Phi      144  -6.3   +6.3
-Jet2DPhiMet       126  -6.3    +6.3
-Jet2AbsDPhiMet    126   0.0    +6.3
-Jet2MinAbsDPhiMet  126   0.0    +6.3
+Jet2DphiMet       126  -6.3  +6.3
+Jet2AbsDPhiMet    126   0.0  +6.3
+Jet2MinAbsDPhiMet 126   0.0  +6.3
 
 FillBJet 1
 
@@ -255,9 +255,8 @@ DiJetPt              1000   0  5000
 
 LargestDiJetMass        1000   0  5000
 LargestDiJetPt          1000   0  5000
-LargestDiJetDeltaEta	200    0.   10.
+LargestDiJetEtaProduct     4  -2     2
 LargestDiJetDeltaR       200   0    10.
-LargestMassDiJetEtaProduct     4  -2     2
 LargestMassDiJetDeltaEta     200   0    10.
 
 //------------------------------------------------//
@@ -350,6 +349,27 @@ DiTauPZeta                      200  -100   100
 DiTauPZetaVis                   100     0   100
 DiTauZeta1D                     150  -300   300
 DiTauPt 					   500     0.    1000.
+
+DiTauJet1MetDPhi				126    -3.15  +3.15
+DiTauJet1MetDPhiOS				126    -3.15  +3.15
+DiTauJet1MetDPhiLS				126    -3.15  +3.15
+DiTauJet1MetAbsDPhi				126     0.0    6.3
+DiTauJet1MetAbsDPhiOS			126     0.0    6.3
+DiTauJet1MetAbsDPhiLS			126     0.0    6.3
+DiTauJet1MetMinAbsDPhi			126     0.0    6.3
+DiTauJet1MetMinAbsDPhiOS		126     0.0    6.3
+DiTauJet1MetMinAbsDPhiLS		126     0.0    6.3
+
+DiTauJet2MetDPhi				126	   -3.15  +3.15
+DiTauJet2MetDPhiOS				126	   -3.15  +3.15
+DiTauJet2MetDPhiLS				126	   -3.15  +3.15
+DiTauJet2MetAbsDPhi				126     0.0    6.3
+DiTauJet2MetAbsDPhiOS			126     0.0    6.3
+DiTauJet2MetAbsDPhiLS			126     0.0    6.3
+DiTauJet2MetMinAbsDPhi			126	    0.0    6.3
+DiTauJet2MetMinAbsDPhiOS		126     0.0    6.3
+DiTauJet2MetMinAbsDPhiLS		126     0.0    6.3
+
 DiTauNotReconstructableMass     200     0  5000
 DiTauReconstructableMass        2500    0  5000
 DiTauDiJetReconstructableMass   200	0  5000
