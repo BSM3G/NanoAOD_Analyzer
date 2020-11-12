@@ -3897,6 +3897,20 @@ void Analyzer::getGoodDiJets(const PartStats& stats, const int syst) {
         else if(cut == "DiscrByOSEta") passCuts = passCuts && (jet1.Eta() * jet2.Eta() < 0);
         else if(cut == "DiscrByMassReco") passCuts = passCuts && passCutRange((jet1+jet2).M(), stats.pmap.at("MassCut"));
         else if(cut == "DiscrByCosDphi") passCuts = passCuts && passCutRange(cos(absnormPhi(jet1.Phi() - jet2.Phi())), stats.pmap.at("CosDphiCut"));
+        else if(cut == "RejectForwardDiJetPairs") passCuts = passCuts && ( !passCutRangeAbs(jet1.Eta(), stats.pmap.at("ForwardEtaRange")) || !passCutRangeAbs(jet2.Eta(), stats.pmap.at("ForwardEtaRange")) );
+        /*
+        {
+        	std::cout << "Checking if this is a forward dijet pair..." << std::endl;
+        	std::cout << "Jet1 eta = " << jet1.Eta() << ", jet2 eta = " << jet2.Eta() << std::endl;
+        	// Check the first jet of the pair:
+        	std::cout << "Jet 1 in the forward eta range? " << passCutRangeAbs(jet1.Eta(), stats.pmap.at("ForwardEtaRange")) << std::endl;
+        	// Then go onto the second jet of the pair:
+        	passCuts = passCuts && !passCutRangeAbs(jet2.Eta(), stats.pmap.at("ForwardEtaRange"));
+        	std::cout << "Jet 2 in the forward eta range? " << passCutRangeAbs(jet2.Eta(), stats.pmap.at("ForwardEtaRange")) << std::endl;
+        	if(passCuts){ std::cout << "dijet pair not coming from both jets in the forward region" << std::endl;}
+        	else{std::cout << "dijet pair -- coming -- from both jets in the forward region" << std::endl;}
+        }
+        */
         else std::cout << "cut: " << cut << " not listed" << std::endl;
       }
       ///Particlesp that lead to good combo are totjet * part1 + part2
