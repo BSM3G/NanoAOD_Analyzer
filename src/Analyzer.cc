@@ -713,7 +713,16 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
   runyear = year;
   for(Particle* ipart: allParticles){
-    ipart->init();
+    // std::cout << "Particle: " << ipart->GenName << std::endl;
+    try{
+      ipart->init();
+    }
+    catch(std::runtime_error& err){
+      std::cerr << "Found problematic list of particles: " << err.what() << std::endl;
+      throw std::runtime_error("Event not valid.");
+      clear_values();
+      return;
+    }
   }
   _MET->init();
 
