@@ -186,7 +186,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
      allParticles= {_Gen,_GenHadTau,_GenJet,_Electron,_Muon,_Tau,_Jet,_FatJet,_Photon};
   } else {
     std::cout<<"This is Data if not, change the flag!"<<std::endl;
-    allParticles= {_Electron,_Muon,_Tau,_Jet,_FatJet,_Photon};
+    allParticles= {_Electron,_Muon,_Tau,_Jet,_FatJet};
   }
 
   particleCutMap[CUTS::eGElec]=_Electron;
@@ -432,11 +432,12 @@ Analyzer::~Analyzer() {
   delete _Tau;
   delete _Jet;
   delete _FatJet;
-  delete _Photon;
+  
   if(!isData){
     delete _Gen;
     delete _GenHadTau;
     delete _GenJet;
+    delete _Photon;
   }
 
   for(auto fpair: fillInfo) {
@@ -738,7 +739,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   // std::cout << "Number of photons (default) = " << _Photon->size() << std::endl;
   // std::cout << "Number of jets (default) = " << _Jet->size() << std::endl; 
 
-  if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
+  if(!isData && distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
     // Reset weights for each event before producing them
     prefiringwgtprod.resetWeights();
 
