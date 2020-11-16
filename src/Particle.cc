@@ -25,21 +25,21 @@ Particle::Particle(TTree* _BOOM, std::string _GenName, std::string filename, std
 
   for( auto item : syst_names) {
     if(item == "orig") {
-      std::cout << "This is orig" << std::endl;
+      // std::cout << "This is orig" << std::endl;
       systVec.push_back(new std::vector<TLorentzVector>());
       continue;
     }
     if(!regex_match(item, mSyst, syst_regex)){
-      std::cout << "This is !regex_match(item, mSyst, syst_regex)" << std::endl;
+      // std::cout << "This is !regex_match(item, mSyst, syst_regex)" << std::endl;
       systVec.push_back(nullptr);
       continue;
     }
     if(mGen[1] == mSyst[1]) {
-      std::cout << "This is mGen[1] == mSyst[1]" << std::endl;
+      // std::cout << "This is mGen[1] == mSyst[1]" << std::endl;
       systVec.push_back(new std::vector<TLorentzVector>());
       std::cout << GenName << ": " << item << std::endl;
     } else {
-      std::cout << "This is else for systVec" << std::endl;
+      // std::cout << "This is else for systVec" << std::endl;
       systVec.push_back(nullptr);
     }
   }
@@ -87,20 +87,20 @@ void Particle::addP4Syst(TLorentzVector mp4, int syst){
 
 void Particle::init(){
   // print the particle type name
+	/*
   std::cout << "-------" << std::endl;
   std::cout << "Particle: " << GenName << std::endl;
   std::cout << "Number of vectors = " << m_n << std::endl;
   std::cout << "Reco.size() = " << Reco.size() << std::endl;
   std::cout << "systVec.size() = " << systVec.size() << std::endl; 
-  
-
   std::cout << "Reco.empty() = " << Reco.empty() << std::endl;
   std::cout << "systVec.empty() = " << systVec.empty() << std::endl;
+  */
   //cleanup of the particles
 
-  if( (systVec.empty() == 0 && systVec.size() > 10e10) || (Reco.empty() == 0 && Reco.size() > 10e10) ){
-  	throw std::runtime_error((GenName+" list of particles will throw a bus error").c_str());
-  }
+  // if( (systVec.empty() == 0 && systVec.size() > 10e10) || (Reco.empty() == 0 && Reco.size() > 10e10) ){
+  // 	throw std::runtime_error((GenName+" list of particles will throw a bus error").c_str());
+  // ak}
   //	std::cout << "bad memory clean up" << std::endl;
   //	Reco.resize(1);
   //	std::cout << "Reco.size() = " << Reco.size() << std::endl;
@@ -109,7 +109,7 @@ void Particle::init(){
   	// Reco.shrink_to_fit();
   //} else {
   
-  std::cout << "normal clean up" << std::endl;
+  // std::cout << "normal clean up" << std::endl;
   Reco.clear();
   Reco.shrink_to_fit();
   
@@ -119,25 +119,19 @@ void Particle::init(){
   //
 
  for(auto it: systVec){
-    std::cout << "beginning of for loop" << std::endl;
-    std::cout << "clear systVec... " << (it != nullptr) << std::endl;
+    // std::cout << "beginning of for loop" << std::endl;
+    // std::cout << "clear systVec... " << (it != nullptr) << std::endl;
     if(it != nullptr) it->clear();
   }
 
-  std::cout << "particles cleaned up: Reco.clear() " << std::endl;
-  std::cout << "Reco.size() = " << Reco.size() << std::endl;
-  std::cout << "systVec.size() = " << systVec.size() << std::endl;
-  
-  //for(auto it: systVec){
-  //	std::cout << "beginning of for loop" << std::endl;
-  //	delete it;
-  //}
-  // systVec.clear();
+  // std::cout << "particles cleaned up: Reco.clear() " << std::endl;
+  // std::cout << "Reco.size() = " << Reco.size() << std::endl;
+  // std::cout << "systVec.size() = " << systVec.size() << std::endl;
 
-  std::cout << "Finished clearing systVec" << std::endl;
+  // std::cout << "Finished clearing systVec" << std::endl;
 
   TLorentzVector tmp;
-  std::cout << "Started filling TLorentz vectors... " << std::endl;
+  // std::cout << "Started filling TLorentz vectors... " << std::endl;
   
   for(uint i=0; i < m_n; i++) {
 
@@ -145,13 +139,13 @@ void Particle::init(){
     Reco.push_back(tmp);
 
   }
-  std::cout << "Reco.size() = " << Reco.size() << std::endl;
+  // std::cout << "Reco.size() = " << Reco.size() << std::endl;
   
-  std::cout << "Done. Doing setCurrentP(-1)" << std::endl;
+  // std::cout << "Done. Doing setCurrentP(-1)" << std::endl;
   setCurrentP(-1);
-  std::cout << "Reco.size() = " << Reco.size() << std::endl;
+  // std::cout << "Reco.size() = " << Reco.size() << std::endl;
   
-  std::cout << "Done." << std::endl;
+  // std::cout << "Done." << std::endl;
 
 }
 

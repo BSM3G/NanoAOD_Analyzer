@@ -707,22 +707,14 @@ bool Analyzer::skimSignalMC(int event){
 void Analyzer::preprocess(int event, std::string year){ // This function no longer needs to get the JSON dictionary as input.
 
   int test= BOOM->GetEntry(event);
+  // std::cout << "Event test: " << test << std::endl;
   if(test<0){
     std::cout << "Could not read the event from the following file: "<<BOOM->GetFile()->GetNewUrl().Data() << std::endl;
   }
 
   runyear = year;
   for(Particle* ipart: allParticles){
-    // std::cout << "Particle: " << ipart->GenName << std::endl;
-    try{
-      ipart->init();
-    }
-    catch(std::runtime_error& err){
-      std::cerr << "Found problematic list of particles: " << err.what() << std::endl;
-      throw std::runtime_error("Event not valid.");
-      clear_values();
-      return;
-    }
+    ipart->init();
   }
   _MET->init();
 

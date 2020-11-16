@@ -140,17 +140,11 @@ int main (int argc, char* argv[]) {
   //testing.checkParticleDecayList(); 01.16.19
   
   //main event loop
-  for(size_t i=1328000; i < Nentries; i++) {
-    std::cout << "----- Event #" << i << " -----" << std::endl;  
+  for(size_t i=0; i < Nentries; i++) {
     //if(i == 0) spechialAna.begin_run();   // Special analyzer
     testing.clear_values();
     
-    try{
-      testing.preprocess(i, year);
-    } catch(std::runtime_error& err){
-      std::cerr << "Skipping event #" << i << ": " << err.what() << std::endl;
-      continue;
-    }
+    testing.preprocess(i, year);
 
     testing.fill_efficiency();
     //if (i < 25)
