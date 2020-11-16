@@ -89,7 +89,7 @@ JMatchingDeltaR 0.8
 RemoveOverlapWithBs 0
 BJMatchingDeltaR 0.4
 
-DiscrByDPhiMet 1
+DiscrByDPhiMet 0
 DPhiMetCut 0.0 0.5
 
 Apply2017EEnoiseVeto false
