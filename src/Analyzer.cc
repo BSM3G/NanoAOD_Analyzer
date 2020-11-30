@@ -462,12 +462,14 @@ void Analyzer::clear_values() {
 
   for(auto e: Enum<CUTS>()) {
     goodParts[e]->clear();
+    goodParts[e]->shrink_to_fit();
   }
   //faster!!
   for(auto &it: syst_parts) {
     if (it.size() == 0) continue;
     for(auto e: Enum<CUTS>()) {
       it[e]->clear();
+      it[e]->shrink_to_fit();
     }
   }
   if(infoFile!=BOOM->GetFile()){
@@ -1943,6 +1945,7 @@ void Analyzer::getJetEnergyResSFs(Particle& jet, const CUTS eGenPos){
 
 	// Clean up the vector before starting:
 	jets_jer_sfs.clear();
+        jets_jer_sfs.shrink_to_fit();
 
 	// Loop over all jets
 	for(size_t i = 0; i < jet.size(); i++){
@@ -2956,7 +2959,10 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
   }
  
   // Clean jetPtIndexVector after looping over first and second leading jets for each iteration. 
-  if(ePos == CUTS::eR1stJet && jetPtIndexVector.size() != 0) jetPtIndexVector.clear();
+  if(ePos == CUTS::eR1stJet && jetPtIndexVector.size() != 0){ 
+      jetPtIndexVector.clear();
+      jetPtIndexVector.shrink_to_fit();
+  }
 
   //note the leading jet has to be selected first!  
   //Do this only once for the first leading jet:
@@ -3573,12 +3579,14 @@ void Analyzer::TriggerCuts(CUTS ePos) {
 			active_part->at(ePos)->push_back(0);
 			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
 			triggernamedecisions.clear();
+   			triggernamedecisions.shrink_to_fit();
 			// End of the function
 			return;
 		}
 	}
 	// If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
 	triggernamedecisions.clear();
+	triggernamedecisions.shrink_to_fit();
 }
 
 
