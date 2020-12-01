@@ -29,7 +29,7 @@ class PileUpJetIDWgtProd{
 		PileUpJetIDWgtProd(const std::string& datapath, const std::string& year, const bool useEMpt=false);
 		~L1ECALPrefiringWgtProd() { };
 
-		void produceWeights(Photon& photons, Jet& jets);
+		void produceWeights(Jet& jets);
 		void resetWeights();
 		float getPileUpJetIDWeight(const std::string& syst_name="");
 
@@ -42,11 +42,10 @@ class PileUpJetIDWgtProd{
 		TString jetmapname;
 		TString filename_photonmap;
 		TString filename_jetmap;
-		TH2F* h_prefmap_photon;
-		TH2F* h_prefmap_jet;
-		bool useEMpt_;
+		TH2F* h_PileUpJetIDmap_photon;
+		TH2F* h_PileUpJetIDmap_jet;
 		std::string dataera_;
-		double prefiringRateSystUnc_;
+		double PileUpJetIDRateSystUnc_;
 
 };
 
