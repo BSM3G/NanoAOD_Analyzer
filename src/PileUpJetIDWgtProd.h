@@ -38,11 +38,8 @@ class PileUpJetIDWgtProd{
 		float getPileUpJetIDRate(double eta, double pt, TH2F* h_prefmap, variations var);
 		float nonPileUpJetIDProbability[3] = {1.0, 1.0, 1.0}; // 0: central, 1: up, 2: down
 
-		TString photonmapname;
-		TString jetmapname;
-		TString filename_photonmap;
-		TString filename_jetmap;
-		TH2F* h_PileUpJetIDmap_photon;
+		TString PileUpJetID_jetmapname;
+		TString filename_PileUpJetID_jetmap;
 		TH2F* h_PileUpJetIDmap_jet;
 		std::string dataera_;
 		double PileUpJetIDRateSystUnc_;
