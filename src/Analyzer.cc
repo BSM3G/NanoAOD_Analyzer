@@ -4308,6 +4308,10 @@ void Analyzer::fill_histogram(std::string year) {
     if(distats["Run"].bfind("ApplyWKfactor")){
       wgt *= getWkfactor();
     }
+    // Added by Dale 12/1/20. Apply PileUp Jet ID weights
+    if(distats["Run"].bfind("ApplyPileUpJetIDWeight"){
+      wgt *= getPileUpJetIDWeightfactor();
+    }
     // Apply Z-boost weights from the SUSY PAG for Run II analyses
     if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // September 10, 2020 - Brenda FE
       prefiring_wgt = prefiringwgtprod.getPrefiringWeight("");
