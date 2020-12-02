@@ -27,7 +27,7 @@ class PileUpJetIDWgtProd{
 	public:
 		PileUpJetIDWgtProd() { };
 		PileUpJetIDWgtProd(const std::string& datapath, const std::string& year, const bool useEMpt=false);
-		~L1ECALPrefiringWgtProd() { };
+		~PileUpJetIDWgtProd() { };
 
 		void produceWeights(Jet& jets);
 		void resetWeights();
