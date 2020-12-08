@@ -170,9 +170,9 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   setupTauResSFsInfo(distats["Run"].bfind("ApplyETauFakeRateESSF"));
 
   // L1 prefiring weights only for 2016 or 2017
-  if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
-    prefiringwgtprod = L1ECALPrefiringWgtProd((PUSPACE+"L1Prefiring").c_str(), year, distats["Run"].bfind("UseJetEMPt"));
-  }
+  //if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
+  //  prefiringwgtprod = L1ECALPrefiringWgtProd((PUSPACE+"L1Prefiring").c_str(), year, distats["Run"].bfind("UseJetEMPt"));
+  //}
 
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
@@ -763,12 +763,11 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
   // Call the L1 weight producer here, only for 2016 or 2017
 
-  if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
+  // if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
     // Reset weights for each event before producing them
-    prefiringwgtprod.resetWeights();
-
-    prefiringwgtprod.produceWeights(*_Photon, *_Jet);
-  }
+    // prefiringwgtprod.resetWeights();
+    // prefiringwgtprod.produceWeights(*_Photon, *_Jet);
+  //}
   
   if(!isData){ // Do everything that corresponds only to MC
 
