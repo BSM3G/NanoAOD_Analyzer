@@ -532,9 +532,18 @@ void Analyzer::setupEventGeneral(int nevent){
   if(!isData){ 
     SetBranch("Pileup_nTrueInt",nTruePU);
     SetBranch("genWeight",gen_weight);
+    SetBranch("L1PreFiringWeight_Nom", l1prefiringwgt);
+
     if (BOOM->FindBranch("LHE_HT") != 0){
-    	SetBranch("LHE_HT",generatorht);
+      SetBranch("LHE_HT",generatorht);
     }
+
+    if(syst_names.size() > 1){
+      SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);
+      SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
+    }
+
+
   }
   // Get the number of primary vertices, applies to both data and MC
   SetBranch("PV_npvs", bestVertices);
@@ -4000,10 +4009,12 @@ void Analyzer::fill_histogram(std::string year) {
     }
     // Apply Z-boost weights from the SUSY PAG for Run II analyses
     if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // September 10, 2020 - Brenda FE
-      prefiring_wgt = prefiringwgtprod.getPrefiringWeight("");
-      //std::cout << "Prefiring weight = " << prefiringwgtprod.getPrefiringWeight("") << std::endl;
+      // prefiring_wgt = prefiringwgtprod.getPrefiringWeight("");
+      // std::cout << "Prefiring weight = " << prefiringwgtprod.getPrefiringWeight("") << std::endl;
+      // std::cout << "Prefiring wgt in sample = " << l1prefiringwgt << std::endl;
       //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
-      wgt *= prefiringwgtprod.getPrefiringWeight(""); // nominal value
+      // wgt *= prefiringwgtprod.getPrefiringWeight(""); // nominal value
+      wgt *= l1prefiringwgt;
     }
 
     wgt *= getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]); //01.16.19
@@ -4061,14 +4072,17 @@ void Analyzer::fill_histogram(std::string year) {
         // --------- Prefiring weights ----------- //
         if(syst_names[i]=="L1Prefiring_weight_Up"){
           if(distats["Run"].bfind("ApplyL1PrefiringWeight")){
-            wgt /= prefiringwgtprod.getPrefiringWeight("");
+            // wgt /= prefiringwgtprod.getPrefiringWeight("");
+            wgt /= l1prefiringwgt;
             //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
-            wgt *= prefiringwgtprod.getPrefiringWeight("Up");
+            // wgt *= prefiringwgtprod.getPrefiringWeight("Up");
+            wgt *= l1prefiringwgt_up;
           }
         } else if(syst_names[i]=="L1Prefiring_weight_Down"){
           if(distats["Run"].bfind("ApplyL1PrefiringWeight")){
-            wgt /= prefiringwgtprod.getPrefiringWeight("");
-            wgt *= prefiringwgtprod.getPrefiringWeight("Down");
+            // wgt /= prefiringwgtprod.getPrefiringWeight("");
+            wgt /= l1prefiringwgt;
+            wgt *= l1prefiringwgt_dn;
           }
         }
       }
