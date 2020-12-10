@@ -5,21 +5,21 @@
 #include <sstream>
 
 
-PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::string& year){
+PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::string& WP){
 	
-	static std::map<std::string, std::string> yearmap = {
-		{"2016", "2016BtoH"},
-		{"2017", "2017BtoF"},
-		{"2018", "2018AtoD"}
-	};
+	//static std::map<std::string, std::string> yearmap = {
+//		{"2016", "2016BtoH"},
+//		{"2017", "2017BtoF"},
+//		{"2018", "2018AtoD"}
+//	};
 
-	PileUpJetID_dataera_ = yearmap[year];
+//	PileUpJetID_dataera_ = yearmap[year];
 
 	//prefiringRateSystUnc_ = 0.2; // Recommended: https://lathomas.web.cern.ch/lathomas/TSGStuff/L1Prefiring/PrefiringMaps_2016and2017/
 
-	PileUpJetID_jetmapname = Form("PileUpJetID_%s", PileUpJetID_dataera_.data());
+//	PileUpJetID_jetmapname = Form("PileUpJetID_%s", PileUpJetID_dataera_.data());
 
-	filename_PileUpJetID_jetmap = Form("%s/%s.root", datapath.data(), PileUpJetID_jetmapname.Data());
+//	filename_PileUpJetID_jetmap = Form("%s/%s.root", datapath.data(), PileUpJetID_jetmapname.Data());
 
 	TFile* file_PileUpJetID_map = new TFile(filename_PileUpJetID_jetmap);
 	if(!file_PileUpJetID_map or file_PileUpJetID_map->IsZombie()){
