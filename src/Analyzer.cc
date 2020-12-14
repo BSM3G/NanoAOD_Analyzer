@@ -178,6 +178,11 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     prefiringwgtprod = L1ECALPrefiringWgtProd((PUSPACE+"L1Prefiring").c_str(), year, distats["Run"].bfind("UseJetEMPt"));
   }
 
+  // Jet Pile Up ID Weights (Addded by Dale, 12/10/20)
+  if(distats["Run"].bfind("ApplyPUJetIDWeights")){
+    pileupjetidwgt = PileIpJetIDWgtProd((PUSPACE+"PileUpJetIDWeights").c_str());    
+  }
+
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
     _Gen = new Generated(BOOM, filespace + "Gen_info.in", syst_names);

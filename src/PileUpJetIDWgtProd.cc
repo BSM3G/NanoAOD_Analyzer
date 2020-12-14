@@ -45,7 +45,7 @@ void PileUpJetIDWgtProd::produceWeights(Jet& jets){
 		for(size_t i = 0; i < jets.size(); i++){
 			// Get the Lorentz vector for the corresponding jet
 			TLorentzVector jetP4 = jets.RecoP4(i);
-
+			float eta_jet = jetP4.Eta();
 			float pt_jet = jetP4.Pt();
 
 			// Check that it is in the affected regions
