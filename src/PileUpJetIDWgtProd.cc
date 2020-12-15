@@ -34,23 +34,25 @@ PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::s
 
 }
 
-void PileUpJetIDWgtProd::produceWeights(Jet& jets){
+void PileUpJetIDWgtProd::produceWeights(Jet& passing_jets, Jet& failing_jets){
 
 	// Probability for the event NOT to prefire, computed with the prefiring maps per object.
 	// Up and down values correspond to the resulting value when shifting up/down all prefiring rates in prefiring maps
 
-	for(const auto var: {variations::central, variations::up, variations::down}) {
+	//for(const auto var: {variations::central, variations::up, variations::down}) {
 
 		// Now apply the prefiring maps to jets in the affected regions.
-		for(size_t i = 0; i < jets.size(); i++){
+		for(size_t i = 0; i < passing_jets.size(); i++){
 			// Get the Lorentz vector for the corresponding jet
-			TLorentzVector jetP4 = jets.RecoP4(i);
+			TLorentzVector jetP4 = passing_jets.RecoP4(i);
 			float eta_jet = jetP4.Eta();
 			float pt_jet = jetP4.Pt();
 
 			// Check that it is in the affected regions
 			if(pt_jet < 15.0 || pt_jet > 50.0) continue;
 			if(abs(jetP4.Eta()) < -5.0 || abs(jetP4.Eta()) > 5.0) continue;
+			
+			
 
 			//float nonprefiringprobfromoverlappingjet = 1.0 - getPileUpJetIDRate(jetP4.Eta(), pt_jet, h_prefmap_jet, var);
 //
@@ -73,6 +75,7 @@ void PileUpJetIDWgtProd::produceWeights(Jet& jets){
 	}
 }
 
+/*
 float PileUpJetIDWgtProd::getPileUpJetIDRate(double eta, double pt, TH2F* h_PileUpJetIDmap, variations var){
 
 	if(h_PileUpJetIDmap == nullptr){
@@ -100,8 +103,9 @@ float PileUpJetIDWgtProd::getPileUpJetIDRate(double eta, double pt, TH2F* h_Pile
 	return PileUpJetIDrate;
 
 }
+*/
 
-float PileUpJetIDWgtProd::getPileUpJetIDWeight(const std::string& syst_name){
+/*float PileUpJetIDWgtProd::getPileUpJetIDWeight(const std::string& syst_name){
 
 	if(syst_name == "")
 		return nonPrefiringProbability[0];
@@ -118,5 +122,5 @@ void PileUpJetIDWgtProd::resetWeights(){
 	for(const auto var: {variations::central, variations::up, variations::down}){
 		nonPrefiringProbability[var] = 1.0;
 	}
-
+*/
 }
