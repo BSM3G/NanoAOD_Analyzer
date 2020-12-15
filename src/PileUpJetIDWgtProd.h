@@ -29,14 +29,14 @@ class PileUpJetIDWgtProd{
 		PileUpJetIDWgtProd(const std::string& datapath, const std::string& WP);
 		~PileUpJetIDWgtProd() { };
 
-		void producePileUpJetIDWeights(Jet& jets);
+		void producePileUpJetIDWeights(Jet& passing_jets, Jet& failing_jets);
 		void resetPileUpJetIDWeights();
-		float getPileUpJetIDWeight(const std::string& syst_name="");
+		//float getPileUpJetIDWeight(const std::string& syst_name="");
 
 	private:
 
-		float getPileUpJetIDRate(double eta, double pt, TH2F* h_prefmap, variations var);
-		float nonPileUpJetIDProbability[3] = {1.0, 1.0, 1.0}; // 0: central, 1: up, 2: down
+		float getPileUpJetIDWeight(double eta, double pt, TH2F* h_prefmap);
+		//float nonPileUpJetIDProbability[3] = {1.0, 1.0, 1.0}; // 0: central, 1: up, 2: down
 
 		TString PileUpJetID_jetmapname;
 		TString filename_PileUpJetID_jetmap;
