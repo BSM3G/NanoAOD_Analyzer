@@ -919,7 +919,9 @@ bool Taus::get_Iso(int index, double onetwo, double flipisolation) const {
   else if(flipisolation && (tau_isomax_mask.count() == 0)){ // Requiring a non-isolated tau by flipping isolation
     // std::cout << "Tau isolation (2) = " << tau_iso << ", min requirement = " << tau_isomin_mask << ", max requirement = " << tau_isomax_mask << std::endl;
     // std::cout << "(flip isolation) Isolation requirement passed? " << (tau_isomax_mask == tau_iso) << std::endl;
-    return (!((tau_isomin_mask&tau_iso).count()) and (tau_isomax_mask == tau_iso));
+    // std::cout << "!((tau_isomin_mask&tau_iso).count()? " << ( !(tau_isomin_mask&tau_iso).count() ) << std::endl;
+    // std::cout << "!((tau_isomin_mask&tau_iso).count() && (tau_isomax_mask == tau_iso) ? " << ( !(tau_isomin_mask&tau_iso).count() || (tau_isomax_mask == tau_iso) ) << std::endl;
+    return (!((tau_isomin_mask&tau_iso).count()) || (tau_isomax_mask == tau_iso));
   }
   else{
     if(!flipisolation){
