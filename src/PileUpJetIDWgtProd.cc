@@ -5,122 +5,127 @@
 #include <sstream>
 
 
-PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::string& WP){
+PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::year&, const std::string& WP){
 	
-	//static std::map<std::string, std::string> yearmap = {
-//		{"2016", "2016BtoH"},
-//		{"2017", "2017BtoF"},
-//		{"2018", "2018AtoD"}
-//	};
+  static std::map<std::string, std::string> WP_map = {
+    {"0", "T"},
+    {"1", "M"},
+    {"2", "L"}
+};
 
-//	PileUpJetID_dataera_ = yearmap[year];
+  WP_value = WP_map[WP];
 
-	//prefiringRateSystUnc_ = 0.2; // Recommended: https://lathomas.web.cern.ch/lathomas/TSGStuff/L1Prefiring/PrefiringMaps_2016and2017/
+  //Set the root file to pull from
+  effcyMap_rootFile = Form("%s/effcyPUID_81Xtraining.root", datapath.data());
+  SFMap_rootFile = Form("%s/scalefactorsPUID_81Xtraining.root", datapath.data());
+  
+  //Set the histrogram to pull from within the root file
+  effcyMap = Form("h2_eff_mc%s_%s", year.data(), WP_value.data());
+  SFMap = Form("h2_eff_sf%s_%s", year.data(), WP_value.data());
 
-//	PileUpJetID_jetmapname = Form("PileUpJetID_%s", PileUpJetID_dataera_.data());
-
-//	filename_PileUpJetID_jetmap = Form("%s/%s.root", datapath.data(), PileUpJetID_jetmapname.Data());
-
-	TFile* file_PileUpJetID_map = new TFile(filename_PileUpJetID_jetmap);
-	if(!file_PileUpJetID_map or file_PileUpJetID_map->IsZombie()){
-		std::cerr << std::endl << "ERROR! Failed to open input file '" << file_PileUpJetID_map << "'!" << std::endl;
+  //Create TFile from the efficiency map
+  TFile* file_effcyMap = new TFile(effcyMap_rootFile);
+  if(!file_effcyMap or file_effcyMap->IsZombie()){
+    std::cerr << std::endl << "ERROR! Failed to open input file '" << file_effcyMap << "'!" << std::endl;
 	}
 
+  //Get the histogram to pull efficiency values from
+  h_PileUpJetIDEffcymap = dynamic_cast<TH2F*>(file_effcyMap->Get(effcyMap));
+  h_PileUpJetIDEffcymap->SetDirectory(nullptr);
+  file_effcyMap->Close();
+  delete file_effcyMap;
 
-	h_PileUpJetIDmap_jet = dynamic_cast<TH2F*>(file_PileUpJetID_map->Get(PileUpJetID_jetmapname));
-	h_PileUpJetIDmap_jet->SetDirectory(nullptr);
-	file_PileUpJetID_map->Close();
-	delete file_PileUpJetID_map;
+  //Create TFile from the scale factor map
+  TFile* file_SFMap = new TFile(SFMap_rootFile);
+  if(!file_SFMap or file_SFMap->IsZombie()){
+    std::cerr << std::endl << "ERROR! Failed to open input file '" << file_SFMap << "!" << std::endl;
+  }
 
+  //Get the histogram to pull scale factor values from
+  h_PileUpJetIDSFmap = dynamic_cast<TH2F*>(file_SFMap->Get(SFMap));
+  h_PileUpJetIDFSmap->SetDirectory(nullptr);
+  file_SFMap->Close();
+  delete file_SFMap;
 }
 
-void PileUpJetIDWgtProd::produceWeights(Jet& passing_jets, Jet& failing_jets){
+  //This function will fill the Passing/Failing_Jets_Data/MC vectors which hold the effcy and SF values needed to calculate the weights. The actual calculation happens in producePUJetIDWeights.  
+void PileUpJetIDWgtProd::getPUJetIDWeights(Jet& passing_jets, Jet& failing_jets){
+  // First we get values for jets which pass PU ID.
+  for(size_t i = 0; i < passing_jets.size(); i++){
+  
+    // Get the Lorentz vector for the corresponding jet
+    TLorentzVector jetP4 = passing_jets.RecoP4(i);
+    float eta_jet = jetP4.Eta();
+    float pt_jet = jetP4.Pt();
 
-	// Probability for the event NOT to prefire, computed with the prefiring maps per object.
-	// Up and down values correspond to the resulting value when shifting up/down all prefiring rates in prefiring maps
+    // Check that it is in the affected regions
+    if(pt_jet < 15.0 || pt_jet > 50.0) continue;
+    if(abs(jetP4.Eta()) < -5.0 || abs(jetP4.Eta()) > 5.0) continue;	
+    
+    //Get actual effcy/SF value for pt & eta value from histogram 
+    float passingJetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
+    float passingJetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
 
-	//for(const auto var: {variations::central, variations::up, variations::down}) {
+    //Push values into appropriate vectors.
+    MC_PU_values.push_back(passingJetEffcyValue);
+    Data_PU_values.push_back(passingJetSFValue*passingJetEffcyValue);
+	}
 
-		// Now apply the prefiring maps to jets in the affected regions.
-		for(size_t i = 0; i < passing_jets.size(); i++){
-			// Get the Lorentz vector for the corresponding jet
-			TLorentzVector jetP4 = passing_jets.RecoP4(i);
-			float eta_jet = jetP4.Eta();
-			float pt_jet = jetP4.Pt();
+// Now we do the same but for jets which fail PU ID.
+  for(size_t i = 0; i < failing_jets.size(); i++){
+  
+    // Get the Lorentz vector for the corresponding jet
+    TLorentzVector jetP4 = failing_jets.RecoP4(i);
+    float eta_jet = jetP4.Eta();
+    float pt_jet = jetP4.Pt();
 
-			// Check that it is in the affected regions
-			if(pt_jet < 15.0 || pt_jet > 50.0) continue;
-			if(abs(jetP4.Eta()) < -5.0 || abs(jetP4.Eta()) > 5.0) continue;
-			
-			
+    // Check that it is in the affected regions
+    if(pt_jet < 15.0 || pt_jet > 50.0) continue;
+    if(abs(jetP4.Eta()) < -5.0 || abs(jetP4.Eta()) > 5.0) continue;	
+    
+    //Get actual effcy/SF value for pt & eta value from histogram 
+    float failingJetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
+    float failingJetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
 
-			//float nonprefiringprobfromoverlappingjet = 1.0 - getPileUpJetIDRate(jetP4.Eta(), pt_jet, h_prefmap_jet, var);
-//
-//			if(nonprefiringprobfromoverlappingphotons == 1.0){
-//				// Case 1: there are no overlapping photons
-//				nonPrefiringProbability[var] *= nonprefiringprobfromoverlappingjet;
-//			}
-//			else if(nonprefiringprobfromoverlappingphotons > nonprefiringprobfromoverlappingjet){
-//				// Case 2: if overlapping photons have a non prefiring rate larger than the jet, then replace these weights by the jet one
-//				if(nonprefiringprobfromoverlappingphotons != 0.){
-//					nonPrefiringProbability[var] *= nonprefiringprobfromoverlappingjet / nonprefiringprobfromoverlappingphotons;
-//				} else {
-//					nonPrefiringProbability[var] = 0.0;
-//				}
-//			}
-//			else{
-//				// Case 3: if overlapping photons have a non prefiring rate smaller than the jet, don't consider the jet in the event weight and do nothing.
-			}
-		}
+    //Push values into appropriate vectors.
+    MC_PU_values.push_back(1.0-passingJetEffcyValue);
+    Data_PU_values.push_back(1.0-(passingJetSFValue*passingJetEffcyValue));
 	}
 }
 
-/*
-float PileUpJetIDWgtProd::getPileUpJetIDRate(double eta, double pt, TH2F* h_PileUpJetIDmap, variations var){
+float PileUpJetIDWgtProd::getPileUpEffcyOrSF(float eta, float pt, TH2F* h_PUWeightMap){
+  //This function will open h_PUWeightmap and pull the appropriate efficiency.
+  
+  if(h_prefmap == nullptr){
+    std::cout << "Prefiring map not found, setting prefiring rate to 0" << std::endl;
+    return 0.0;
+  }
+  
+  int thebin = h_PUWeightMap->FindBin(pt,eta);
+  float bin_value = h_PUWeightMap->GetBinContent(thebin);
 
-	if(h_PileUpJetIDmap == nullptr){
-		std::cout << "PileUp Jet ID map not found, setting prefiring rate to 0" << std::endl;
-		return 0.0;
-	}
-
-	// Check pt is not above map overflow
-	int nbinsy = h_PileUpJetIDmap->GetNbinsY();
-	float maxy = h_PileUpJetIDmap->GetYaxis()->GetBinLowEdge(nbinsy + 1);
-	if(pt >= maxy)
-		pt = maxy - 0.01;
-	int thebin = h_PileUpJetIDmap->FindBin(eta,pt);
-
-	float PileUpJetIDrate = h_PileUpJetIDmap->GetBinContent(thebin);
-
-	float statuncty = h_PileUpJetIDmap->GetBinError(thebin);
-	float systuncty = PileUpJetIDRateSystUnc_ * PileUpJetIDrate;
-
-	if(var == up)
-		PileUpJetIDrate = std::min(1., PileUpJetIDrate + sqrt(pow(statuncty,2) + pow(systuncty, 2)));
-	if(var == down)
-		PileUpJetIDrate = std::max(0., PileUpJetIDrate - sqrt(pow(statuncty,2) + pow(systuncty, 2)));
-
-	return PileUpJetIDrate;
+  return bin_value;
 
 }
-*/
 
-/*float PileUpJetIDWgtProd::getPileUpJetIDWeight(const std::string& syst_name){
+//This function will combine the effcy/SF values held in Data_PU_values & MC_PU_values and produce the PUJetIDweight
+ float producePUJetIDWeights(std::vector<float> Data_PU_values, std::vector<float> MC_PU_values){
 
-	if(syst_name == "")
-		return nonPrefiringProbability[0];
-	else if(syst_name == "Up")
-		return nonPrefiringProbability[1];
-	else if(syst_name == "Down")
-		return nonPrefiringProbability[2];
+   if(!(Data_PU_values.size() == MC_PU_values.size())){
+    std::cerr << std::endl << "ERROR! Pile-Up Jet vectors not same length!" << std::endl;
+    }
 
-	return 1.0;
-}
+   float Prob_Data = 1.0;
+   float Prob_MC = 1.0;
 
-void PileUpJetIDWgtProd::resetWeights(){
+   for(size_t i = 0; i < Data_PU_values.size(); i++){
+     
+     Prob_Data *= Data_PU_values[i];
+     Prob_MC *= MC_PU_values[i];
+   }
+   
+   PUJetIDWeight = Prob_Data/Prob_MC;
 
-	for(const auto var: {variations::central, variations::up, variations::down}){
-		nonPrefiringProbability[var] = 1.0;
-	}
-*/
-}
+   return PUJetIDWeight;
+ }
+

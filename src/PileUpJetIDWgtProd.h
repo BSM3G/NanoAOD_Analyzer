@@ -11,6 +11,7 @@
  * Adapted by: Dale Julson.
  * Date: Dec 1, 2020
 */
+
 #include <iostream>
 #include <memory>
 #include <TFile.h>   // TFile
@@ -21,29 +22,32 @@
 #include <TH2.h>
 #include "Particle.h"
 
-//enum variations {central = 0, up, down};
-
 class PileUpJetIDWgtProd{
 	public:
 		PileUpJetIDWgtProd() { };
-		PileUpJetIDWgtProd(const std::string& datapath, const std::string& WP);
+		PileUpJetIDWgtProd(const std::string& datapath, const std::string& year, const std::string& WP);
 		~PileUpJetIDWgtProd() { };
 
-		void producePileUpJetIDWeights(Jet& passing_jets, Jet& failing_jets);
-		void resetPileUpJetIDWeights();
-		//float getPileUpJetIDWeight(const std::string& syst_name="");
-
+		void getPUJetIDWeights(Jet& passing_jets, Jet& failing_jets);
+		//void resetPileUpJetIDWeights();
+		float producePUJetIDWeights(std::vector<float> Data_PU_values, std::vector<float> MC_PU_values);
+		
 	private:
 
-		float getPileUpJetIDWeight(double eta, double pt, TH2F* h_prefmap);
-		//float nonPileUpJetIDProbability[3] = {1.0, 1.0, 1.0}; // 0: central, 1: up, 2: down
+		float getPileUpEffcyOrSF(float eta, float pt, TH2F* h_PUWeightMap);
+		TString effcyMap_rootFile;
+		TString SFMap_rootFile;
+		TString effcyMap;
+		TString SFMap;
+		TH2F* h_PileUpJetIDEffcymap;
+		TH2F* h_PileUpJetIDSFmap;
+		std::vector<float> Data_PU_values;
+		std::vector<float> MC_PU_values;
+		std::string WP_value;
+		float PUJetIDWeight;
 
-		TString PileUpJetID_jetmapname;
-		TString filename_PileUpJetID_jetmap;
-		TH2F* h_PileUpJetIDmap_jet;
-		std::string dataera_;
-		double PileUpJetIDRateSystUnc_;
-
+		//double PileUpJetIDRateSystUnc_;
+		
 };
 
 #endif
