@@ -28,7 +28,7 @@ class PileUpJetIDWgtProd{
 		PileUpJetIDWgtProd(const std::string& datapath, const std::string& year, const std::string& WP);
 		~PileUpJetIDWgtProd() { };
 
-		float getPUJetIDWeights(Jet& passing_jets, Jet& failing_jets);
+		float getPUJetIDWeights(Jet& jets, std::vector<int> passing_jets, std::vector<int> failing_jets);
 		//void resetPileUpJetIDWeights();
 		float producePUJetIDWeights(std::vector<float> Data_PU_values, std::vector<float> MC_PU_values);
 		

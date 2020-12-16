@@ -340,6 +340,8 @@ public:
 
   // PileUpJetID
   PileUpJetIDWgtProd pileupjetidwgt;
+  std::vector<int> jetpassPUID;
+  std::vector<int> jetfailPUID;
 
   Float_t jec_rho =20.;
   std::vector< std::vector<float> > jets_jer_sfs;

@@ -40,8 +40,7 @@ const std::vector<CUTS> Analyzer::genCuts = {
 
 const std::vector<CUTS> Analyzer::jetCuts = {
   CUTS::eRJet1,  CUTS::eRJet2,   CUTS::eRCenJet,
-  CUTS::eR1stJet, CUTS::eR2ndJet, CUTS::eRBJet,
-  CUTS::eRFailPUJetID
+  CUTS::eR1stJet, CUTS::eR2ndJet, CUTS::eRBJet
 };
 
 const std::vector<CUTS> Analyzer::nonParticleCuts = {
@@ -893,7 +892,7 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoJets(CUTS::eRJet1, _Jet->pstats["Jet1"],syst);
   getGoodRecoJets(CUTS::eRJet2, _Jet->pstats["Jet2"],syst);
   getGoodRecoJets(CUTS::eRCenJet, _Jet->pstats["CentralJet"],syst);
-  getFailingPUJetIDJets(CUTS::eRFailPUJetID, _Jet->pstats["Jet1"],syst); //12.16.20
+  getFailingPUJetIDJets(CUTS::eRJet1, _Jet->pstats["Jet1"],syst); //12.16.20
   getGoodRecoLeadJets(CUTS::eR1stJet, _Jet->pstats["FirstLeadingJet"],syst);
   getGoodRecoLeadJets(CUTS::eR2ndJet, _Jet->pstats["SecondLeadingJet"],syst);
   
@@ -2917,6 +2916,7 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       passCuts = passCuts && find(active_part->at(CUTS::eRBJet)->begin(), active_part->at(CUTS::eRBJet)->end(), i) == active_part->at(CUTS::eRBJet)->end();
     }
     if(passCuts) active_part->at(ePos)->push_back(i);
+    if(passCuts && _Jet->pt(i) <= 50.0) jetpassPUID.push_back(i);
     i++;
 
   }
@@ -3212,7 +3212,8 @@ void Analyzer::getFailingPUJetIDJets(CUTS ePos, const PartStats& stats, const in
     if(_Jet->pstats["BJet"].bfind("RemoveBJetsFromJets") and ePos!=CUTS::eRBJet){
       passCuts = passCuts && find(active_part->at(CUTS::eRBJet)->begin(), active_part->at(CUTS::eRBJet)->end(), i) == active_part->at(CUTS::eRBJet)->end();
     }
-    if(passCuts) active_part->at(ePos)->push_back(i);
+    //if(passCuts) active_part->at(ePos)->push_back(i);
+    if(passCuts && _Jet->pt(i) <= 50.0) jetfailPUID.push_back(i);
     i++;
 
   }
@@ -4420,7 +4421,7 @@ void Analyzer::fill_histogram(std::string year) {
     }
     // Added by Dale 12/1/20. Apply PileUp Jet ID weights if ApplyPileUpJetIDWeight & ApplyPileupJetID flags are engaged.
     if(distats["Run"].bfind("ApplyPileUpJetIDWeight") && distats["Jet_info"].bfind("ApplyPileupJetID")){
-      wgt *= pileupjetidwgt.getPUJetIDWeights();
+      wgt *= pileupjetidwgt.getPUJetIDWeights(*_Jet, passing_jets, failing_jets);
     }
 	  
     // Apply Z-boost weights from the SUSY PAG for Run II analyses
