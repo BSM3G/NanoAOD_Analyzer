@@ -13,7 +13,7 @@ PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::y
     {"2", "L"}
 };
 
-  WP_value = WP_map[WP];
+  std::string WP_value = WP_map[WP];
 
   //Set the root file to pull from
   effcyMap_rootFile = Form("%s/effcyPUID_81Xtraining.root", datapath.data());

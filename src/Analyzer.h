@@ -337,7 +337,10 @@ public:
 
   // Prefiring weights
   L1ECALPrefiringWgtProd prefiringwgtprod;
-  
+
+  // PileUpJetID
+  PileUpJetIDWgtProd pileupjetidwgt;
+
   Float_t jec_rho =20.;
   std::vector< std::vector<float> > jets_jer_sfs;
 
