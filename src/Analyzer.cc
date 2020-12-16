@@ -4420,7 +4420,7 @@ void Analyzer::fill_histogram(std::string year) {
     }
     // Added by Dale 12/1/20. Apply PileUp Jet ID weights if ApplyPileUpJetIDWeight & ApplyPileupJetID flags are engaged.
     if(distats["Run"].bfind("ApplyPileUpJetIDWeight") && distats["Jet_info"].bfind("ApplyPileupJetID")){
-      wgt *= getPileUpJetIDWeightfactor();
+      wgt *= pileupjetidwgt.getPUJetIDWeights();
     }
 	  
     // Apply Z-boost weights from the SUSY PAG for Run II analyses

@@ -49,7 +49,7 @@ PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::y
 }
 
   //This function will fill the Passing/Failing_Jets_Data/MC vectors which hold the effcy and SF values needed to calculate the weights. The actual calculation happens in producePUJetIDWeights.  
-void PileUpJetIDWgtProd::getPUJetIDWeights(Jet& passing_jets, Jet& failing_jets){
+float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& passing_jets, Jet& failing_jets){
   // First we get values for jets which pass PU ID.
   for(size_t i = 0; i < passing_jets.size(); i++){
   
@@ -91,6 +91,11 @@ void PileUpJetIDWgtProd::getPUJetIDWeights(Jet& passing_jets, Jet& failing_jets)
     MC_PU_values.push_back(1.0-passingJetEffcyValue);
     Data_PU_values.push_back(1.0-(passingJetSFValue*passingJetEffcyValue));
 	}
+  
+  float final_weight = producePUJetIDWeights(std::vector<float> Data_PU_values, std::vector<float> MC_PU_values); 
+
+  return final_weight;
+
 }
 
 float PileUpJetIDWgtProd::getPileUpEffcyOrSF(float eta, float pt, TH2F* h_PUWeightMap){
