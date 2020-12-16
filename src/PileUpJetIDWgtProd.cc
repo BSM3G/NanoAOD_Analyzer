@@ -5,7 +5,7 @@
 #include <sstream>
 
 
-PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::year&, const std::string& WP){
+PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::string& year, const std::string& WP){
 	
   static std::map<std::string, std::string> WP_map = {
     {"0", "T"},
@@ -43,7 +43,7 @@ PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::y
 
   //Get the histogram to pull scale factor values from
   h_PileUpJetIDSFmap = dynamic_cast<TH2F*>(file_SFMap->Get(SFMap));
-  h_PileUpJetIDFSmap->SetDirectory(nullptr);
+  h_PileUpJetIDSFmap->SetDirectory(nullptr);
   file_SFMap->Close();
   delete file_SFMap;
 }
@@ -54,7 +54,7 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
   for(size_t i = 0; i < passing_jets.size(); i++){
   
     // Get the Lorentz vector for the corresponding jet
-    TLorentzVector jetP4 = jets.p4(passing_jets(i));
+    TLorentzVector jetP4 = jets.p4(passing_jets[i]);
     float eta_jet = jetP4.Eta();
     float pt_jet = jetP4.Pt();
 
@@ -63,19 +63,19 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
     if(abs(jetP4.Eta()) < -5.0 || abs(jetP4.Eta()) > 5.0) continue;	
     
     //Get actual effcy/SF value for pt & eta value from histogram 
-    float passingJetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
-    float passingJetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
+    float JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
+    float JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
 
     //Push values into appropriate vectors.
-    MC_PU_values.push_back(passingJetEffcyValue);
-    Data_PU_values.push_back(passingJetSFValue*passingJetEffcyValue);
+    MC_PU_values.push_back(JetEffcyValue);
+    Data_PU_values.push_back(JetSFValue*JetEffcyValue);
 	}
 
 // Now we do the same but for jets which fail PU ID.
   for(size_t i = 0; i < failing_jets.size(); i++){
   
     // Get the Lorentz vector for the corresponding jet
-    TLorentzVector jetP4 = jets.p4(failing_jets(i));
+    TLorentzVector jetP4 = jets.p4(failing_jets[i]);
     float eta_jet = jetP4.Eta();
     float pt_jet = jetP4.Pt();
 
@@ -84,15 +84,15 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
     if(abs(jetP4.Eta()) < -5.0 || abs(jetP4.Eta()) > 5.0) continue;	
     
     //Get actual effcy/SF value for pt & eta value from histogram 
-    float failingJetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
-    float failingJetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
+    float JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
+    float JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
 
     //Push values into appropriate vectors.
-    MC_PU_values.push_back(1.0-passingJetEffcyValue);
-    Data_PU_values.push_back(1.0-(passingJetSFValue*passingJetEffcyValue));
+    MC_PU_values.push_back(1.0-JetEffcyValue);
+    Data_PU_values.push_back(1.0-(JetSFValue*JetEffcyValue));
 	}
   
-  float final_weight = producePUJetIDWeights(std::vector<float> Data_PU_values, std::vector<float> MC_PU_values); 
+  float final_weight = producePUJetIDWeights(Data_PU_values, MC_PU_values); 
 
   return final_weight;
 
@@ -101,7 +101,7 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
 float PileUpJetIDWgtProd::getPileUpEffcyOrSF(float eta, float pt, TH2F* h_PUWeightMap){
   //This function will open h_PUWeightmap and pull the appropriate efficiency.
   
-  if(h_prefmap == nullptr){
+  if(h_PUWeightMap == nullptr){
     std::cout << "Prefiring map not found, setting prefiring rate to 0" << std::endl;
     return 0.0;
   }
@@ -129,7 +129,7 @@ float PileUpJetIDWgtProd::getPileUpEffcyOrSF(float eta, float pt, TH2F* h_PUWeig
      Prob_MC *= MC_PU_values[i];
    }
    
-   PUJetIDWeight = Prob_Data/Prob_MC;
+   float PUJetIDWeight = Prob_Data/Prob_MC;
 
    return PUJetIDWeight;
  }

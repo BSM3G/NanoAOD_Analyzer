@@ -3182,20 +3182,21 @@ void Analyzer::getFailingPUJetIDJets(CUTS ePos, const PartStats& stats, const in
               // std::cout << "PU jet ID flag on, this jet is below 50 GeV... applying PU jet ID instead." << std::endl;
                   passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
               }
-          }
           else{
               // if(stats.bfind("ApplyPileupJetID")){ std::cout << "PU jet ID flag on but this jet is above 50 GeV, applying loose ID instead." << std::endl; }
               // else{ std::cout << "PU jet ID flag off, simply applying loose ID" << std::endl;}
               passCuts = passCuts && _Jet->passedLooseJetID(i); 
           }
+      }
       else if(cut == "ApplyTightID"){ 
           if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
               // std::cout << "PUJetIDCut = " << stats.dmap.at("PUJetIDCut") << ", PUJetID = " << _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")) << std::endl;
                  passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
               }
-          } else {
+          else {
               passCuts = passCuts && _Jet->passedTightJetID(i);
-          } 
+          }
+      } 
       else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(lvec, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
       else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(lvec, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
 
@@ -4421,7 +4422,7 @@ void Analyzer::fill_histogram(std::string year) {
     }
     // Added by Dale 12/1/20. Apply PileUp Jet ID weights if ApplyPileUpJetIDWeight & ApplyPileupJetID flags are engaged.
     if(distats["Run"].bfind("ApplyPileUpJetIDWeight") && distats["Jet_info"].bfind("ApplyPileupJetID")){
-      wgt *= pileupjetidwgt.getPUJetIDWeights(*_Jet, passing_jets, failing_jets);
+      wgt *= pileupjetidwgt.getPUJetIDWeights(*_Jet, jetpassPUID, jetfailPUID);
     }
 	  
     // Apply Z-boost weights from the SUSY PAG for Run II analyses

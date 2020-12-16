@@ -44,7 +44,7 @@ class PileUpJetIDWgtProd{
 		std::vector<float> Data_PU_values;
 		std::vector<float> MC_PU_values;
 		std::string WP_value;
-		float PUJetIDWeight;
+		//float PUJetIDWeight;
 
 		//double PileUpJetIDRateSystUnc_;
 		

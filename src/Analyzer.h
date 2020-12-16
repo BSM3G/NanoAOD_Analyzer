@@ -39,6 +39,7 @@ struct CRTester;
 #include "JetScaleResolution.h"
 #include "JetRecalibrator.h"
 #include "L1ECALPrefiringWgtProd.h"
+#include "PileUpJetIDWgtProd.h"
 #include "CondFormats/JetMETObjects/interface/JetResolution.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
@@ -342,6 +343,7 @@ public:
   PileUpJetIDWgtProd pileupjetidwgt;
   std::vector<int> jetpassPUID;
   std::vector<int> jetfailPUID;
+  void getFailingPUJetIDJets(CUTS ePos, const PartStats& stats, const int syst);
 
   Float_t jec_rho =20.;
   std::vector< std::vector<float> > jets_jer_sfs;
