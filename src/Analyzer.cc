@@ -180,7 +180,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 
   // Jet Pile Up ID Weights (Addded by Dale, 12/10/20)
   if(distats["Run"].bfind("ApplyPUJetIDWeights")){
-    pileupjetidwgt = PileUpJetIDWgtProd(PUSPACE, year, stats.dmap.at("PUJetIDCut"));    
+    pileupjetidwgt = PileUpJetIDWgtProd(PUSPACE, year, _Jet->pstats["Jet1"].dmap.at("PUJetIDCut"));    
   }
 
   if(!isData) {
