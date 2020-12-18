@@ -16,8 +16,8 @@ PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::s
   std::string WP_value = WP_map[WP];
 
   //Set the root file to pull from
-  effcyMap_rootFile = Form("%s/effcyPUID_81Xtraining.root", datapath.data());
-  SFMap_rootFile = Form("%s/scalefactorsPUID_81Xtraining.root", datapath.data());
+  effcyMap_rootFile = Form("%sPUJetIDWeightEffcy.root", datapath.data());
+  SFMap_rootFile = Form("%sPUJetIDWeightScaleFactors.root", datapath.data());
   
   //Set the histrogram to pull from within the root file
   effcyMap = Form("h2_eff_mc%s_%s", year.data(), WP_value.data());
@@ -47,42 +47,6 @@ PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::s
   file_SFMap->Close();
   delete file_SFMap;
 }
-
-float PileUpJetIDWgtProd::getPileUpEffcyOrSF(float eta, float pt, TH2F* h_PUWeightMap){
-  //This function will open h_PUWeightmap and pull the appropriate efficiency.
-  
-  if(h_PUWeightMap == nullptr){
-    std::cout << "Prefiring map not found, setting prefiring rate to 0" << std::endl;
-    return 0.0;
-  }
-  
-  int thebin = h_PUWeightMap->FindBin(pt,eta);
-  float bin_value = h_PUWeightMap->GetBinContent(thebin);
-
-  return bin_value;
-
-}
-
-//This function will combine the effcy/SF values held in Data_PU_values & MC_PU_values and produce the PUJetIDweight
- float producePUJetIDWeights(std::vector<float> Data_PU_values, std::vector<float> MC_PU_values){
-
-   if(!(Data_PU_values.size() == MC_PU_values.size())){
-    std::cerr << std::endl << "ERROR! Pile-Up Jet vectors not same length!" << std::endl;
-    }
-
-   float Prob_Data = 1.0;
-   float Prob_MC = 1.0;
-
-   for(size_t i = 0; i < Data_PU_values.size(); i++){
-     
-     Prob_Data *= Data_PU_values[i];
-     Prob_MC *= MC_PU_values[i];
-   }
-   
-   float PUJetIDWeight = Prob_Data/Prob_MC;
-
-   return PUJetIDWeight;
- }
 
 
   //This function will fill the Passing/Failing_Jets_Data/MC vectors which hold the effcy and SF values needed to calculate the weights. The actual calculation happens in producePUJetIDWeights.  
@@ -131,6 +95,46 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
   
   float final_weight = producePUJetIDWeights(Data_PU_values, MC_PU_values); 
 
+  MC_PU_values.clear();
+  Data_PU_values.clear();
+
   return final_weight;
 
 }
+
+
+float PileUpJetIDWgtProd::getPileUpEffcyOrSF(float eta, float pt, TH2F* h_PUWeightMap){
+  //This function will open h_PUWeightmap and pull the appropriate efficiency.
+  
+  if(h_PUWeightMap == nullptr){
+    std::cout << "Prefiring map not found, setting prefiring rate to 0" << std::endl;
+    return 0.0;
+  }
+  
+  int thebin = h_PUWeightMap->FindBin(pt,eta);
+  float bin_value = h_PUWeightMap->GetBinContent(thebin);
+
+  return bin_value;
+
+}
+
+//This function will combine the effcy/SF values held in Data_PU_values & MC_PU_values and produce the PUJetIDweight
+float PileUpJetIDWgtProd::producePUJetIDWeights(std::vector<float> Data_PU_values, std::vector<float> MC_PU_values){
+
+   if(!(Data_PU_values.size() == MC_PU_values.size())){
+    std::cerr << std::endl << "ERROR! Pile-Up Jet vectors not same length!" << std::endl;
+    }
+
+   float Prob_Data = 1.0;
+   float Prob_MC = 1.0;
+
+   for(size_t i = 0; i < Data_PU_values.size(); i++){
+     
+     Prob_Data *= Data_PU_values[i];
+     Prob_MC *= MC_PU_values[i];
+   }
+   
+   float PUJetIDWeight = Prob_Data/Prob_MC;
+
+   return PUJetIDWeight;
+ }
