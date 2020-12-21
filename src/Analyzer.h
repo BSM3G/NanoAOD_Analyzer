@@ -336,7 +336,8 @@ public:
   bool failtau1iso = false, failtau2iso = false;
 
   // Prefiring weights
-  L1ECALPrefiringWgtProd prefiringwgtprod;
+  // L1ECALPrefiringWgtProd prefiringwgtprod;
+  float l1prefiringwgt = 1.0, l1prefiringwgt_up = 1.0, l1prefiringwgt_dn = 1.0;
   
   Float_t jec_rho =20.;
   std::vector< std::vector<float> > jets_jer_sfs;

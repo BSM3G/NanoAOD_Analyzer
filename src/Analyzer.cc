@@ -4,6 +4,7 @@
 #include <sstream>
 #include <cmath>
 #include <map>
+#include <typeinfo>
 //// Used to convert Enums to integers
 #define ival(x) static_cast<int>(x)
 //// BIG_NUM = sqrt(sizeof(int)) so can use diparticle convention of
@@ -174,9 +175,9 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   setupTauResSFsInfo(distats["Run"].bfind("ApplyETauFakeRateESSF"));
 
   // L1 prefiring weights only for 2016 or 2017
-  if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
-    prefiringwgtprod = L1ECALPrefiringWgtProd((PUSPACE+"L1Prefiring").c_str(), year, distats["Run"].bfind("UseJetEMPt"));
-  }
+  // if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
+  //  prefiringwgtprod = L1ECALPrefiringWgtProd((PUSPACE+"L1Prefiring").c_str(), year, distats["Run"].bfind("UseJetEMPt"));
+  //}
 
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
@@ -491,9 +492,20 @@ void Analyzer::setupEventGeneral(int nevent){
   if(!isData){ 
     SetBranch("Pileup_nTrueInt",nTruePU);
     SetBranch("genWeight",gen_weight);
+
+    if (BOOM->FindBranch("L1PrefiringWeight_Nom") != 0){
+      SetBranch("L1PrefiringWeight_Nom", l1prefiringwgt);
+
+      if(distats["Systematics"].bfind("useSystematics")){
+        SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);
+        SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
+      }
+    }
+
     if (BOOM->FindBranch("LHE_HT") != 0){
     	SetBranch("LHE_HT",generatorht);
     }
+
   }
   // Get the number of primary vertices, applies to both data and MC
   SetBranch("PV_npvs", bestVertices);
@@ -741,12 +753,11 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   // std::cout << "Number of photons (default) = " << _Photon->size() << std::endl;
   // std::cout << "Number of jets (default) = " << _Jet->size() << std::endl; 
 
-  if(!isData && distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
-    // Reset weights for each event before producing them
-    prefiringwgtprod.resetWeights();
-
-    prefiringwgtprod.produceWeights(*_Photon, *_Jet);
-  }
+  //if(!isData && distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
+     // Reset weights for each event before producing them
+  //  prefiringwgtprod.resetWeights();
+  //  prefiringwgtprod.produceWeights(*_Photon, *_Jet);
+  //}
   
   if(!isData){ // Do everything that corresponds only to MC
 
@@ -855,6 +866,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     active_part=&syst_parts.at(i);
   }
 
+  // std::cout << typeid(*active_part->at(CUTS::eRJet1)).name() << std::endl;
 
   active_part = &goodParts;
   
@@ -1945,7 +1957,7 @@ void Analyzer::getJetEnergyResSFs(Particle& jet, const CUTS eGenPos){
 
 	// Clean up the vector before starting:
 	jets_jer_sfs.clear();
-        jets_jer_sfs.shrink_to_fit();
+  jets_jer_sfs.shrink_to_fit();
 
 	// Loop over all jets
 	for(size_t i = 0; i < jet.size(); i++){
@@ -4316,12 +4328,8 @@ void Analyzer::fill_histogram(std::string year) {
     if(distats["Run"].bfind("ApplyWKfactor")){
       wgt *= getWkfactor();
     }
-    // Apply Z-boost weights from the SUSY PAG for Run II analyses
     if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // September 10, 2020 - Brenda FE
-      prefiring_wgt = prefiringwgtprod.getPrefiringWeight("");
-      //std::cout << "Prefiring weight = " << prefiringwgtprod.getPrefiringWeight("") << std::endl;
-      //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
-      wgt *= prefiringwgtprod.getPrefiringWeight(""); // nominal value
+      wgt *= l1prefiringwgt; // nominal value
     }
 
     wgt *= getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]); //01.16.19
@@ -4379,14 +4387,13 @@ void Analyzer::fill_histogram(std::string year) {
         // --------- Prefiring weights ----------- //
         if(syst_names[i]=="L1Prefiring_weight_Up"){
           if(distats["Run"].bfind("ApplyL1PrefiringWeight")){
-            wgt /= prefiringwgtprod.getPrefiringWeight("");
-            //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
-            wgt *= prefiringwgtprod.getPrefiringWeight("Up");
+            wgt /= l1prefiringwgt;
+            wgt *= l1prefiringwgt_up;
           }
         } else if(syst_names[i]=="L1Prefiring_weight_Down"){
           if(distats["Run"].bfind("ApplyL1PrefiringWeight")){
-            wgt /= prefiringwgtprod.getPrefiringWeight("");
-            wgt *= prefiringwgtprod.getPrefiringWeight("Down");
+            wgt /= l1prefiringwgt;
+            wgt *= l1prefiringwgt_dn;
           }
         }
       }
@@ -4538,7 +4545,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(nTruePU, "PUNTrueInt");
     histAddVal(generatorht, "HT");
     histAddVal(gen_weight, "Weight");
-    histAddVal(prefiring_wgt, "PrefiringWeight");
+    histAddVal(l1prefiringwgt, "PrefiringWeight");
 
     int nhadtau = 0;
     TLorentzVector genVec(0,0,0,0);
