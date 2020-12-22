@@ -28,7 +28,7 @@ NVertices   100   0.  100.
 
 //------------------------------------------------//
 
-FillGen 1
+FillGen 0
 
 PUNTrueInt    99 0. 99. // nTruePU - change the number of bins accordingly for each year's datatset
 GenHT       4000 0. 4000.
@@ -74,7 +74,7 @@ GenZDiLepMass	  1000	0.	 5000.
 
 //------------------------------------------------//
 
-FillTau1 1
+FillTau1 0
 
 NTau1                    20   0.      20.
 Tau1Energy             2000   0.    5000.
@@ -88,7 +88,7 @@ Tau1SeedTrackPt        2000   0.    5000.
 Tau1Charge               10  -5.       5.
 Tau1MetMt		 200  0.       1000.
 
-FillTau2 1
+FillTau2 0
 
 NTau2                    20   0.      20.
 Tau2Energy             2000   0.    5000.
@@ -104,7 +104,7 @@ Tau2MetMt		 200 0.	       1000.
 
 //------------------------------------------------//
 
-FillElectron1 1
+FillElectron1 0
 
 NElectron1                   20   0.      20.
 Electron1Energy            2000   0.    5000.
@@ -128,7 +128,7 @@ Electron2MetMt              100   0      500
 
 //------------------------------------------------//
 
-FillMuon1 1
+FillMuon1 0
 
 
 ptak8pt        2000   0.    5000.
@@ -217,7 +217,7 @@ CorrectedRawMET    100  0  1000
  
 //------------------------------------------------//
 
-FillLeadingJet 1
+FillLeadingJet 0
 
 FirstLeadingJetPt     200   0.   1000.
 SecondLeadingJetPt    200   0.   1000.
@@ -245,7 +245,7 @@ DeltaEtaVsDeltaPhiLeadSubl   200   0      10.   72   0    +3.15
 
 //------------------------------------------------//
 
-FillDiJet 1
+FillDiJet 0
 
 DiJetDeltaR           200   0    10.
 DiJetDeltaEta         200   0    10.
@@ -258,6 +258,20 @@ LargestDiJetPt          1000   0  5000
 LargestDiJetEtaProduct     4  -2     2
 LargestDiJetDeltaR       200   0    10.
 LargestMassDiJetDeltaEta     200   0    10.
+
+//------------------------------------------------//
+
+FillPUJet 1
+
+PUJetPtFail 	100    0.0  100.0
+PUJetEtaFail  	100   -5.0     5.0
+PUJetPhiFail  	144   -6.3     6.3
+PUJetEnergyFail	100    0.0  100.0
+
+PUJetPtPass       100    0.0  100.0
+PUJetEtaPass      100   -5.0     5.0
+PUJetPhiPass	  144   -6.3     6.3
+PUJetEnergyPass   100    0.0  100.0
 
 //------------------------------------------------//
 

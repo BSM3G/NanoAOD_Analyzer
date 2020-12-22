@@ -360,6 +360,7 @@ void Analyzer::create_fillInfo() {
   fillInfo["FillDiTau"] =      new FillVals(CUTS::eDiTau, FILLER::Dipart, _Tau, _Tau);
   fillInfo["FillMetCuts"] =    new FillVals();
   fillInfo["FillDiJet"] =      new FillVals(CUTS::eDiJet, FILLER::Dipart, _Jet, _Jet);
+  fillInfo["FillPUJet"] =      new FillVals();
 
   fillInfo["FillMuon1Tau1"] =       new FillVals(CUTS::eMuon1Tau1, FILLER::Dipart, _Muon, _Tau);
   fillInfo["FillMuon1Tau2"] =       new FillVals(CUTS::eMuon1Tau1, FILLER::Dipart, _Muon, _Tau);
@@ -738,6 +739,12 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
   // Call the new function setupEventGeneral: this will set generatorht, pu weight and genweight
   setupEventGeneral(event);
+
+  // Clear arrays for pileup jet ID weights.
+  jetfailPUID.clear();
+  jetfailPUID.shrink_to_fit();
+  jetpassPUID.clear();
+  jetpassPUID.shrink_to_fit();
 
   // Call the L1 weight producer here, only for 2016 or 2017
 
@@ -3156,13 +3163,7 @@ void Analyzer::getFailingPUJetIDJets(CUTS ePos, const PartStats& stats, const in
   int i=0;
 
   for(auto lvec: *_Jet) {
-    /*
-    if(ePos == CUTS::eR1stJet || ePos == CUTS::eR2ndJet){
-      if(ePos == CUTS::eR1stJet) std::cout << "I'm selecting leading jet" << std::endl;
-      else if(ePos == CUTS::eR2ndJet) std::cout << "I'm selecting the second leading jet" << std::endl;
-      break;
-    }
-    */
+
     bool passCuts = true;
     double dphi1rjets = normPhi(lvec.Phi() - _MET->phi());
     if( ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
@@ -3219,33 +3220,6 @@ void Analyzer::getFailingPUJetIDJets(CUTS ePos, const PartStats& stats, const in
 
   }
 
-  //clean up for first and second jet
-  //note the leading jet has to be selected fist!
-  /*
-  if(ePos == CUTS::eR1stJet || ePos == CUTS::eR2ndJet) {
-
-    std::cout << "Number of selected good jets: " << active_part->at(CUTS::eRJet1).size() << std::endl;
-
-    std::vector<std::pair<double, int> > ptIndexVector;
-    for(auto it : *active_part->at(CUTS::eRJet1)) {
-      ptIndexVector.push_back(std::make_pair(_Jet->pt(it),it));
-      std::cout << "Filling ptIndexVector with jet #" << it << ", pt = " << _Jet->pt(it) << std::endl;
-    }
-    sort(ptIndexVector.begin(),ptIndexVector.end());
-    std::cout << " ----- Sorted ptIndexVector: " << std::endl;
-    for(size_t i = 0; i < ptIndexVector.size(); i++){
-      std::cout << "Jet #" << ptIndexVector.at(i).second << ", pt = " << ptIndexVector.at(i).first << std::endl;
-    }
-    if(ePos == CUTS::eR1stJet && ptIndexVector.size()>0){
-      std::cout << "Leading jet is #" << ptIndexVector.back().second << ", with pt = " << ptIndexVector.back().first << std::endl;
-      active_part->at(ePos)->push_back(ptIndexVector.back().second);
-    }
-    else if(ePos == CUTS::eR2ndJet && ptIndexVector.size()>1){
-      std::cout << "Second leading jet is #" << ptIndexVector.at(ptIndexVector.size()-2).second << ", with pt = " << ptIndexVector.at(ptIndexVector.size()-2).first << std::endl;
-      active_part->at(ePos)->push_back(ptIndexVector.at(ptIndexVector.size()-2).second);
-    }
-  }
-  */
 }
 
 
@@ -4932,6 +4906,23 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal2((absnormPhi(_Tau->p4(index).Phi()-_MET->phi())), leaddijetdeltaEta, "MetDphiVSLeadingDeltaEta");
       histAddVal2((absnormPhi(_Tau->p4(index).Phi()-_MET->phi())), leaddijetdeltaR, "MetDphiVSLeadingDeltaR");
       histAddVal2((absnormPhi(_Tau->p4(index).Phi()-_MET->phi())), leaddijetpt, "MetDphiVSLeadingPt");
+    }
+  } else if(group == "FillPUJet"){ // Pileup jets
+
+    for(size_t i=0; i < jetfailPUID.size(); i++){      
+      TLorentzVector failPUJetID = _Jet->p4(jetfailPUID.at(i));
+      histAddVal(failPUJetID.Pt(), "PtFail");
+      histAddVal(failPUJetID.Eta(), "EtaFail");
+      histAddVal(failPUJetID.Phi(), "PhiFail");
+      histAddVal(failPUJetID.E(), "EnergyFail");
+    }
+
+    for(size_t j=0; j < jetpassPUID.size(); j++){
+      TLorentzVector passPUJetID = _Jet->p4(jetpassPUID.at(j));
+      histAddVal(passPUJetID.Pt(), "PtPass");
+      histAddVal(passPUJetID.Eta(), "EtaPass");
+      histAddVal(passPUJetID.Phi(), "PhiPass");
+      histAddVal(passPUJetID.Et(), "EnergyPass");
     }
 
   } else if(fillInfo[group]->type == FILLER::Dilepjet) { // LeptonJet combinations
