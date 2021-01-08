@@ -83,7 +83,7 @@ Tau2Charge               10  -5.       5.
 
 //------------------------------------------------//
 
-FillElectron1 1
+FillElectron1 0
 
 NElectron1                   20   0.      20.
 Electron1Energy            2000   0.    5000.
@@ -118,7 +118,7 @@ FirstLeadingMuon1Eta    144  -7.2     +7.2
 Muon1Phi                 36  -3.15    +3.15
 Muon1MetMt              100   0      500
 
-FillMuon2 0
+FillMuon2 1
 
 NMuon2                   20   0.      20.
 Muon2Energy            2000   0.    5000.
@@ -228,7 +228,7 @@ LargestMassDiJetDeltaEta     200   0    10.
 
 //------------------------------------------------//
 
-FillDiMuon 0
+FillDiMuon 1
 
 DiMuon_Muon1DiJetDeltaPhi       72     0       +3.15
 DiMuon_Muon2DiJetDeltaPhi       72     0       +3.15
@@ -491,7 +491,7 @@ Electron2MetDeltaPhiVsElectron2Tau2CosDphi    72     0       +3.15   220    -1.1
 
 //------------------------------------------------//
 
-FillMuon1Electron1 1
+FillMuon1Electron1 0
 
 Muon1Electron1_Electron1DiJetDeltaPhi           72     0       +3.15
 Muon1Electron1_Muon1DiJetDeltaPhi          72     0       +3.15

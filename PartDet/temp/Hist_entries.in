@@ -28,7 +28,7 @@ NVertices   100   0.  100.
 
 //------------------------------------------------//
 
-FillGen 1
+FillGen 0
 
 PUNTrueInt    99 0. 99. // nTruePU - change the number of bins accordingly for each year's datatset
 GenHT       4000 0. 4000.
@@ -128,7 +128,8 @@ Electron2MetMt              100   0      500
 
 //------------------------------------------------//
 
-FillMuon1 1
+FillMuon1 0
+
 
 ptak8pt        2000   0.    5000.
 NMuon1                   20   0.      20.
@@ -140,7 +141,7 @@ FirstLeadingMuon1Eta    144  -7.2     +7.2
 Muon1Phi                 36  -3.15    +3.15
 Muon1MetMt              100   0      500
 
-FillMuon2 1
+FillMuon2 0
 
 NMuon2                   20   0.      20.
 Muon2Energy            2000   0.    5000.
@@ -216,7 +217,7 @@ CorrectedRawMET    100  0  1000
  
 //------------------------------------------------//
 
-FillLeadingJet 1
+FillLeadingJet 0
 
 FirstLeadingJetPt     200   0.   1000.
 SecondLeadingJetPt    200   0.   1000.
@@ -244,7 +245,7 @@ DeltaEtaVsDeltaPhiLeadSubl   200   0      10.   72   0    +3.15
 
 //------------------------------------------------//
 
-FillDiJet 1
+FillDiJet 0
 
 DiJetDeltaR           200   0    10.
 DiJetDeltaEta         200   0    10.
@@ -309,7 +310,7 @@ Electron1MetDeltaPhiVsDiElectronCosDphi   72  0   +3.15  220    -1.1    1.1
 
 //------------------------------------------------//
 
-FillDiMuon 1
+FillDiMuon 0
 
 DiMuon_Muon1DiJetDeltaPhi       72     0       +3.15
 DiMuon_Muon2DiJetDeltaPhi       72     0       +3.15
@@ -344,7 +345,7 @@ Muon1MetDeltaPhiVsDiMuonCosDphi   72  0   +3.15  220    -1.1    1.1
 
 //------------------------------------------------//
 
-FillDiTau 0
+FillDiTau 1
 
 DiTau_Tau1DiJetDeltaPhi          72     0    +3.15
 DiTau_Tau2DiJetDeltaPhi          72     0    +3.15

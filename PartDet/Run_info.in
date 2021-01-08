@@ -22,10 +22,9 @@ ApplyTauAntiMuSF true
 UsePileUpWeight true
 ApplyISRZBoostSF false # Z-boost weight corrections derived for ISR+stau analysis (SUS-19-002)
 ApplySUSYZBoostSF false # Official Z-boost weight corrections derived by the SUSY PAG.
-ApplyVBFSusyZBoostSF false # Weights derived by the VBF SUSY team - Run II
+ApplyVBFSusyZBoostSF true # Weights derived by the VBF SUSY team - Run II
 
-ApplyPUJetIDWeights true 
-PUJetIDWP tight # loose, medium, or tight
+ApplyPUJetIDWeights true
 
 isData false
 ApplyGenWeight  true
@@ -39,7 +38,7 @@ ApplyHEMVeto2018 false
 
 /// ------ MC Gen-level cuts ------///
 /// --- HT filter --- ///
-DiscrByGenHT false
+DiscrByGenHT true
 LowerGenHtCut 0.0
 UpperGenHtCut 100.0
 
@@ -50,8 +49,8 @@ GenDilepMassRange 80.0 100.0
 /// ------ Triggers ----- ///
 
 Trigger1FirstRequirement HLT_IsoMu24
-Trigger1SecondRequirement HLT_IsoMu24
-UseTriggerWildcard false
+Trigger1SecondRequirement HLT_IsoMu27
+UseTriggerWildcard true
 
 /// Trigger2FirstRequirement HLT_DoubleMediumIsoPFTau35_Trk1_eta2p1_Reg
 /// Trigger2SecondRequirement HLT_DoubleMediumIsoPFTau40_Trk1_eta2p1_Reg
@@ -65,8 +64,8 @@ TreatMuonsAsTaus 0
 ///-----MET cuts------///
 ApplyMetFilters true
 MT2Mass 0.
-DiscrByMet false
-MetCut 30.0 10000.0
+DiscrByMet true
+MetCut 0.0 10000.0
 
 DiscrByMHT false
 MhtCut 50.0
