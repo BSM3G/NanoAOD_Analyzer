@@ -513,19 +513,38 @@ void Analyzer::setupEventGeneral(int nevent){
   // Get the trigger decision vector.
   triggerDecision = false; // Reset the decision flag for each event.
 
-  for(std::string triggname : triggerBranchesList){
-    // std::cout << "Trigger name: " << triggname << std::endl;
-    
-    TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
-    triggerBranch->SetStatus(1);
-    triggerBranch->SetAddress(&triggerDecision);
+  if(trigger1BranchesList.size() > 0){
+    for(std::string triggname : trigger1BranchesList){
+      // std::cout << "Trigger name: " << triggname << std::endl;
+      
+      TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
+      triggerBranch->SetStatus(1);
+      triggerBranch->SetAddress(&triggerDecision);
 
-    // SetBranch(triggname.c_str(), triggerDecision);
-    BOOM->GetEntry(nevent);
+      // SetBranch(triggname.c_str(), triggerDecision);
+      BOOM->GetEntry(nevent);
 
-    // std::cout << "Decision = " << triggerDecision << std::endl;
-    triggernamedecisions.push_back(triggerDecision);
-    triggerBranch->ResetAddress();
+      // std::cout << "Decision = " << triggerDecision << std::endl;
+      trigger1namedecisions.push_back(triggerDecision);
+      triggerBranch->ResetAddress();
+    }
+  }
+
+  if(trigger2BranchesList.size() > 0){
+    for(std::string triggname : trigger2BranchesList){
+      // std::cout << "Trigger name: " << triggname << std::endl;
+      
+      TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
+      triggerBranch->SetStatus(1);
+      triggerBranch->SetAddress(&triggerDecision);
+
+      // SetBranch(triggname.c_str(), triggerDecision);
+      BOOM->GetEntry(nevent);
+
+      // std::cout << "Decision = " << triggerDecision << std::endl;
+      trigger2namedecisions.push_back(triggerDecision);
+      triggerBranch->ResetAddress();
+    }
   }
 
   /*
@@ -788,6 +807,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
   // ---------------- Trigger requirement ------------------ //
   TriggerCuts(CUTS::eRTrig1);
+  TriggerCuts(CUTS::eRTrig2);
 
   for(size_t i=0; i < syst_names.size(); i++) {
   	std::string systname = syst_names.at(i);
@@ -1421,28 +1441,49 @@ void Analyzer::branchException(std::string branch){
   }
 }
 
-void Analyzer::getTriggerBranchesList(std::string trigger, bool usewildcard){
+void Analyzer::getTriggerBranchesList(CUTS ePos, std::string trigger, bool usewildcard){
 
- if(usewildcard){
-  for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+  if(ePos == CUTS::eRTrig1){
+    if(usewildcard){
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        if(branch_name.find(trigger) == std::string::npos) continue;
+        //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger1BranchesList.push_back(branch_name);
+      }
+    } else {
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        // Look for branches that match exactly the trigger name
+        if(branch_name.compare(trigger.c_str()) != 0) continue;
+        // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger1BranchesList.push_back(branch_name);
+      }
+    }
 
-    std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
-    if(branch_name.find(trigger) == std::string::npos) continue;
-    //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
-    triggerBranchesList.push_back(branch_name);
+    if(trigger1BranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.\n";
   }
- }
- else{
-    for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
-       std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
-       // Look for branches that match exactly the trigger name
-       if(branch_name.compare(trigger.c_str()) != 0) continue;
-       // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
-       triggerBranchesList.push_back(branch_name);
- }
-}
 
-  if(triggerBranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.";
+  if(ePos == CUTS::eRTrig2){
+    if(usewildcard){
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        if(branch_name.find(trigger) == std::string::npos) continue;
+        //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger2BranchesList.push_back(branch_name);
+      }
+    } else {
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        // Look for branches that match exactly the trigger name
+        if(branch_name.compare(trigger.c_str()) != 0) continue;
+        // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger2BranchesList.push_back(branch_name);
+      }
+    }
+
+    if(trigger2BranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.\n";
+  }
 }
 
 /////sets up other values needed for analysis that aren't particle specific
@@ -1473,24 +1514,49 @@ void Analyzer::setupGeneral(std::string year) {
   // Call readinJSON and save this in the jsonlinedict we declared in Analyzer.h
   jsonlinedict = readinJSON(year);
 
-  for(std::string trigger : inputTriggerNames){
-    try{
-      getTriggerBranchesList(trigger, distats["Run"].bfind("UseTriggerWildcard"));
+  if(inputTrigger1Names.size() > 0){
+    for(std::string trigger : inputTrigger1Names){
+      try{
+        getTriggerBranchesList(CUTS::eRTrig1, trigger, distats["Run"].bfind("UseTriggerWildcard"));
+      }
+      catch(const char* msg){
+        std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
+        continue;
+      }
     }
-    catch(const char* msg){
-      std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
-      continue;
-    }
+
+  // Check that there are no elements on the trigger list that refer to the same trigger to speed up the process.
+  removeDuplicates(trigger1BranchesList);
+
   }
 
-  // Check that there are no elements on the trigger list that refer to the same trigger 
-  // to speed up the process.
-  removeDuplicates(triggerBranchesList);
+  if(inputTrigger2Names.size() > 0){
+    for(std::string trigger : inputTrigger2Names){
+      try{
+        getTriggerBranchesList(CUTS::eRTrig2, trigger, distats["Run"].bfind("UseTriggerWildcard"));
+      }
+      catch(const char* msg){
+        std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
+        continue;
+      }
+    } 
+
+    // Check that there are no elements on the trigger list that refer to the same trigger to speed up the process.
+    removeDuplicates(trigger2BranchesList);
+  }
 
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
-  std::cout << "Full list of triggers to be probed: " << std::endl;
-  for(std::string name : triggerBranchesList){
-    std::cout << name << std::endl;
+  if(trigger1BranchesList.size() > 0){
+    std::cout << "Full list of trigger to be probed (1): " << std::endl;
+    for(std::string name : trigger1BranchesList){
+      std::cout << name << std::endl;
+    }
+  }
+  if(trigger2BranchesList.size() > 0){
+    std::cout << "Full list of trigger to be probed (2): " << std::endl;
+    for(std::string name : trigger2BranchesList){
+      std::cout << name << std::endl;
+    }
   }
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
 }
@@ -1578,10 +1644,18 @@ void Analyzer::read_info(std::string filename) {
         if(*p) distats[group].smap[stemp[0]] = stemp[1];
         else  distats[group].dmap[stemp[0]]=std::stod(stemp[1]);
       }
-      if(stemp.at(0).find("Trigger") != std::string::npos) {
+      if(stemp.at(0).find("Trigger1") != std::string::npos) {
         for(auto trigger : stemp){
           if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
-            inputTriggerNames.push_back(trigger);
+            inputTrigger1Names.push_back(trigger);
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("Trigger2") != std::string::npos) {
+        for(auto trigger : stemp){
+          if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
+            inputTrigger2Names.push_back(trigger);
           }
         }
         continue;
@@ -1589,10 +1663,11 @@ void Analyzer::read_info(std::string filename) {
     } else if(stemp.size() == 3 and stemp.at(0).find("Trigger") == std::string::npos){
       distats[group].pmap[stemp[0]] = std::make_pair(std::stod(stemp[1]), std::stod(stemp[2]));
     } else{
+
       if(stemp.at(0).find("Trigger") != std::string::npos) {
         for(auto trigger : stemp){
-          if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
-            inputTriggerNames.push_back(trigger);
+          if(trigger.find("Trigger") == std::string::npos and "=" != trigger ){
+            inputTrigger1Names.push_back(trigger);
           }
         }
         continue;
@@ -3231,21 +3306,45 @@ bool Analyzer::isInTheCracks(float etaValue){
 
 ///sees if the event passed one of the two cuts provided
 void Analyzer::TriggerCuts(CUTS ePos) {
+
 	if(! neededCuts.isPresent(ePos)) return;
 
-	// Loop over all elements of the trigger decisions vector
-	for(bool decision : triggernamedecisions){
-		if(decision){
-			// If one element is true (1), then store back the event in the triggers vector
-			active_part->at(ePos)->push_back(0);
-			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
-			triggernamedecisions.clear();
-			// End of the function
-			return;
-		}
-	}
-	// If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
-	triggernamedecisions.clear();
+  if(ePos == CUTS::eRTrig1){
+  	// Loop over all elements of the trigger decisions vector
+  	for(bool decision : trigger1namedecisions){
+  		if(decision){
+  			// If one element is true (1), then store back the event in the triggers vector
+  			active_part->at(ePos)->push_back(0);
+  			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
+  			trigger1namedecisions.clear();
+        trigger1namedecisions.shrink_to_fit();
+  			// End of the function
+  			return;
+  		}
+  	}
+  	// If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
+  	trigger1namedecisions.clear();
+    trigger1namedecisions.shrink_to_fit();
+  }
+
+  if(ePos == CUTS::eRTrig2){
+    // Loop over all elements of the trigger decisions vector
+    for(bool decision : trigger2namedecisions){
+      if(decision){
+        // If one element is true (1), then store back the event in the triggers vector
+        active_part->at(ePos)->push_back(0);
+        // Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
+        trigger2namedecisions.clear();
+        trigger2namedecisions.shrink_to_fit();
+        // End of the function
+        return;
+      }
+    }
+    // If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
+    trigger2namedecisions.clear();
+    trigger2namedecisions.shrink_to_fit();
+  }
+
 }
 
 
