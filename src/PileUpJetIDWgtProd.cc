@@ -22,6 +22,8 @@ PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::s
   //Set the histrogram to pull from within the root file
   effcyMap = Form("h2_eff_mc%s_%s", year.data(), WP_value.data());
   SFMap = Form("h2_eff_sf%s_%s", year.data(), WP_value.data());
+  mistag_effcyMap = Form("h2_mistag_mc%s_%s", year.data(), WP_value.data());
+  mistag_SFMap = Form("h2_mistag_sf%s_%s", year.data(), WP_value.data());
 
   //Create TFile from the efficiency map
   TFile* file_effcyMap = new TFile(effcyMap_rootFile);
@@ -29,9 +31,11 @@ PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::s
     std::cerr << std::endl << "ERROR! Failed to open input file '" << file_effcyMap << "'!" << std::endl;
 	}
 
-  //Get the histogram to pull efficiency values from
+  //Get the histogram to pull efficiency and mistag values from
   h_PileUpJetIDEffcymap = dynamic_cast<TH2F*>(file_effcyMap->Get(effcyMap));
   h_PileUpJetIDEffcymap->SetDirectory(nullptr);
+  h_PileUpJetIDEffcyMistag_map = dynamic_cast<TH2F*>(file_effcyMap->Get(mistag_effcyMap));
+  h_PileUpJetIDEffcyMistag_map->SetDirectory(nullptr);
   file_effcyMap->Close();
   delete file_effcyMap;
 
@@ -44,6 +48,8 @@ PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::s
   //Get the histogram to pull scale factor values from
   h_PileUpJetIDSFmap = dynamic_cast<TH2F*>(file_SFMap->Get(SFMap));
   h_PileUpJetIDSFmap->SetDirectory(nullptr);
+  h_PileUpJetIDSFMistag_map = dynamic_cast<TH2F*>(file_SFMap->Get(mistag_SFMap));
+  h_PileUpJetIDSFMistag_map->SetDirectory(nullptr);
   file_SFMap->Close();
   delete file_SFMap;
 }
@@ -58,14 +64,21 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
     TLorentzVector jetP4 = jets.p4(passing_jets[i]);
     float eta_jet = jetP4.Eta();
     float pt_jet = jetP4.Pt();
+    int matchedGenJetIndex = jets.genJetIdx[passing_jets[i]];
 
     // Check that it is in the affected regions
     if(pt_jet < 15.0 || pt_jet > 50.0) continue;
     if(abs(jetP4.Eta()) < -5.0 || abs(jetP4.Eta()) > 5.0) continue;	
+
+    if (matchedGenJetIndex < 0){ //These are real PU Jets which passed PU Jet ID & were therefore "mistagged" (the naming convention here is confusing), therefore they pull from the mistag histograms.
+	JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcyMistag_map);
+    JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFMistag_map);
+    }
     
-    //Get actual effcy/SF value for pt & eta value from histogram 
-    float JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
-    float JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
+    else{//These are real hard scatter jets which were correctly identified.
+    JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
+    JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
+	}
 
     //Push values into appropriate vectors.
     MC_PU_values.push_back(JetEffcyValue);
@@ -79,14 +92,21 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
     TLorentzVector jetP4 = jets.p4(failing_jets[i]);
     float eta_jet = jetP4.Eta();
     float pt_jet = jetP4.Pt();
+    int matchedGenJetIndex = jets.genJetIdx[failing_jets[i]];
 
     // Check that it is in the affected regions
     if(pt_jet < 15.0 || pt_jet > 50.0) continue;
     if(abs(jetP4.Eta()) < -5.0 || abs(jetP4.Eta()) > 5.0) continue;	
     
-    //Get actual effcy/SF value for pt & eta value from histogram 
-    float JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
-    float JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
+    if (matchedGenJetIndex < 0){//Genuine PU Jets that fail PU Jet ID, they get entered as 1-mistag_efficiency.
+    JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcyMistag_map);
+    JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFMistag_map);
+	}
+
+	else{//Hard scatter jets which failed PU ID, these get entered as 1-efficiency.
+	JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
+    JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
+	}
 
     //Push values into appropriate vectors.
     MC_PU_values.push_back(1.0-JetEffcyValue);

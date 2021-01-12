@@ -33,7 +33,7 @@ ApplyL1PrefiringWeight true
 UseJetEMPt false
 
 /// ------ Data-specific cuts ------///
-FilterDataByGoldenJSON true
+FilterDataByGoldenJSON false
 ApplyHEMVeto2018 false
 
 /// ------ MC Gen-level cuts ------///

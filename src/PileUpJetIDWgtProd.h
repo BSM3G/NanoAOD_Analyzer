@@ -39,11 +39,20 @@ class PileUpJetIDWgtProd{
 		TString SFMap_rootFile;
 		TString effcyMap;
 		TString SFMap;
+		TString mistag_effcyMap;
+		TString mistag_SFMap;
+
 		TH2F* h_PileUpJetIDEffcymap;
 		TH2F* h_PileUpJetIDSFmap;
+		TH2F* h_PileUpJetIDEffcyMistag_map;
+		TH2F* h_PileUpJetIDSFMistag_map;
+
 		std::vector<float> Data_PU_values;
 		std::vector<float> MC_PU_values;
 		std::string WP_value;
+
+		float JetEffcyValue;
+		float JetSFValue;
 		//float PUJetIDWeight;
 
 		//double PileUpJetIDRateSystUnc_;
