@@ -58,6 +58,10 @@ PileUpJetIDWgtProd::PileUpJetIDWgtProd(const std::string& datapath, const std::s
   //This function will fill the Passing/Failing_Jets_Data/MC vectors which hold the effcy and SF values needed to calculate the weights. The actual calculation happens in producePUJetIDWeights.  
 float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_jets, std::vector<int> failing_jets){
   // First we get values for jets which pass PU ID.
+  std::cout << "jet collection size is " << jets.size() << std::endl; 
+  std::cout << "passing jet collection size is " << passing_jets.size() << std::endl;
+  std::cout << "failing jet collection size is " << failing_jets.size() << std::endl;
+  
   for(size_t i = 0; i < passing_jets.size(); i++){
   
     // Get the Lorentz vector for the corresponding jet
@@ -65,14 +69,17 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
     float eta_jet = jetP4.Eta();
     float pt_jet = jetP4.Pt();
     int matchedGenJetIndex = jets.genJetIdx[passing_jets[i]];
+    std::cout << "Passing Jet " << i << " has pt " << pt_jet << std::endl;
+    std::cout << "Passing Jet "<< i <<" has eta " << eta_jet << std::endl;
+    std::cout << "Passing matchedGenJetIndex is: " << matchedGenJetIndex << std::endl;
 
     // Check that it is in the affected regions
     if(pt_jet < 15.0 || pt_jet > 50.0) continue;
     if(abs(jetP4.Eta()) < -5.0 || abs(jetP4.Eta()) > 5.0) continue;	
 
     if (matchedGenJetIndex < 0){ //These are real PU Jets which passed PU Jet ID & were therefore "mistagged" (the naming convention here is confusing), therefore they pull from the mistag histograms.
-	JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcyMistag_map);
-    JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFMistag_map);
+    JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcyMistag_map);
+    JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFMistag_map); 
     }
     
     else{//These are real hard scatter jets which were correctly identified.
@@ -80,10 +87,13 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
     JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
 	}
 
+    std::cout << "Passing Jet " << i << " has Effcy value " << JetEffcyValue << std::endl;
+    std::cout << "Passing Jet "<< i <<" has SF value " << JetSFValue << std::endl;
+
     //Push values into appropriate vectors.
     MC_PU_values.push_back(JetEffcyValue);
     Data_PU_values.push_back(JetSFValue*JetEffcyValue);
-	}
+    	}
 
 // Now we do the same but for jets which fail PU ID.
   for(size_t i = 0; i < failing_jets.size(); i++){
@@ -93,6 +103,9 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
     float eta_jet = jetP4.Eta();
     float pt_jet = jetP4.Pt();
     int matchedGenJetIndex = jets.genJetIdx[failing_jets[i]];
+    std::cout << "Failing Jet " << i << " has pt " << pt_jet << std::endl;
+    std::cout << "Failing Jet "<< i <<" has eta " << eta_jet << std::endl;
+    std::cout << "Failing matchedGenJetIndex is: " << matchedGenJetIndex << std::endl;
 
     // Check that it is in the affected regions
     if(pt_jet < 15.0 || pt_jet > 50.0) continue;
@@ -101,12 +114,15 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
     if (matchedGenJetIndex < 0){//Genuine PU Jets that fail PU Jet ID, they get entered as 1-mistag_efficiency.
     JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcyMistag_map);
     JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFMistag_map);
-	}
+    }
 
-	else{//Hard scatter jets which failed PU ID, these get entered as 1-efficiency.
-	JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
+    else{//Hard scatter jets which failed PU ID, these get entered as 1-efficiency.
+    JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
     JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
-	}
+    }
+
+    std::cout << "Failing Jet " << i << " has Effcy value " << JetEffcyValue << std::endl;
+    std::cout << "Failing Jet "<< i <<" has SF value " << JetSFValue << std::endl;
 
     //Push values into appropriate vectors.
     MC_PU_values.push_back(1.0-JetEffcyValue);
@@ -125,15 +141,15 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
 
 float PileUpJetIDWgtProd::getPileUpEffcyOrSF(float eta, float pt, TH2F* h_PUWeightMap){
   //This function will open h_PUWeightmap and pull the appropriate efficiency.
-  
+
   if(h_PUWeightMap == nullptr){
     std::cout << "Prefiring map not found, setting prefiring rate to 0" << std::endl;
     return 0.0;
   }
-  
+
   int thebin = h_PUWeightMap->FindBin(pt,eta);
   float bin_value = h_PUWeightMap->GetBinContent(thebin);
-
+  
   return bin_value;
 
 }

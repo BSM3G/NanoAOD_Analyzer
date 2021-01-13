@@ -344,6 +344,7 @@ public:
   std::vector<int> jetpassPUID;
   std::vector<int> jetfailPUID;
   void getFailingPUJetIDJets(CUTS ePos, const PartStats& stats, const int syst);
+  void getPassingPUJetIDJets(CUTS ePos, const PartStats& stats, const int syst);
 
   Float_t jec_rho =20.;
   std::vector< std::vector<float> > jets_jer_sfs;
