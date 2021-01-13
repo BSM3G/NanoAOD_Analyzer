@@ -4681,6 +4681,12 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
           minDeltaPhiMet = deltaPhiMet;
         }
       }
+
+      if(ePos == CUTS::eRBJet){
+        // std::cout << "I get here" << std::endl;
+        histAddVal2(part->p4(it).Eta(), part->p4(it).Pt(), "PtVsEta");
+      }
+
     }
 
     if(part->type == PType::Jet){

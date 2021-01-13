@@ -88,7 +88,7 @@ Tau1SeedTrackPt        2000   0.    5000.
 Tau1Charge               10  -5.       5.
 Tau1MetMt		 200  0.       1000.
 
-FillTau2 1
+FillTau2 0
 
 NTau2                    20   0.      20.
 Tau2Energy             2000   0.    5000.
@@ -161,9 +161,6 @@ Jet1Energy   200   0.   500.
 Jet1Pt       200   0.   500.
 Jet1Eta      100  -5.0   +5.0
 Jet1Phi      144  -6.3   +6.3
-Jet1DPhiMet       126  -6.3    +6.3
-Jet1AbsDPhiMet    126   0.0    +6.3
-Jet1MinAbsDPhiMet  126   0.0    +6.3
 
 FillJet2 1
 
@@ -172,9 +169,6 @@ Jet2Energy   200   0.   500.
 Jet2Pt       200   0.   500.
 Jet2Eta      100  -5.0   +5.0
 Jet2Phi      144  -6.3   +6.3
-Jet2DphiMet       126  -6.3  +6.3
-Jet2AbsDPhiMet    126   0.0  +6.3
-Jet2MinAbsDPhiMet 126   0.0  +6.3
 
 FillBJet 1
 
@@ -331,7 +325,7 @@ Muon1MetDeltaPhiVsDiMuonCosDphi   72  0   +3.15  220    -1.1    1.1
 
 //------------------------------------------------//
 
-FillDiTau 1
+FillDiTau 0
 
 DiTau_Tau1DiJetDeltaPhi          72     0    +3.15
 DiTau_Tau2DiJetDeltaPhi          72     0    +3.15
@@ -349,27 +343,6 @@ DiTauPZeta                      200  -100   100
 DiTauPZetaVis                   100     0   100
 DiTauZeta1D                     150  -300   300
 DiTauPt 					   500     0.    1000.
-
-DiTauJet1MetDPhi				126    -3.15  +3.15
-DiTauJet1MetDPhiOS				126    -3.15  +3.15
-DiTauJet1MetDPhiLS				126    -3.15  +3.15
-DiTauJet1MetAbsDPhi				126     0.0    6.3
-DiTauJet1MetAbsDPhiOS			126     0.0    6.3
-DiTauJet1MetAbsDPhiLS			126     0.0    6.3
-DiTauJet1MetMinAbsDPhi			126     0.0    6.3
-DiTauJet1MetMinAbsDPhiOS		126     0.0    6.3
-DiTauJet1MetMinAbsDPhiLS		126     0.0    6.3
-
-DiTauJet2MetDPhi				126	   -3.15  +3.15
-DiTauJet2MetDPhiOS				126	   -3.15  +3.15
-DiTauJet2MetDPhiLS				126	   -3.15  +3.15
-DiTauJet2MetAbsDPhi				126     0.0    6.3
-DiTauJet2MetAbsDPhiOS			126     0.0    6.3
-DiTauJet2MetAbsDPhiLS			126     0.0    6.3
-DiTauJet2MetMinAbsDPhi			126	    0.0    6.3
-DiTauJet2MetMinAbsDPhiOS		126     0.0    6.3
-DiTauJet2MetMinAbsDPhiLS		126     0.0    6.3
-
 DiTauNotReconstructableMass     200     0  5000
 DiTauReconstructableMass        2500    0  5000
 DiTauDiJetReconstructableMass   200	0  5000
@@ -401,8 +374,8 @@ Muon1Tau1CosDphi                     220    -1.1      1.1
 Muon1Tau1CosDphi_DeltaPtAndMet       220    -1.1      1.1
 Muon1Tau1_Muon1MetDeltaPhi            72     0       +3.15
 Muon1Tau1_Tau1MetDeltaPhi             72     0       +3.15
-Muon1Tau1NotReconstructableMass      600     0     1500
-Muon1Tau1ReconstructableMass         600     0     1500
+Muon1Tau1NotReconstructableMass      2500     0      5000
+Muon1Tau1ReconstructableMass         2500     0     5000
 Muon1Tau1ReconstructableMassDeltaPt   	100 	0. 	 5000.
 Muon1Tau1RecoCosDphiPtLeadLepandMet 	440 	-1. 	1.
 Muon1Tau1RecoAbsCosDphiPtLeadLepandMet 	220 	0. 	1.
@@ -411,7 +384,6 @@ Muon1Tau1PZetaVis                    100     0      100
 Muon1Tau1Zeta1D                      150  -300      300
 Muon1Tau1Pt 					   500     0.    1000.
 Muon1Tau1DiJetReconstructableMass    100     0     5000
-
 Muon1PtVsTau1Pt                      100     0      500      100     0     500
 Muon1Tau1Zeta2D                      100     0      100      200  -100     100
 Muon1MetDeltaPhiVsMuon1Tau1CosDphi    72     0       +3.15   220    -1.1     1.1
