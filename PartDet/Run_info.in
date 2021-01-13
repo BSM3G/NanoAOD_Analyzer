@@ -24,7 +24,7 @@ ApplyISRZBoostSF false # Z-boost weight corrections derived for ISR+stau analysi
 ApplySUSYZBoostSF false # Official Z-boost weight corrections derived by the SUSY PAG.
 ApplyVBFSusyZBoostSF true # Weights derived by the VBF SUSY team - Run II
 
-ApplyPUJetIDWeights true
+ApplyPileUpJetIDWeight true
 
 isData false
 ApplyGenWeight  true
@@ -38,7 +38,7 @@ ApplyHEMVeto2018 false
 
 /// ------ MC Gen-level cuts ------///
 /// --- HT filter --- ///
-DiscrByGenHT true
+DiscrByGenHT false
 LowerGenHtCut 0.0
 UpperGenHtCut 100.0
 
