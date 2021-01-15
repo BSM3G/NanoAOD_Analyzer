@@ -231,32 +231,6 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   setupJetCorrections(year, outfile);
 
 
-  ///this can be done nicer
-  //put the variables that you use here:
-  /*
-  zBoostTree["tau1_pt"] =0;
-  zBoostTree["tau1_eta"]=0;
-  zBoostTree["tau1_phi"]=0;
-  zBoostTree["tau2_pt"] =0;
-  zBoostTree["tau2_eta"]=0;
-  zBoostTree["tau2_phi"]=0;
-  zBoostTree["met"]     =0;
-  zBoostTree["mt_tau1"] =0;
-  zBoostTree["mt_tau2"] =0;
-  zBoostTree["mt2"]     =0;
-  zBoostTree["cosDphi1"]=0;
-  zBoostTree["cosDphi2"]=0;
-  zBoostTree["jet1_pt"] =0;
-  zBoostTree["jet1_eta"]=0;
-  zBoostTree["jet1_phi"]=0;
-  zBoostTree["jet2_pt"] =0;
-  zBoostTree["jet2_eta"]=0;
-  zBoostTree["jet2_phi"]=0;
-  zBoostTree["jet_mass"]=0;
-  
-  histo.createTree(&zBoostTree,"TauTauTree");
-  */
-
   if(setCR) {
     cuts_per.resize(histo.get_folders()->size());
     cuts_cumul.resize(histo.get_folders()->size());
@@ -285,26 +259,17 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   }
 
   // Check if this is a W/Z+jets sample for the purposes of applying Z-pt corrections.
-  if((infiles[0].find("WJets") != std::string::npos) || (infiles[0].find("DY") != std::string::npos)){
+  if((infiles[0].find("WJets") != std::string::npos) || (infiles[0].find("DY") != std::string::npos) || (infiles[0].find("EWKWPlus") != std::string::npos) 
+    || (infiles[0].find("EWKWMinus") != std::string::npos) || (infiles[0].find("Z2Jets") != std::string::npos)){
     isVSample = true;
   }
   else{
     isVSample = false;
   }
 
-  //std::cout << "isVSample = " << isVSample << std::endl;
-  
-  //if(distats["Run"].bfind("InitializeMCSelection")){
-     // std::cout << "MC selection initialized." << std::endl;
-     //initializeMCSelection(infiles);
-  //}
-
-
   initializeWkfactor(infiles);
   setCutNeeds();
   
-  
-
   std::cout << "setup complete" << std::endl << std::endl;
   start = std::chrono::system_clock::now();
 }
@@ -456,9 +421,6 @@ void Analyzer::setupCR(std::string var, double val) {
 
 ////destructor
 Analyzer::~Analyzer() {
-  // routfile->Write();
-  // routfile->Close();
-
   clear_values();
   delete BOOM;
   delete _Electron;
@@ -482,16 +444,6 @@ Analyzer::~Analyzer() {
     delete goodParts[e];
     goodParts[e]=nullptr;
   }
-  //for(auto &it: syst_parts) {
-    //for(auto e: Enum<CUTS>()) {
-      //if( it[e] != nullptr) {
-      //if(it.find(e) != it.end()){
-        //delete it[e];
-        //it[e]=nullptr;
-      //}
-      //}
-    //}
-  //}
   for(auto it: testVec){
     delete it;
     it=nullptr;
@@ -570,19 +522,38 @@ void Analyzer::setupEventGeneral(int nevent){
   // Get the trigger decision vector.
   triggerDecision = false; // Reset the decision flag for each event.
 
-  for(std::string triggname : triggerBranchesList){
-    // std::cout << "Trigger name: " << triggname << std::endl;
-    
-    TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
-    triggerBranch->SetStatus(1);
-    triggerBranch->SetAddress(&triggerDecision);
+  if(trigger1BranchesList.size() > 0){
+    for(std::string triggname : trigger1BranchesList){
+      // std::cout << "Trigger name: " << triggname << std::endl;
+      
+      TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
+      triggerBranch->SetStatus(1);
+      triggerBranch->SetAddress(&triggerDecision);
 
-    // SetBranch(triggname.c_str(), triggerDecision);
-    BOOM->GetEntry(nevent);
+      // SetBranch(triggname.c_str(), triggerDecision);
+      BOOM->GetEntry(nevent);
 
-    // std::cout << "Decision = " << triggerDecision << std::endl;
-    triggernamedecisions.push_back(triggerDecision);
-    triggerBranch->ResetAddress();
+      // std::cout << "Decision = " << triggerDecision << std::endl;
+      trigger1namedecisions.push_back(triggerDecision);
+      triggerBranch->ResetAddress();
+    }
+  }
+
+  if(trigger2BranchesList.size() > 0){
+    for(std::string triggname : trigger2BranchesList){
+      // std::cout << "Trigger name: " << triggname << std::endl;
+      
+      TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
+      triggerBranch->SetStatus(1);
+      triggerBranch->SetAddress(&triggerDecision);
+
+      // SetBranch(triggname.c_str(), triggerDecision);
+      BOOM->GetEntry(nevent);
+
+      // std::cout << "Decision = " << triggerDecision << std::endl;
+      trigger2namedecisions.push_back(triggerDecision);
+      triggerBranch->ResetAddress();
+    }
   }
 
   /*
@@ -762,8 +733,8 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   setupEventGeneral(event);
 
   // Call the L1 weight producer here, only for 2016 or 2017
+  //if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
 
-  // if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
     // Reset weights for each event before producing them
     // prefiringwgtprod.resetWeights();
     // prefiringwgtprod.produceWeights(*_Photon, *_Jet);
@@ -841,6 +812,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
   // ---------------- Trigger requirement ------------------ //
   TriggerCuts(CUTS::eRTrig1);
+  TriggerCuts(CUTS::eRTrig2);
 
   for(size_t i=0; i < syst_names.size(); i++) {
   	std::string systname = syst_names.at(i);
@@ -1474,28 +1446,49 @@ void Analyzer::branchException(std::string branch){
   }
 }
 
-void Analyzer::getTriggerBranchesList(std::string trigger, bool usewildcard){
+void Analyzer::getTriggerBranchesList(CUTS ePos, std::string trigger, bool usewildcard){
 
- if(usewildcard){
-  for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+  if(ePos == CUTS::eRTrig1){
+    if(usewildcard){
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        if(branch_name.find(trigger) == std::string::npos) continue;
+        //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger1BranchesList.push_back(branch_name);
+      }
+    } else {
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        // Look for branches that match exactly the trigger name
+        if(branch_name.compare(trigger.c_str()) != 0) continue;
+        // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger1BranchesList.push_back(branch_name);
+      }
+    }
 
-    std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
-    if(branch_name.find(trigger) == std::string::npos) continue;
-    //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
-    triggerBranchesList.push_back(branch_name);
+    if(trigger1BranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.\n";
   }
- }
- else{
-    for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
-       std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
-       // Look for branches that match exactly the trigger name
-       if(branch_name.compare(trigger.c_str()) != 0) continue;
-       // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
-       triggerBranchesList.push_back(branch_name);
- }
-}
 
-  if(triggerBranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.";
+  if(ePos == CUTS::eRTrig2){
+    if(usewildcard){
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        if(branch_name.find(trigger) == std::string::npos) continue;
+        //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger2BranchesList.push_back(branch_name);
+      }
+    } else {
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        // Look for branches that match exactly the trigger name
+        if(branch_name.compare(trigger.c_str()) != 0) continue;
+        // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger2BranchesList.push_back(branch_name);
+      }
+    }
+
+    if(trigger2BranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.\n";
+  }
 }
 
 /////sets up other values needed for analysis that aren't particle specific
@@ -1526,24 +1519,49 @@ void Analyzer::setupGeneral(std::string year) {
   // Call readinJSON and save this in the jsonlinedict we declared in Analyzer.h
   jsonlinedict = readinJSON(year);
 
-  for(std::string trigger : inputTriggerNames){
-    try{
-      getTriggerBranchesList(trigger, distats["Run"].bfind("UseTriggerWildcard"));
+  if(inputTrigger1Names.size() > 0){
+    for(std::string trigger : inputTrigger1Names){
+      try{
+        getTriggerBranchesList(CUTS::eRTrig1, trigger, distats["Run"].bfind("UseTriggerWildcard"));
+      }
+      catch(const char* msg){
+        std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
+        continue;
+      }
     }
-    catch(const char* msg){
-      std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
-      continue;
-    }
+
+  // Check that there are no elements on the trigger list that refer to the same trigger to speed up the process.
+  removeDuplicates(trigger1BranchesList);
+
   }
 
-  // Check that there are no elements on the trigger list that refer to the same trigger 
-  // to speed up the process.
-  removeDuplicates(triggerBranchesList);
+  if(inputTrigger2Names.size() > 0){
+    for(std::string trigger : inputTrigger2Names){
+      try{
+        getTriggerBranchesList(CUTS::eRTrig2, trigger, distats["Run"].bfind("UseTriggerWildcard"));
+      }
+      catch(const char* msg){
+        std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
+        continue;
+      }
+    } 
+
+    // Check that there are no elements on the trigger list that refer to the same trigger to speed up the process.
+    removeDuplicates(trigger2BranchesList);
+  }
 
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
-  std::cout << "Full list of triggers to be probed: " << std::endl;
-  for(std::string name : triggerBranchesList){
-    std::cout << name << std::endl;
+  if(trigger1BranchesList.size() > 0){
+    std::cout << "Full list of trigger to be probed (1): " << std::endl;
+    for(std::string name : trigger1BranchesList){
+      std::cout << name << std::endl;
+    }
+  }
+  if(trigger2BranchesList.size() > 0){
+    std::cout << "Full list of trigger to be probed (2): " << std::endl;
+    for(std::string name : trigger2BranchesList){
+      std::cout << name << std::endl;
+    }
   }
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
 }
@@ -1631,10 +1649,18 @@ void Analyzer::read_info(std::string filename) {
         if(*p) distats[group].smap[stemp[0]] = stemp[1];
         else  distats[group].dmap[stemp[0]]=std::stod(stemp[1]);
       }
-      if(stemp.at(0).find("Trigger") != std::string::npos) {
+      if(stemp.at(0).find("Trigger1") != std::string::npos) {
         for(auto trigger : stemp){
           if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
-            inputTriggerNames.push_back(trigger);
+            inputTrigger1Names.push_back(trigger);
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("Trigger2") != std::string::npos) {
+        for(auto trigger : stemp){
+          if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
+            inputTrigger2Names.push_back(trigger);
           }
         }
         continue;
@@ -1642,10 +1668,11 @@ void Analyzer::read_info(std::string filename) {
     } else if(stemp.size() == 3 and stemp.at(0).find("Trigger") == std::string::npos){
       distats[group].pmap[stemp[0]] = std::make_pair(std::stod(stemp[1]), std::stod(stemp[2]));
     } else{
+
       if(stemp.at(0).find("Trigger") != std::string::npos) {
         for(auto trigger : stemp){
-          if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
-            inputTriggerNames.push_back(trigger);
+          if(trigger.find("Trigger") == std::string::npos and "=" != trigger ){
+            inputTrigger1Names.push_back(trigger);
           }
         }
         continue;
@@ -2035,8 +2062,16 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     // get the proper jet pts for type-I MET, only correct the non-mu fraction of the jet
     // if the corrected pt > 15 GeV (unclEnThreshold), use the corrected jet, otherwise use raw
     // condition ? result_if_true : result_if_false
-    double jet_pt_noMuL1L2L3 = jet_Pt * jec > jetUnclEnThreshold ? jet_Pt * jec : jet_Pt;
-    double jet_pt_noMuL1 = jet_Pt * jecL1 > jetUnclEnThreshold ? jet_Pt * jecL1 : jet_Pt;
+    double jet_pt_noMuL1L2L3 = 0.0, jet_pt_noMuL1 = 0.0;
+
+    if(year.compare("2017") == 0){
+      jet_pt_noMuL1L2L3 = jet_Pt * jec > jetUnclEnThreshold ? jet_Pt * jec : jet_Pt;
+      jet_pt_noMuL1 = jet_Pt * jecL1 > jetUnclEnThreshold ? jet_Pt * jecL1 : jet_Pt;
+    }
+    else{
+      jet_pt_noMuL1L2L3 = jet_Pt * jec;
+      jet_pt_noMuL1 = jet_Pt * jecL1;      
+    }
 
     // Apply the JER corrections if desired to MC    
     // Define the JER scale factors:
@@ -2159,7 +2194,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     double jetTotalEmEF = _Jet->neutralEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
     
     // Propagate this correction to the MET: nominal values.
-    if(jet_pt_L1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
+    if(jet_pt_noMuL1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
 
       if(!(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_rawPt < 50.0)){
         
@@ -2675,7 +2710,7 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
     */
     bool passCuts = true;
     double dphi1rjets = normPhi(lvec.Phi() - _MET->phi());
-    if( ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
+    if(ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
     else  passCuts = passCuts && passCutRange(fabs(lvec.Eta()), stats.pmap.at("EtaCut"));
     passCuts = passCuts && (lvec.Pt() > stats.dmap.at("PtCut")) ;
 
@@ -2698,7 +2733,8 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
       else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
       else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-      else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+      else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
+      
     }
     if(_Jet->pstats["BJet"].bfind("RemoveBJetsFromJets") and ePos!=CUTS::eRBJet){
       passCuts = passCuts && find(active_part->at(CUTS::eRBJet)->begin(), active_part->at(CUTS::eRBJet)->end(), i) == active_part->at(CUTS::eRBJet)->end();
@@ -2810,7 +2846,7 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-        else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+        else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
         //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
       }
     }
@@ -2859,8 +2895,7 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-        else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
-        //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
+        else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
       }
     }
 
@@ -3276,21 +3311,45 @@ bool Analyzer::isInTheCracks(float etaValue){
 
 ///sees if the event passed one of the two cuts provided
 void Analyzer::TriggerCuts(CUTS ePos) {
+
 	if(! neededCuts.isPresent(ePos)) return;
 
-	// Loop over all elements of the trigger decisions vector
-	for(bool decision : triggernamedecisions){
-		if(decision){
-			// If one element is true (1), then store back the event in the triggers vector
-			active_part->at(ePos)->push_back(0);
-			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
-			triggernamedecisions.clear();
-			// End of the function
-			return;
-		}
-	}
-	// If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
-	triggernamedecisions.clear();
+  if(ePos == CUTS::eRTrig1){
+  	// Loop over all elements of the trigger decisions vector
+  	for(bool decision : trigger1namedecisions){
+  		if(decision){
+  			// If one element is true (1), then store back the event in the triggers vector
+  			active_part->at(ePos)->push_back(0);
+  			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
+  			trigger1namedecisions.clear();
+        trigger1namedecisions.shrink_to_fit();
+  			// End of the function
+  			return;
+  		}
+  	}
+  	// If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
+  	trigger1namedecisions.clear();
+    trigger1namedecisions.shrink_to_fit();
+  }
+
+  if(ePos == CUTS::eRTrig2){
+    // Loop over all elements of the trigger decisions vector
+    for(bool decision : trigger2namedecisions){
+      if(decision){
+        // If one element is true (1), then store back the event in the triggers vector
+        active_part->at(ePos)->push_back(0);
+        // Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
+        trigger2namedecisions.clear();
+        trigger2namedecisions.shrink_to_fit();
+        // End of the function
+        return;
+      }
+    }
+    // If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
+    trigger2namedecisions.clear();
+    trigger2namedecisions.shrink_to_fit();
+  }
+
 }
 
 
@@ -4267,6 +4326,10 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     Particle* part = fillInfo[group]->part;
     CUTS ePos = fillInfo[group]->ePos;
 
+    // Added variable to calculate minimum deltaPhi between particle and MET
+    float minDeltaPhiMet = 9999.9;
+
+    // int i = 0;
     for(auto it : *active_part->at(ePos)) {
       histAddVal(part->p4(it).Energy(), "Energy");
       histAddVal(part->p4(it).Pt(), "Pt");
@@ -4286,6 +4349,24 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(_FatJet->tau2[it], "tau2");
         histAddVal(_FatJet->tau2[it]/_FatJet->tau1[it], "tau2Overtau1");
       }
+      if(part->type == PType::Jet){
+        // Find out if this is the closest jet to the MET
+        float deltaPhiMet = absnormPhi(part->p4(it).Phi() - _MET->phi());
+        // std::cout << "jet #" << i << ", dPhi(j,MET) = " <<  normPhi(part->p4(it).Phi() - _MET->phi()) << std::endl;
+        // std::cout << "minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
+        histAddVal(deltaPhiMet, "AbsDPhiMet");
+        histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "DPhiMet");
+
+        if(deltaPhiMet < minDeltaPhiMet){
+          minDeltaPhiMet = deltaPhiMet;
+        }
+        // i++;
+      }
+    }
+
+    if(part->type == PType::Jet){
+      // std::cout << "the minimum minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
+      histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
     }
 
     if((part->type != PType::Jet ) && active_part->at(ePos)->size() > 0) {

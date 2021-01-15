@@ -13,19 +13,19 @@ SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6.root
 /// SpecialMCPUHistos new_mc2017_pileupReweighting_NanoAODv6_wanddylo_incl.root
 
 ApplyTauIDSF true
-TauIdSFsByDM false # Tau ID scale factors that are decay mode (DM) - dependent. If using di-tau triggers and tau-pt > 40 GeV, this are the recommended SFs.
+TauIdSFsByDM true # Tau ID scale factors that are decay mode (DM) - dependent. If using di-tau triggers and tau-pt > 40 GeV, this are the recommended SFs.
 TauSFforEmbeddedSamples false
 
 ApplyTauAntiEleSF true
 ApplyTauAntiMuSF true
 
-UsePileUpWeight true
-ApplyISRZBoostSF false # Z-boost weight corrections derived for ISR+stau analysis (SUS-19-002)
-ApplySUSYZBoostSF false # Official Z-boost weight corrections derived by the SUSY PAG.
-ApplyVBFSusyZBoostSF false # Weights derived by the VBF SUSY team - Run II
-
 isData false
 ApplyGenWeight  true
+UsePileUpWeight true
+
+ApplyISRZBoostSF false 				# Z-boost weight corrections derived for ISR+stau analysis (SUS-19-002)
+ApplySUSYZBoostSF false 			# Official Z-boost weight corrections derived by the SUSY PAG.
+ApplyVBFSusyZBoostSF true 			# Weights derived by the VBF SUSY team - Run II
 
 ApplyL1PrefiringWeight true
 UseJetEMPt false
@@ -46,12 +46,12 @@ GenDilepMassRange 80.0 100.0
 
 /// ------ Triggers ----- ///
 
-Trigger1FirstRequirement HLT_IsoMu24
-Trigger1SecondRequirement HLT_IsoMu24
-UseTriggerWildcard false
+Trigger1FirstRequirement HLT_PFMETNoMu120_PFMHTNoMu120_IDTight
+Trigger1SecondRequirement HLT_PFMETNoMu120_PFMHTNoMu120_IDTight
+UseTriggerWildcard true
 
-/// Trigger2FirstRequirement HLT_DoubleMediumIsoPFTau35_Trk1_eta2p1_Reg
-/// Trigger2SecondRequirement HLT_DoubleMediumIsoPFTau40_Trk1_eta2p1_Reg
+# Trigger2FirstRequirement HLT_DoubleMediumIsoPFTau35_Trk1_eta2p1_Reg
+# Trigger2SecondRequirement HLT_DoubleMediumIsoPFTau40_Trk1_eta2p1_Reg
 
 ///---Treat Muon as Neutrino---///
 
@@ -62,8 +62,8 @@ TreatMuonsAsTaus 0
 ///-----MET cuts------///
 ApplyMetFilters true
 MT2Mass 0.
-DiscrByMet false
-MetCut 30.0 10000.0
+DiscrByMet true
+MetCut 250.0 10000.0
 
 DiscrByMHT false
 MhtCut 50.0
