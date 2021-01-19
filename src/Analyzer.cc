@@ -2322,6 +2322,7 @@ bool Analyzer::JetMatchesLepton(const Lepton& lepton, const TLorentzVector& jetV
 
 
 ////checks if reco object matchs a gen object.  If so, then reco object is for sure a correctly identified particle
+/*
 TLorentzVector Analyzer::matchLeptonToGen(const TLorentzVector& recoLepton4Vector, const PartStats& stats, CUTS ePos) {
   if(ePos == CUTS::eGTau) {
     return matchTauToGen(recoLepton4Vector, stats.dmap.at("GenMatchingDeltaR"));
@@ -2337,9 +2338,69 @@ TLorentzVector Analyzer::matchLeptonToGen(const TLorentzVector& recoLepton4Vecto
   }
   return TLorentzVector(0,0,0,0);
 }
+*/
+
+TLorentzVector Analyzer::matchLeptonToGen(int recoLeptonIndex, const PartStats& stats, CUTS ePos) {
+
+  if(ePos == CUTS::eGTau) {
+    return matchTauToGen(recoLeptonIndex, stats.dmap.at("GenMatchingFlavor"));
+  }
+  if(ePos == CUTS::eGHadTau){
+    return matchHadTauToGen(recoLeptonIndex, stats.dmap.at("GenMatchingDeltaR"));
+  }
+  for(auto it : *active_part->at(ePos)) {
+    if(recoLepton4Vector.DeltaR(_Gen->p4(it)) <= stats.dmap.at("GenMatchingDeltaR")) {
+      if(stats.bfind("UseMotherID") && abs(_Gen->pdg_id[_Gen->genPartIdxMother[it]]) != stats.dmap.at("MotherID")) continue;
+      return _Gen->p4(it);
+    }
+  }
+  return TLorentzVector(0,0,0,0);
+}
 
 ///Tau specific matching function.  Works by seeing if a tau doesn't decay into a muon/electron and has
 //a matching tau neutrino showing that the tau decayed and decayed hadronically
+/*
+TLorentzVector Analyzer::matchTauToGen(const TLorentzVector& lvec, double lDeltaR) {
+  TLorentzVector genVec(0,0,0,0);
+  int i = 0;
+  for(vec_iter it=active_part->at(CUTS::eGTau)->begin(); it !=active_part->at(CUTS::eGTau)->end();it++, i++) {
+    int nu = active_part->at(CUTS::eGNuTau)->at(i);
+    if(nu == -1) continue;
+
+    genVec = _Gen->p4(*it) - _Gen->p4(nu);
+    if(lvec.DeltaR(genVec) <= lDeltaR) {
+      return genVec;
+    }
+  }
+  return genVec;
+}
+*/
+
+TLorentzVector Analyzer::matchTauToGen(int recoTauIndex, int genPartFlavor){
+
+  // Look for the index of the matching particle in the Gen particle collection (tau status-2, meaning not decayed)
+  int matchingTauIdx = _Tau->genPartIdx[recoTauIndex];
+  int tauGenPartFlavor = static_cast<unsigned>(_Tau->genPartFlav[recoTauIndex]);
+  
+  if(matchingTauIdx != -1){
+
+    if((genPartFlav == -1) && (tauGenPartFlavor == 3 || tauGenPartFlavor == 4 || tauGenPartFlavor == 5) ){ // include all possible tau decays (tau->e decay, tau->mu decay, hadronic tau decay)
+      return _Gen->p4(matchingTauIdx);  
+    } else if ( (genPartFlav == 0) && (tauGenPartFlavor == 0) ){
+      return _Gen->p4(matchingTauIdx);
+    } else {
+      if(tauGenPartFlavor == genPartFlav){
+        return _Gen->p4(matchingTauIdx);
+      }
+    }
+  }
+
+  return TLorentzVector(0,0,0,0);
+}
+
+///Tau specific matching function.  Works by seeing if a tau doesn't decay into a muon/electron and has
+//a matching tau neutrino showing that the tau decayed and decayed hadronically
+/*
 TLorentzVector Analyzer::matchHadTauToGen(const TLorentzVector& recoTau4Vector, double recogenDeltaR) {
 
   for(vec_iter genhadtau_it = active_part->at(CUTS::eGHadTau)->begin(); genhadtau_it != active_part->at(CUTS::eGHadTau)->end(); genhadtau_it++){ // (genhadtau_it) is the index of the gen-level hadronic tau in the gen-hadtau vector.
@@ -2361,24 +2422,30 @@ TLorentzVector Analyzer::matchHadTauToGen(const TLorentzVector& recoTau4Vector, 
   //return genTau4Vector;
   return TLorentzVector(0,0,0,0);
 }
+*/
 
+TLorentzVector Analyzer::matchHadTauToGen(const TLorentzVector& recoTau4Vector, double recogenDeltaR) {
 
-///Tau specific matching function.  Works by seeing if a tau doesn't decay into a muon/electron and has
-//a matching tau neutrino showing that the tau decayed and decayed hadronically
-TLorentzVector Analyzer::matchTauToGen(const TLorentzVector& lvec, double lDeltaR) {
-  TLorentzVector genVec(0,0,0,0);
-  int i = 0;
-  for(vec_iter it=active_part->at(CUTS::eGTau)->begin(); it !=active_part->at(CUTS::eGTau)->end();it++, i++) {
-    int nu = active_part->at(CUTS::eGNuTau)->at(i);
-    if(nu == -1) continue;
+  for(vec_iter genhadtau_it = active_part->at(CUTS::eGHadTau)->begin(); genhadtau_it != active_part->at(CUTS::eGHadTau)->end(); genhadtau_it++){ // (genhadtau_it) is the index of the gen-level hadronic tau in the gen-hadtau vector.
+    
+    // Compare the separation between the reco and gen hadronic tau candidates. If it's greather than the requirement, continue with the next gen-tau_h candidate.
+    if(recoTau4Vector.DeltaR(_GenHadTau->p4(*genhadtau_it)) > recogenDeltaR) continue;
+    // If the requirement DeltaR <= recogenDeltaR, the code will get to this point. Then we want to fill a vector that only stores the matched gen taus
+    
+    if(std::find(active_part->at(CUTS::eGMatchedHadTau)->begin(), active_part->at(CUTS::eGMatchedHadTau)->end(), *genhadtau_it) == active_part->at(CUTS::eGMatchedHadTau)->end()){
+      // The if condition above will make sure to not double count the gen-taus that have already been matched. It will only fill the CUTS::eGMatchedHadTau if it's not already in there.
+         active_part->at(CUTS::eGMatchedHadTau)->push_back(*genhadtau_it);
+    }    
 
-    genVec = _Gen->p4(*it) - _Gen->p4(nu);
-    if(lvec.DeltaR(genVec) <= lDeltaR) {
-      return genVec;
-    }
+    active_part->at(CUTS::eGMatchedHadTau)->push_back(*genhadtau_it); 
+
+    // And we also return the gen-tau p4 vector, which we are interested in.
+    return _GenHadTau->p4(*genhadtau_it);
   }
-  return genVec;
+  //return genTau4Vector;
+  return TLorentzVector(0,0,0,0);
 }
+
 
 
 ////checks if reco object matchs a gen object.  If so, then reco object is for sure a correctly identified particle
@@ -4454,7 +4521,7 @@ void Analyzer::fill_histogram(std::string year) {
 
 ///Function that fills up the histograms
 void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto, bool issyst) {
-  /*be aware in this function
+  /* be aware in this function
    * the following definition is used:
    * histAddVal(val, name) histo.addVal(val, group, max, name, wgt)
    * so each histogram knows the group, max and weight!
@@ -4629,9 +4696,12 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(gendilepmass, "ZDiLepMass");
 
     double mass=0;
+    int nb_leptons = 0;
     TLorentzVector lep1(0,0,0,0), lep2(0,0,0,0);
+
     for(size_t igen=0; igen<_Gen->size(); igen++){
       if(abs(_Gen->pdg_id[igen])==11 or abs(_Gen->pdg_id[igen])==13 or abs(_Gen->pdg_id[igen])==15){
+        
         if(lep1!=TLorentzVector(0,0,0,0)){
           lep2= _Gen->p4(igen);
           mass=(lep1+lep2).M();
@@ -4639,9 +4709,29 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         }else{
           lep1= _Gen->RecoP4(igen);
         }
+
+        histAddVal(_Gen->p4(igen).Pt(), "LeptonPt");
+        histAddVal(_Gen->p4(igen).Eta(), "LeptonEta");
+        histAddVal(_Gen->p4(igen).Phi(), "LeptonPhi");
+        histAddVal(_Gen->p4(igen).E(), "LeptonE");
+
+        nb_leptons++;
       }
     }
+
     histAddVal(mass, "LeptonMass");
+    histAddVal(nb_leptons, "NLepton");
+
+    for(size_t i_genjet=0; i_genjet < _GenJet->siize(); i_genjet++){
+      histAddVal(_GenJet->pt(i_genjet), "JetPt");
+      histAddVal(_GenJet->eta(i_genjet), "JetEta");
+      histAddVal(_GenJet->phi(i_genjet), "JetPhi");
+      histAddVal(_GenJet->energy(i_genjet), "JetEnergy");
+      histAddVal(_GenJet->genHadronFlavor[i_genjet], "JetHadronFlavor");
+      histAddVal(_GenJet->genPartonFlavor[i_genjet], "JetPartonFlavor");
+    }
+
+    histAddVal(_GenJet->size(), "NJet");
 
   } else if(fillInfo[group]->type == FILLER::Single) {
     Particle* part = fillInfo[group]->part;
@@ -4672,8 +4762,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       if(part->type == PType::Jet){
         // Find out if this is the closest jet to the MET
         float deltaPhiMet = absnormPhi(part->p4(it).Phi() - _MET->phi());
-        // std::cout << "jet #" << i << ", dPhi(j,MET) = " <<  normPhi(part->p4(it).Phi() - _MET->phi()) << std::endl;
-        // std::cout << "minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
         histAddVal(deltaPhiMet, "AbsDPhiMet");
         histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "DPhiMet");
 
@@ -4683,7 +4771,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       }
 
       if(ePos == CUTS::eRBJet){
-        // std::cout << "I get here" << std::endl;
         histAddVal2(part->p4(it).Eta(), part->p4(it).Pt(), "PtVsEta");
       }
 
@@ -4733,12 +4820,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
   } else if(group == "FillLeadingJet" && active_part->at(CUTS::eSusyCom)->size() == 0) {
 
-    /*
-    std::cout << "FillLeadingJet ON and active_part->at(CUTS::eSusyCom)->size() == 0" << std::endl;
-    std::cout << "CUTS::eR1stJet size = " << active_part->at(CUTS::eR1stJet)->size() << std::endl;
-    std::cout << "CUTS::eR2ndJet size = " << active_part->at(CUTS::eR2ndJet)->size() << std::endl;
-    */
-
     if(active_part->at(CUTS::eR1stJet)->size()>0) { //01.17.19
       // std::cout << "First leading jet index (fill) = " << active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size()-1) << ", pt = " << _Jet->p4(active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size()-1)).Pt() << std::endl;
       histAddVal(_Jet->p4(active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size()-1)).Pt(), "FirstPt");
@@ -4753,14 +4834,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     }
 
   } else if(group == "FillLeadingJet" && active_part->at(CUTS::eSusyCom)->size() != 0) {
-    /*
-    std::cout << "FillLeadingJet ON and active_part->at(CUTS::eSusyCom)->size() != 0" << std::endl;
-    std::cout << "CUTS::eR1stJet size = " << active_part->at(CUTS::eR1stJet)->size() << std::endl;
-    std::cout << "CUTS::eR2ndJet size = " << active_part->at(CUTS::eR2ndJet)->size() << std::endl;
 
-    std::cout << "First leading jet index (fill) = " << active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size() - 1) << ", pt = " << _Jet->p4(active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size() - 1)).Pt() << std::endl;
-    std::cout << "Second leading jet index (fill) = " << active_part->at(CUTS::eR2ndJet)->at(active_part->at(CUTS::eR2ndJet)->size() - 1) << ", pt = " << _Jet->p4(active_part->at(CUTS::eR2ndJet)->at(active_part->at(CUTS::eR2ndJet)->size() - 1)).Pt() << std::endl;
-    */
     TLorentzVector first = _Jet->p4(active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size() - 1));
     TLorentzVector second = _Jet->p4(active_part->at(CUTS::eR2ndJet)->at(active_part->at(CUTS::eR2ndJet)->size() - 1));
 
@@ -5064,61 +5138,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     }
   }
 }
-
-/*
-void Analyzer::fill_Tree(){
-
-  if(0){
-    //do our dirty tree stuff here:
-    int p1=-1;
-    int p2=-1;
-    if(active_part->at(CUTS::eDiTau)->size()==1){
-      p1= active_part->at(CUTS::eDiTau)->at(0) / BIG_NUM;
-      p2= active_part->at(CUTS::eDiTau)->at(0) % BIG_NUM;
-    } else{
-      return;
-    }
-    int j1=-1;
-    int j2=-1;
-    double mass=0;
-    for(auto it : *active_part->at(CUTS::eDiJet)) {
-      int j1tmp= (it) / _Jet->size();
-      int j2tmp= (it) % _Jet->size();
-      if(diParticleMass(_Jet->p4(j1tmp),_Jet->p4(j2tmp),"")>mass){
-        j1=j1tmp;
-        j2=j2tmp;
-        mass=diParticleMass(_Jet->p4(j1tmp),_Jet->p4(j2tmp),"");
-      }
-    }
-    if(p1<0 or p2<0 or j1<0 or j2 <0)
-      return;
-    zBoostTree["tau1_pt"]   = _Tau->pt(p1);
-    zBoostTree["tau1_eta"]  = _Tau->eta(p1);
-    zBoostTree["tau1_phi"]  = _Tau->phi(p1);
-    zBoostTree["tau2_pt"]   = _Tau->pt(p2);
-    zBoostTree["tau2_eta"]  = _Tau->eta(p2);
-    zBoostTree["tau2_phi"]  = _Tau->phi(p2);
-    zBoostTree["tau_mass"]  = diParticleMass(_Tau->p4(p1),_Tau->p4(p2),"");
-    zBoostTree["met"]       = _MET->pt();
-    zBoostTree["mt_tau1"]   = calculateLeptonMetMt(_Tau->p4(p1));
-    zBoostTree["mt_tau2"]   = calculateLeptonMetMt(_Tau->p4(p2));
-    zBoostTree["mt2"]       = _MET->MT2(_Tau->p4(p1),_Tau->p4(p2));
-    zBoostTree["cosDphi1"]  = absnormPhi(_Tau->phi(p1) - _MET->phi());
-    zBoostTree["cosDphi2"]  = absnormPhi(_Tau->phi(p2) - _MET->phi());
-    zBoostTree["jet1_pt"]   = _Jet->pt(j1);
-    zBoostTree["jet1_eta"]  = _Jet->eta(j1);
-    zBoostTree["jet1_phi"]  = _Jet->phi(j1);
-    zBoostTree["jet2_pt"]   = _Jet->pt(j2);
-    zBoostTree["jet2_eta"]  = _Jet->eta(j2);
-    zBoostTree["jet2_phi"]  = _Jet->phi(j2);
-    zBoostTree["jet_mass"]  = mass;
-    zBoostTree["weight"]    = wgt;
-
-    //put it accidentally in the tree
-    histo.fillTree("TauTauTree");
-  }
-}
-*/
 
 void Analyzer::initializePileupInfo(const bool& specialPU, std::string outfilename){
    // If specialPUcalculation is true, then take the name of the output file (when submitting jobs) 
