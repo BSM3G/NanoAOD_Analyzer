@@ -174,11 +174,6 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   setupTauIDSFsInfo(_Tau->pstats["TauID"].smap.at("TauIDAlgorithm"), year, distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"));
   setupTauResSFsInfo(distats["Run"].bfind("ApplyETauFakeRateESSF"));
 
-  // L1 prefiring weights only for 2016 or 2017
-  // if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
-  //  prefiringwgtprod = L1ECALPrefiringWgtProd((PUSPACE+"L1Prefiring").c_str(), year, distats["Run"].bfind("UseJetEMPt"));
-  //}
-
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
     _Gen = new Generated(BOOM, filespace + "Gen_info.in", syst_names);
@@ -493,8 +488,8 @@ void Analyzer::setupEventGeneral(int nevent){
     SetBranch("Pileup_nTrueInt",nTruePU);
     SetBranch("genWeight",gen_weight);
 
-    if (BOOM->FindBranch("L1PrefiringWeight_Nom") != 0){
-      SetBranch("L1PrefiringWeight_Nom", l1prefiringwgt);
+    if (BOOM->FindBranch("L1PreFiringWeight_Nom") != 0){
+      SetBranch("L1PreFiringWeight_Nom", l1prefiringwgt);
 
       if(distats["Systematics"].bfind("useSystematics")){
         SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);
@@ -736,28 +731,8 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   
   active_part = &goodParts;
 
-  // Commented by Brenda FE, Aug 18, 2020 - 12:48 pm
-  /*
-  if(!select_mc_background()){
-    //we will put nothing in good particles
-    clear_values();
-    return;
-  }
-  */
-
   // Call the new function setupEventGeneral: this will set generatorht, pu weight and genweight
   setupEventGeneral(event);
-
-  // Call the L1 weight producer here, only for 2016 or 2017
-
-  // std::cout << "Number of photons (default) = " << _Photon->size() << std::endl;
-  // std::cout << "Number of jets (default) = " << _Jet->size() << std::endl; 
-
-  //if(!isData && distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
-     // Reset weights for each event before producing them
-  //  prefiringwgtprod.resetWeights();
-  //  prefiringwgtprod.produceWeights(*_Photon, *_Jet);
-  //}
   
   if(!isData){ // Do everything that corresponds only to MC
 
@@ -2322,7 +2297,7 @@ bool Analyzer::JetMatchesLepton(const Lepton& lepton, const TLorentzVector& jetV
 
 
 ////checks if reco object matchs a gen object.  If so, then reco object is for sure a correctly identified particle
-/*
+
 TLorentzVector Analyzer::matchLeptonToGen(const TLorentzVector& recoLepton4Vector, const PartStats& stats, CUTS ePos) {
   if(ePos == CUTS::eGTau) {
     return matchTauToGen(recoLepton4Vector, stats.dmap.at("GenMatchingDeltaR"));
@@ -2338,8 +2313,8 @@ TLorentzVector Analyzer::matchLeptonToGen(const TLorentzVector& recoLepton4Vecto
   }
   return TLorentzVector(0,0,0,0);
 }
-*/
 
+/*
 TLorentzVector Analyzer::matchLeptonToGen(int recoLeptonIndex, const PartStats& stats, CUTS ePos) {
 
   if(ePos == CUTS::eGTau) {
@@ -2356,10 +2331,10 @@ TLorentzVector Analyzer::matchLeptonToGen(int recoLeptonIndex, const PartStats& 
   }
   return TLorentzVector(0,0,0,0);
 }
-
+*/
 ///Tau specific matching function.  Works by seeing if a tau doesn't decay into a muon/electron and has
 //a matching tau neutrino showing that the tau decayed and decayed hadronically
-/*
+
 TLorentzVector Analyzer::matchTauToGen(const TLorentzVector& lvec, double lDeltaR) {
   TLorentzVector genVec(0,0,0,0);
   int i = 0;
@@ -2374,8 +2349,8 @@ TLorentzVector Analyzer::matchTauToGen(const TLorentzVector& lvec, double lDelta
   }
   return genVec;
 }
-*/
 
+/*
 TLorentzVector Analyzer::matchTauToGen(int recoTauIndex, int genPartFlavor){
 
   // Look for the index of the matching particle in the Gen particle collection (tau status-2, meaning not decayed)
@@ -2397,10 +2372,9 @@ TLorentzVector Analyzer::matchTauToGen(int recoTauIndex, int genPartFlavor){
 
   return TLorentzVector(0,0,0,0);
 }
-
+*/
 ///Tau specific matching function.  Works by seeing if a tau doesn't decay into a muon/electron and has
 //a matching tau neutrino showing that the tau decayed and decayed hadronically
-/*
 TLorentzVector Analyzer::matchHadTauToGen(const TLorentzVector& recoTau4Vector, double recogenDeltaR) {
 
   for(vec_iter genhadtau_it = active_part->at(CUTS::eGHadTau)->begin(); genhadtau_it != active_part->at(CUTS::eGHadTau)->end(); genhadtau_it++){ // (genhadtau_it) is the index of the gen-level hadronic tau in the gen-hadtau vector.
@@ -2422,8 +2396,8 @@ TLorentzVector Analyzer::matchHadTauToGen(const TLorentzVector& recoTau4Vector, 
   //return genTau4Vector;
   return TLorentzVector(0,0,0,0);
 }
-*/
 
+/*
 TLorentzVector Analyzer::matchHadTauToGen(const TLorentzVector& recoTau4Vector, double recogenDeltaR) {
 
   for(vec_iter genhadtau_it = active_part->at(CUTS::eGHadTau)->begin(); genhadtau_it != active_part->at(CUTS::eGHadTau)->end(); genhadtau_it++){ // (genhadtau_it) is the index of the gen-level hadronic tau in the gen-hadtau vector.
@@ -2445,7 +2419,7 @@ TLorentzVector Analyzer::matchHadTauToGen(const TLorentzVector& recoTau4Vector, 
   //return genTau4Vector;
   return TLorentzVector(0,0,0,0);
 }
-
+*/
 
 
 ////checks if reco object matchs a gen object.  If so, then reco object is for sure a correctly identified particle
@@ -4620,7 +4594,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(nTruePU, "PUNTrueInt");
     histAddVal(generatorht, "HT");
     histAddVal(gen_weight, "Weight");
-    histAddVal(l1prefiringwgt, "PrefiringWeight");
+    histAddVal(l1prefiringwgt, "L1PrefiringWeight");
 
     int nhadtau = 0;
     TLorentzVector genVec(0,0,0,0);
@@ -4722,7 +4696,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(mass, "LeptonMass");
     histAddVal(nb_leptons, "NLepton");
 
-    for(size_t i_genjet=0; i_genjet < _GenJet->siize(); i_genjet++){
+    for(size_t i_genjet=0; i_genjet < _GenJet->size(); i_genjet++){
       histAddVal(_GenJet->pt(i_genjet), "JetPt");
       histAddVal(_GenJet->eta(i_genjet), "JetEta");
       histAddVal(_GenJet->phi(i_genjet), "JetPhi");

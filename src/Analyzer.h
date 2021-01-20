@@ -133,8 +133,8 @@ public:
   void smearJetRes(Particle&, CUTS, const PartStats&, int syst=0);
 
   bool JetMatchesLepton(const Lepton&, const TLorentzVector&, double, CUTS);
-  // TLorentzVector matchLeptonToGen(const TLorentzVector&, const PartStats&, CUTS);
-  TLorentzVector matchLeptonToGen(int, const PartStats& stats, CUTS ePos);
+  TLorentzVector matchLeptonToGen(const TLorentzVector&, const PartStats&, CUTS);
+  // TLorentzVector matchLeptonToGen(int, const PartStats& stats, CUTS ePos);
   TLorentzVector matchTauToGen(const TLorentzVector&, double);
   TLorentzVector matchHadTauToGen(const TLorentzVector&, double);
   TLorentzVector matchJetToGen(const TLorentzVector&, const double&, CUTS);
