@@ -2936,6 +2936,14 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
       else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
+      else if(cut == "MatchBToGen" && !isData ){
+           int matchedGenJetIndex = _Jet->genJetIdx[i];
+           int jetPartonFlavor = abs(_GenJet->genPartonFlavor[matchedGenJetIndex]);
+           int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[matchedGenJetIndex]); 
+ 	   // std::cout << "matchedGenJetIndex = " << matchedGenJetIndex << ", jetPartonFlavor = " << jetPartonFlavor << ", jetHadronFlavor = " << jetHadronFlavor << std::endl;
+ 	   // std::cout << "Is this a genuine b-jet? " << (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5) << std::endl;
+ 	   passCuts = passCuts && (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5);  
+      }
       else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
       else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
 
@@ -4231,7 +4239,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(nTruePU, "PUNTrueInt");
     histAddVal(generatorht, "HT");
     histAddVal(gen_weight, "Weight");
-    histAddVal(l1prefiringwgt, "PrefiringWeight");
+    histAddVal(l1prefiringwgt, "L1PrefiringWeight");
 
     int nhadtau = 0;
     TLorentzVector genVec(0,0,0,0);
@@ -4359,7 +4367,10 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         if(deltaPhiMet < minDeltaPhiMet){
           minDeltaPhiMet = deltaPhiMet;
         }
-        // i++;
+      }
+
+      if(ePos == CUTS::eRBJet){
+         histAddVal2(part->p4(it).Eta(), part->p4(it).Pt(), "PtVsEta");
       }
     }
 
