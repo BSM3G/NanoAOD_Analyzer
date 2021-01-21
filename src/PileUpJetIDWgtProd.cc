@@ -73,16 +73,12 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
 
     if (matchedGenJetIndex < 0){ //These are real PU Jets which passed PU Jet ID & were therefore "mistagged" (the naming convention here is confusing), therefore they pull from the mistag histograms.
     JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcyMistag_map);
-	if (JetEffcyValue == 0) JetEffcyValue = 0.001;
     JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFMistag_map);
-    if (JetSFValue == 0) JetSFValue = 1; 
     }
     
     else{//These are real hard scatter jets which were correctly identified.
     JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
-    if (JetEffcyValue == 0) JetEffcyValue = 0.001;
     JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
-    if (JetSFValue == 0) JetSFValue = 1; 
 	}
 
     //Push values into appropriate vectors.
@@ -105,16 +101,12 @@ float PileUpJetIDWgtProd::getPUJetIDWeights(Jet& jets, std::vector<int> passing_
     
     if (matchedGenJetIndex < 0){//Genuine PU Jets that fail PU Jet ID, they get entered as 1-mistag_efficiency.
     JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcyMistag_map);
-    if (JetEffcyValue == 0) JetEffcyValue = 0.001;
     JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFMistag_map);
-    if (JetSFValue == 0) JetSFValue = 1; 
     }
 
     else{//Hard scatter jets which failed PU ID, these get entered as 1-efficiency.
     JetEffcyValue = getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDEffcymap);
-    if (JetEffcyValue == 0) JetEffcyValue = 0.001;
     JetSFValue =  getPileUpEffcyOrSF(eta_jet, pt_jet, h_PileUpJetIDSFmap);
-    if (JetSFValue == 0) JetSFValue = 1; 
     }
 
     //Push values into appropriate vectors.
@@ -168,7 +160,11 @@ float PileUpJetIDWgtProd::producePUJetIDWeights(std::vector<float> Data_PU_value
      Prob_Data *= Data_PU_values[i];
      Prob_MC *= MC_PU_values[i];
    }
-   
+
+   if(Prob_MC == 0){
+     std::cerr << std::endl << "ERROR! Pile Up Jet ID Weight Prob_MC is zero, cannot divide by zero!" << std::endl;
+   }
+
    float PUJetIDWeight = Prob_Data/Prob_MC;
 
    return PUJetIDWeight;
