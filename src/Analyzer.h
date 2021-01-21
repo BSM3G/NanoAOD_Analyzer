@@ -95,6 +95,7 @@ public:
 
   }
 // private:
+  std::string runyear;
   void CRfillCuts();
   ///// Functions /////
   //void fill_Folder(std::string, const int, std::string syst="");
@@ -133,6 +134,7 @@ public:
 
   bool JetMatchesLepton(const Lepton&, const TLorentzVector&, double, CUTS);
   TLorentzVector matchLeptonToGen(const TLorentzVector&, const PartStats&, CUTS);
+  // TLorentzVector matchLeptonToGen(int, const PartStats& stats, CUTS ePos);
   TLorentzVector matchTauToGen(const TLorentzVector&, double);
   TLorentzVector matchHadTauToGen(const TLorentzVector&, double);
   TLorentzVector matchJetToGen(const TLorentzVector&, const double&, CUTS);
@@ -152,6 +154,9 @@ public:
   void getGoodRecoLeadJets(CUTS, const PartStats&, const int); 
   void getGoodRecoBJets(CUTS, const PartStats&, const int); //01.16.19
   void getGoodRecoFatJets(CUTS, const PartStats&, const int);
+
+  bool discrBySUSYSoftElectrons(int, bool, bool);
+  bool discrBySUSYSoftMuons(int, bool, bool);
 
   void getGoodLeptonCombos(Lepton&, Lepton&, CUTS, CUTS, CUTS, const PartStats&, const int);
   double CalculateDiLepMassDeltaPt(const TLorentzVector&, const TLorentzVector&, const float, const float);
@@ -331,6 +336,7 @@ public:
   bool failtau1iso = false, failtau2iso = false;
 
   // Prefiring weights
+  // L1ECALPrefiringWgtProd prefiringwgtprod; // commented by Brenda FE, Dec 2020
   float l1prefiringwgt = 1.0, l1prefiringwgt_up = 1.0, l1prefiringwgt_dn = 1.0;
   
   Float_t jec_rho =20.;

@@ -89,7 +89,7 @@ Tau1SeedTrackPt        2000   0.    5000.
 Tau1Charge               10  -5.       5.
 Tau1MetMt		 200  0.       1000.
 
-FillTau2 1
+FillTau2 0
 
 NTau2                    20   0.      20.
 Tau2Energy             2000   0.    5000.
@@ -382,8 +382,8 @@ Muon1Tau1CosDphi                     220    -1.1      1.1
 Muon1Tau1CosDphi_DeltaPtAndMet       220    -1.1      1.1
 Muon1Tau1_Muon1MetDeltaPhi            72     0       +3.15
 Muon1Tau1_Tau1MetDeltaPhi             72     0       +3.15
-Muon1Tau1NotReconstructableMass      600     0     1500
-Muon1Tau1ReconstructableMass         600     0     1500
+Muon1Tau1NotReconstructableMass      2500     0      5000
+Muon1Tau1ReconstructableMass         2500     0     5000
 Muon1Tau1ReconstructableMassDeltaPt   	100 	0. 	 5000.
 Muon1Tau1RecoCosDphiPtLeadLepandMet 	440 	-1. 	1.
 Muon1Tau1RecoAbsCosDphiPtLeadLepandMet 	220 	0. 	1.
@@ -392,7 +392,6 @@ Muon1Tau1PZetaVis                    100     0      100
 Muon1Tau1Zeta1D                      150  -300      300
 Muon1Tau1Pt 					   500     0.    1000.
 Muon1Tau1DiJetReconstructableMass    100     0     5000
-
 Muon1PtVsTau1Pt                      100     0      500      100     0     500
 Muon1Tau1Zeta2D                      100     0      100      200  -100     100
 Muon1MetDeltaPhiVsMuon1Tau1CosDphi    72     0       +3.15   220    -1.1     1.1

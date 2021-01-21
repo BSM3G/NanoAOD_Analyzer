@@ -48,6 +48,9 @@ JMatchingDeltaR 0.8
 RemoveOverlapWithBs 0
 BJMatchingDeltaR 0.4
 
+DiscrByDPhiMet 0
+DPhiMetCut 0.0 0.5
+
 Apply2017EEnoiseVeto false
 
 DiscrByDPhiMet 0
@@ -89,6 +92,9 @@ JMatchingDeltaR 0.8
 RemoveOverlapWithBs 0
 BJMatchingDeltaR 0.4
 
+DiscrByDPhiMet 0
+DPhiMetCut 0.0 0.5
+
 Apply2017EEnoiseVeto false
 
 DiscrByDPhiMet 1
@@ -102,6 +108,11 @@ PtCut 30.0
 
 ApplyLooseID 1
 ApplyTightID 0
+
+ApplyPileupJetID 0
+# WPs: tight = 0, medium = 1, loose = 2 
+PUJetIDCut 0
+FailPUJetID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 1
@@ -132,6 +143,11 @@ PtCut 30.0
 ApplyLooseID 1
 ApplyTightID 0
 
+ApplyPileupJetID 0
+# WPs: tight = 0, medium = 1, loose = 2 
+PUJetIDCut 0
+FailPUJetID 0
+
 RemoveOverlapWithMuon1s 1 
 RemoveOverlapWithMuon2s 1
 Muon1MatchingDeltaR 0.4 
@@ -160,6 +176,11 @@ PtCut 30.0
 
 ApplyLooseID 1
 ApplyTightID 0
+
+ApplyPileupJetID 0
+# WPs: tight = 0, medium = 1, loose = 2 
+PUJetIDCut 0
+FailPUJetID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 1

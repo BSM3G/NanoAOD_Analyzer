@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <iostream>
 #include <regex>
+#include <cmath>
 
 #include <TTree.h>
 #include <TBranch.h>
@@ -240,6 +241,8 @@ public:
   Electron(TTree*, std::string, std::vector<std::string>, std::string);
 
   bool get_Iso(int, double, double) const;
+  bool customSoftLooseEleMVAId(int, TLorentzVector, std::string) const;
+  bool customSoftTightEleMVAId(int, TLorentzVector, std::string) const;
   
   std::bitset<8> cbIDele1;
   std::bitset<8> cbIDele2;
@@ -263,6 +266,13 @@ public:
   int cutBased[MAXINDEX];
   bool isPassHEEPId[MAXINDEX];
 
+  bool conversionVeto[MAXINDEX];
+  UChar_t lostHits[MAXINDEX];
+  float ip3d[MAXINDEX];
+  float sip3d[MAXINDEX];
+  float dxy[MAXINDEX];
+  float dz[MAXINDEX];
+  int associatedJetIndex[MAXINDEX];
 };
 
 
@@ -284,6 +294,13 @@ public:
   bool isGlobal[MAXINDEX];
   bool isPFCand[MAXINDEX];
   bool isTracker[MAXINDEX];
+  float ip3d[MAXINDEX];
+  float sip3d[MAXINDEX];
+  float dxy[MAXINDEX];
+  float dz[MAXINDEX];
+  bool looseId[MAXINDEX];
+  int associatedJetIndex[MAXINDEX];
+
 };
 
 class Taus : public Lepton {

@@ -1,6 +1,7 @@
 #include "Particle.h"
 #include <bitset>
 #include <signal.h>
+#include <cmath>
 
 #define SetBranch(name, variable) BOOM->SetBranchStatus(name, 1);  BOOM->SetBranchAddress(name, &variable);
 
@@ -24,17 +25,21 @@ Particle::Particle(TTree* _BOOM, std::string _GenName, std::string filename, std
 
   for( auto item : syst_names) {
     if(item == "orig") {
+      // std::cout << "This is orig" << std::endl;
       systVec.push_back(new std::vector<TLorentzVector>());
       continue;
     }
     if(!regex_match(item, mSyst, syst_regex)){
+      // std::cout << "This is !regex_match(item, mSyst, syst_regex)" << std::endl;
       systVec.push_back(nullptr);
       continue;
     }
     if(mGen[1] == mSyst[1]) {
+      // std::cout << "This is mGen[1] == mSyst[1]" << std::endl;
       systVec.push_back(new std::vector<TLorentzVector>());
       std::cout << GenName << ": " << item << std::endl;
     } else {
+      // std::cout << "This is else for systVec" << std::endl;
       systVec.push_back(nullptr);
     }
   }
@@ -81,18 +86,66 @@ void Particle::addP4Syst(TLorentzVector mp4, int syst){
 
 
 void Particle::init(){
-    //cleanup of the particles
+  // print the particle type name
+	/*
+  std::cout << "-------" << std::endl;
+  std::cout << "Particle: " << GenName << std::endl;
+  std::cout << "Number of vectors = " << m_n << std::endl;
+  std::cout << "Reco.size() = " << Reco.size() << std::endl;
+  std::cout << "systVec.size() = " << systVec.size() << std::endl; 
+  std::cout << "Reco.empty() = " << Reco.empty() << std::endl;
+  std::cout << "systVec.empty() = " << systVec.empty() << std::endl;
+  */
+  //cleanup of the particles
+
+  // if( (systVec.empty() == 0 && systVec.size() > 10e10) || (Reco.empty() == 0 && Reco.size() > 10e10) ){
+  // 	throw std::runtime_error((GenName+" list of particles will throw a bus error").c_str());
+  // ak}
+  //	std::cout << "bad memory clean up" << std::endl;
+  //	Reco.resize(1);
+  //	std::cout << "Reco.size() = " << Reco.size() << std::endl;
+  	// TLorentzVector badtmp(0,0,0,0);
+  	// Reco.push_back(badtmp);
+  	// Reco.shrink_to_fit();
+  //} else {
+  
+  // std::cout << "normal clean up" << std::endl;
   Reco.clear();
-  for(auto it: systVec){
+  Reco.shrink_to_fit();
+  
+  // std::vector<TLorentzVector>().swap(Reco);  	
+  //}
+  // 
+  //
+
+ for(auto it: systVec){
+    // std::cout << "beginning of for loop" << std::endl;
+    // std::cout << "clear systVec... " << (it != nullptr) << std::endl;
     if(it != nullptr) it->clear();
   }
+
+  // std::cout << "particles cleaned up: Reco.clear() " << std::endl;
+  // std::cout << "Reco.size() = " << Reco.size() << std::endl;
+  // std::cout << "systVec.size() = " << systVec.size() << std::endl;
+
+  // std::cout << "Finished clearing systVec" << std::endl;
+
   TLorentzVector tmp;
+  // std::cout << "Started filling TLorentz vectors... " << std::endl;
+  
   for(uint i=0; i < m_n; i++) {
+
     tmp.SetPtEtaPhiM(m_pt[i],m_eta[i],m_phi[i],m_mass[i]);
     Reco.push_back(tmp);
 
   }
+  // std::cout << "Reco.size() = " << Reco.size() << std::endl;
+  
+  // std::cout << "Done. Doing setCurrentP(-1)" << std::endl;
   setCurrentP(-1);
+  // std::cout << "Reco.size() = " << Reco.size() << std::endl;
+  
+  // std::cout << "Done." << std::endl;
 
 }
 
@@ -299,12 +352,11 @@ bool Jet::passedTightJetID(int nobj) {
 }
 
 bool Jet::getPileupJetID(int nobj, int bit_id) {
-   // bit0 - tight ID (true) or fail ID (false), bit1 - medium ID, bit2 - looseID
-   std::bitset<8> bit_jet(puID[nobj]);
-   // std::cout << "PU jet ID = " << puID[nobj] << ", bit_jet = " << bit_jet << ", bit_jet[" << bit_id << "] = " << bit_jet[bit_id] << std::endl;
-   return bit_jet[bit_id];
- }
- 
+  // bit0 - tight ID (true) or fail ID (false), bit1 - medium ID, bit2 - looseID
+  std::bitset<8> bit_jet(puID[nobj]);
+  // std::cout << "PU jet ID = " << puID[nobj] << ", bit_jet = " << bit_jet << ", bit_jet[" << bit_id << "] = " << bit_jet[bit_id] << std::endl;
+  return bit_jet[bit_id];
+}
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////    FATJET   ////////////////////////////////////////
@@ -379,6 +431,7 @@ double Lepton::charge(uint index)const     {return _charge[index];}
 
 Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Lepton(_BOOM, "Electron", filename, syst_names) {
   type = PType::Electron;
+
   auto& elec1 = pstats["Elec1"];
   auto& elec2 = pstats["Elec2"];
   
@@ -418,11 +471,247 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
   if(elec1.bfind("DoDiscrByHEEPID") || elec2.bfind("DoDiscrByHEEPID")) {
     SetBranch("Electron_cutBased_HEEP", isPassHEEPId);
   }
+
+  if(elec1.bfind("DoDiscrBySUSYSoftID") || elec2.bfind("DoDiscrBySUSYSoftID")){
+    SetBranch("Electron_pfRelIso03_all", pfRelIso03_all);
+    SetBranch("Electron_mvaFall17V2noIso", mvaFall17V2noIso);
+    SetBranch("Electron_mvaFall17V2noIso_WP80", mvaFall17V2noIso_WP80);
+    SetBranch("Electron_mvaFall17V2noIso_WP90", mvaFall17V2noIso_WP90);
+    SetBranch("Electron_ip3d", ip3d);
+    SetBranch("Electron_sip3d", sip3d);
+    SetBranch("Electron_dxy", dxy);
+    SetBranch("Electron_dz", dz);
+    SetBranch("Electron_lostHits", lostHits);
+    SetBranch("Electron_convVeto", conversionVeto);
+    SetBranch("Electron_jetIdx", associatedJetIndex);
+  }
 }
 
 bool Electron::get_Iso(int index, double min, double max) const {
   //std::cout << pfRelIso03_all[index] << std::endl;
   return (miniPFRelIso_all[index] >= min && miniPFRelIso_all[index] < max);
+}
+
+bool Electron::customSoftLooseEleMVAId(int index, TLorentzVector electronp4, std::string year) const{
+
+  bool passCutId = true;
+
+  // std::cout << "Electron custom MVA id year = " << year << std::endl;
+  // std::cout << "mvaFall17V2noIso = " << mvaFall17V2noIso[index] << std::endl;
+
+  if(year.compare("2016") == 0){
+
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
+      if(abs(electronp4.Eta()) < 1.479){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.97;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+    }
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.97;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.80;
+      }
+    }
+    else if(electronp4.Pt() >= 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.85;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.20;
+      }
+    }
+  }
+
+  if(year.compare("2017") == 0){    
+
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
+      if(abs(electronp4.Eta()) < 1.479){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.80;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.75;
+      }
+    }
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.20;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.20;
+      }
+    }
+    else if(electronp4.Pt() >= 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.40;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.40;
+      }
+    }
+  }
+
+  if(year.compare("2018") == 0){  
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
+      if(abs(electronp4.Eta()) < 1.479){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+      	passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+    }
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.90;
+      }
+    }
+    else if(electronp4.Pt() >= 20.0){
+      if(abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.80;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.00;
+      }
+    }
+  }
+
+  // std::cout << "passCutId = " << passCutId << std::endl;
+
+  return passCutId;
+
+}
+
+bool Electron::customSoftTightEleMVAId(int index, TLorentzVector electronp4, std::string year) const{
+
+  bool passCutId = true;
+  double rawMvaIdScore = 0.0;
+  double normMvaIdScore = (double) mvaFall17V2noIso[index];
+
+  // std::cout << "Electron custom MVA id year = " << year << std::endl;
+  // std::cout << "mvaFall17V2noIso = " << normMvaIdScore << std::endl;
+
+  if(year.compare("2016") == 0){
+
+  	if(normMvaIdScore > -1.0 && normMvaIdScore < 1.0){
+  		// std::cout << "score between -1 and 1" << std::endl;
+  		rawMvaIdScore = -0.5 * log( (1.0 - normMvaIdScore) / (1.0 + normMvaIdScore) );
+  	}
+  	else{
+  		// std::cout << "score equal to -1 or 1" << std::endl;
+  		rawMvaIdScore = normMvaIdScore * 99999.9;
+  	}
+
+  	// std::cout << "mvaFall17V2noIso (raw) = " << rawMvaIdScore << std::endl;
+
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
+      passCutId = passCutId && mvaFall17V2noIso_WP80[index];
+    }
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 3.447 + 0.063*(electronp4.Pt() - 25.0);
+      }
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 2.552 + 0.058*(electronp4.Pt() - 25.0);
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 1.555 + 0.075*(electronp4.Pt() - 25.0);
+      }
+    }
+    else if(electronp4.Pt() >= 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 4.392;
+      }
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 3.392;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 2.680;
+      }
+      
+    }
+  }
+
+  if(year.compare("2017") == 0){    
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
+      passCutId = passCutId && mvaFall17V2noIso_WP90[index];
+    }
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.2 + 0.032*(electronp4.Pt() - 10.0);
+      }
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.1 + 0.025*(electronp4.Pt() - 10.0);
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.1 + 0.028*(electronp4.Pt() - 10.0);
+      }
+    }
+    else if(electronp4.Pt() >= 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.68;
+      }
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.475;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.32;
+      }
+      
+    }
+  }
+
+  if(year.compare("2018") == 0){  
+
+  	if(normMvaIdScore > -1.0 && normMvaIdScore < 1.0){
+  		// std::cout << "score between -1 and 1" << std::endl;
+  		rawMvaIdScore = -0.5 * log( (1.0 - normMvaIdScore) / (1.0 + normMvaIdScore) );
+  	}
+  	else{
+  		// std::cout << "score equal to -1 or 1" << std::endl;
+  		rawMvaIdScore = normMvaIdScore * 99999.9;
+  	}
+
+  	// std::cout << "mvaFall17V2noIso (raw) = " << rawMvaIdScore << std::endl;
+
+    if(electronp4.Pt() > 5.0 && electronp4.Pt() <= 10.0){
+      passCutId = passCutId && mvaFall17V2noIso_WP80[index];
+    }
+    else if(electronp4.Pt() > 10.0 && electronp4.Pt() < 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 4.277 + 0.112*(electronp4.Pt() - 25.0);
+      }
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 3.152 + 0.060*(electronp4.Pt() - 25.0);
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 2.359 + 0.087*(electronp4.Pt() - 25.0);
+      }
+    }
+    else if(electronp4.Pt() >= 40.0){
+      if(abs(electronp4.Eta()) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 4.277;
+      }
+      else if(abs(electronp4.Eta()) >= 0.8 && abs(electronp4.Eta()) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 3.152;
+      }
+      else if(abs(electronp4.Eta()) >= 1.479 && abs(electronp4.Eta()) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 2.359;
+      }
+      
+    }
+  }
+
+  // std::cout << "passCutId = " << passCutId << std::endl;
+
+  return passCutId;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -451,9 +740,20 @@ Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
     SetBranch("Muon_pfRelIso04_all"  , pfRelIso04_all);
   }
 
-   SetBranch("Muon_isGlobal", isGlobal);
-   SetBranch("Muon_isPFcand", isPFCand);
-   SetBranch("Muon_isTracker", isTracker);
+  SetBranch("Muon_isGlobal", isGlobal);
+  SetBranch("Muon_isPFcand", isPFCand);
+  SetBranch("Muon_isTracker", isTracker);
+
+  if(mu1.bfind("DoDiscrBySUSYSoftID") || mu2.bfind("DoDiscrBySUSYSoftID")){
+    SetBranch("Muon_pfRelIso03_all"  , pfRelIso03_all);
+    SetBranch("Muon_ip3d", ip3d);
+    SetBranch("Muon_sip3d", sip3d);
+    SetBranch("Muon_dxy", dxy);
+    SetBranch("Muon_dz", dz);
+    SetBranch("Muon_looseId", looseId);
+    SetBranch("Muon_softId", soft);
+    SetBranch("Muon_jetIdx", associatedJetIndex);
+   }
 
 }
 
@@ -618,7 +918,9 @@ bool Taus::get_Iso(int index, double onetwo, double flipisolation) const {
   else if(flipisolation && (tau_isomax_mask.count() == 0)){ // Requiring a non-isolated tau by flipping isolation
     // std::cout << "Tau isolation (2) = " << tau_iso << ", min requirement = " << tau_isomin_mask << ", max requirement = " << tau_isomax_mask << std::endl;
     // std::cout << "(flip isolation) Isolation requirement passed? " << (tau_isomax_mask == tau_iso) << std::endl;
-    return (!((tau_isomin_mask&tau_iso).count()) and (tau_isomax_mask == tau_iso));
+    // std::cout << "!((tau_isomin_mask&tau_iso).count()? " << ( !(tau_isomin_mask&tau_iso).count() ) << std::endl;
+    // std::cout << "!((tau_isomin_mask&tau_iso).count() && (tau_isomax_mask == tau_iso) ? " << ( !(tau_isomin_mask&tau_iso).count() || (tau_isomax_mask == tau_iso) ) << std::endl;
+    return (!((tau_isomin_mask&tau_iso).count()) || (tau_isomax_mask == tau_iso));
   }
   else{
     if(!flipisolation){

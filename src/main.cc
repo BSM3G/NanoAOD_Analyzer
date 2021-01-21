@@ -141,24 +141,24 @@ int main (int argc, char* argv[]) {
   
   //main event loop
   for(size_t i=0; i < Nentries; i++) {
-    
     //if(i == 0) spechialAna.begin_run();   // Special analyzer
     testing.clear_values();
-
+    
     testing.preprocess(i, year);
 
     testing.fill_efficiency();
     //if (i < 25)
     //{testing.writeParticleDecayList(i);}  //01.16.19:  This will write the particle decay list for the first 25 events.
     testing.fill_histogram(year);
-    
+
     //spechialAna.analyze();                // Special analyzer
-    
+
     //this will be set if ctrl+c is pressed
     if(do_break){
       testing.nentries=i+1;
       break;
     }
+
   }
   testing.printCuts();
   
