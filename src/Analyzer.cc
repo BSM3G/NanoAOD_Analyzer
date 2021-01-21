@@ -707,6 +707,29 @@ bool Analyzer::passHEMveto2018(){
 
 }
 
+bool Analyzer::skimSignalMC(int event){
+  // Check if we should use this function at all... to be called only for signal samples
+  if(! isSignalMC ) return true;
+
+  // Construct the name of the branch:
+  std::string signalBranchName = ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str();
+  
+  // std::cout << "Name of the branch: " << signalBranchName << std::endl;
+  bool isInputSignal = false;
+  
+  TBranch *signalBranch = BOOM->GetBranch(signalBranchName.c_str());
+  signalBranch->SetStatus(1);
+  signalBranch->SetAddress(&isInputSignal);
+
+  BOOM->GetEntry(event);
+
+  finalInputSignal = isInputSignal;
+
+  signalBranch->ResetAddress();
+  // std::cout << "Input signal: " << signalBranchName << ", isInputSignal? " << finalInputSignal << std::endl;
+  return finalInputSignal;
+}
+
 ///Function that does most of the work.  Calculates the number of each particle
 void Analyzer::preprocess(int event, std::string year){ // This function no longer needs to get the JSON dictionary as input.
 
@@ -773,6 +796,14 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
          clear_values();
          return;
        }
+     }
+
+     // -- For signal samples -- //
+     if(isSignalMC){
+      if(skimSignalMC(event) == false){
+        clear_values();
+        return;
+      }
      }
 
   }
@@ -1518,6 +1549,7 @@ void Analyzer::setupGeneral(std::string year) {
   read_info(filespace + "VBFCuts_info.in");
   read_info(filespace + "Run_info.in");
   read_info(filespace + "Systematics_info.in");
+  read_info(filespace + "SignalMC_info.in");
 	
   // Call readinJSON and save this in the jsonlinedict we declared in Analyzer.h
   jsonlinedict = readinJSON(year);
@@ -1565,6 +1597,20 @@ void Analyzer::setupGeneral(std::string year) {
     for(std::string name : trigger2BranchesList){
       std::cout << name << std::endl;
     }
+  }
+  std::cout << " ---------------------------------------------------------------------- " << std::endl;
+
+  // Check if it is a signal MC sample:
+  // isSignalMC = distats["SignalMC"].bfind("isSignalMC");
+
+  // double check 
+  if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) == 0){
+   isSignalMC = false;
+   std::cout << "This is not a signal MC sample." << std::endl;
+  }
+  else if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) != 0){
+   isSignalMC = true;
+   std::cout << "This is a signal MC sample!" << std::endl;
   }
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
 }
@@ -1664,6 +1710,22 @@ void Analyzer::read_info(std::string filename) {
         for(auto trigger : stemp){
           if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
             inputTrigger2Names.push_back(trigger);
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("ModelTag") != std::string::npos){
+        for(auto model: stemp){
+          if(model.find("ModelTag") == std::string::npos and "=" != model){
+            inputSignalModel = model;
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("MassParameters") != std::string::npos){
+        for(auto massparam: stemp){
+          if(massparam.find("MassParameters") == std::string::npos and "=" != massparam){
+            inputSignalMassParam = massparam;
           }
         }
         continue;
@@ -2063,15 +2125,18 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     jet_RawFactor = 0.0;
 
     // get the proper jet pts for type-I MET, only correct the non-mu fraction of the jet
+
     // if the corrected pt > 15 GeV (unclEnThreshold), use the corrected jet, otherwise use raw
     // condition ? result_if_true : result_if_false
     double jet_pt_noMuL1L2L3 = 0.0, jet_pt_noMuL1 = 0.0;
 
     if(year.compare("2017") == 0){
+      // This step is only needed for v2 MET in 2017. Only correct the non-mu fraction of the jet.
       jet_pt_noMuL1L2L3 = jet_Pt * jec > jetUnclEnThreshold ? jet_Pt * jec : jet_Pt;
       jet_pt_noMuL1 = jet_Pt * jecL1 > jetUnclEnThreshold ? jet_Pt * jecL1 : jet_Pt;
     }
     else{
+      // For 2016 and 2018, simply apply the corrections as usual.
       jet_pt_noMuL1L2L3 = jet_Pt * jec;
       jet_pt_noMuL1 = jet_Pt * jecL1;      
     }
@@ -2196,7 +2261,9 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
     double jetTotalEmEF = _Jet->neutralEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
     
-    // Propagate this correction to the MET: nominal values.
+    // Propagate JER and JES corrections and uncertainties to MET.
+    // Only propagate JECs to MET if the corrected pt without the muon is above the unclustered energy threshold.
+
     if(jet_pt_noMuL1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
 
       if(!(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_rawPt < 50.0)){
@@ -2724,8 +2791,31 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
-      else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+      // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
+      // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+      else if(cut == "ApplyLooseID"){
+         	if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+              if(!stats.bfind("FailPUJetID")){
+                  passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+              } else {
+                  passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              }
+          	}
+          else{
+              passCuts = passCuts && _Jet->passedLooseJetID(i); 
+          	}
+      	}
+      	else if(cut == "ApplyTightID"){ 
+          	if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
+            	if(!stats.bfind("FailPUJetID")){
+                	passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); 
+              	} else {
+                	passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              	}
+          	} else {
+              passCuts = passCuts && _Jet->passedTightJetID(i);
+          	} 
+      	} 
       else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(lvec, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
       else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(lvec, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
 
@@ -2838,8 +2928,31 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
-        else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-        else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+        // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
+        // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+        else if(cut == "ApplyLooseID"){
+         	if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){
+              if(!stats.bfind("FailPUJetID")){
+                  passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+              } else {
+                  passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              }
+          	}
+          else{
+              passCuts = passCuts && _Jet->passedLooseJetID(i); 
+          	}
+      	}
+      	else if(cut == "ApplyTightID"){ 
+          	if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
+            	if(!stats.bfind("FailPUJetID")){
+                	passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); 
+              	} else {
+                	passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              	}
+          	} else {
+              passCuts = passCuts && _Jet->passedTightJetID(i);
+          	} 
+      	}        
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(leadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(leadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
       // ----anti-overlap requirements
@@ -2887,8 +3000,31 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[j] > stats.dmap.at("JetBTaggingCut")); 
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[j] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[j] > stats.dmap.at("JetBTaggingCut"));
-        else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(j);
-        else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(j);
+        // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(j);
+        // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(j);
+        else if(cut == "ApplyLooseID"){
+         	if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
+              if(!stats.bfind("FailPUJetID")){
+                  passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut"));
+              } else {
+                  passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
+              }
+          	}
+          else{
+              passCuts = passCuts && _Jet->passedLooseJetID(j); 
+          	}
+      	}
+      	else if(cut == "ApplyTightID"){ 
+          	if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
+            	if(!stats.bfind("FailPUJetID")){
+                	passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+              	} else {
+                	passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
+              	}
+          	} else {
+              passCuts = passCuts && _Jet->passedTightJetID(j);
+          	} 
+      	}
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(subleadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(subleadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
       // ----anti-overlap requirements
@@ -2936,8 +3072,31 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
       else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
-      else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+      // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
+      // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+      else if(cut == "ApplyLooseID"){
+          if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+              if(!stats.bfind("FailPUJetID")){
+                  passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+              } else {
+                  passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              }
+          }
+          else{
+              passCuts = passCuts && _Jet->passedLooseJetID(i); 
+          }
+      }
+      else if(cut == "ApplyTightID"){ 
+          if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
+              if(!stats.bfind("FailPUJetID")){
+                 passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); 
+              } else {
+                 passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              }
+          } else {
+              passCuts = passCuts && _Jet->passedTightJetID(i);
+          } 
+      }
 
     // ----anti-overlap requirements
       else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
@@ -3673,6 +3832,19 @@ void Analyzer::getGoodDiJets(const PartStats& stats, const int syst) {
         else if(cut == "DiscrByOSEta") passCuts = passCuts && (jet1.Eta() * jet2.Eta() < 0);
         else if(cut == "DiscrByMassReco") passCuts = passCuts && passCutRange((jet1+jet2).M(), stats.pmap.at("MassCut"));
         else if(cut == "DiscrByCosDphi") passCuts = passCuts && passCutRange(cos(absnormPhi(jet1.Phi() - jet2.Phi())), stats.pmap.at("CosDphiCut"));
+        else if(cut == "RejectForwardDiJetPairs") passCuts = passCuts && ( !passCutRangeAbs(jet1.Eta(), stats.pmap.at("ForwardEtaRange")) || !passCutRangeAbs(jet2.Eta(), stats.pmap.at("ForwardEtaRange")) );
+        /*{
+        	std::cout << "Checking if this is a forward dijet pair..." << std::endl;
+        	std::cout << "Jet1 eta = " << jet1.Eta() << ", jet2 eta = " << jet2.Eta() << std::endl;
+        	// Check the first jet of the pair:
+        	std::cout << "Jet 1 in the forward eta range? " << passCutRangeAbs(jet1.Eta(), stats.pmap.at("ForwardEtaRange")) << std::endl;
+        	// Then go onto the second jet of the pair:
+        	std::cout << "Jet 2 in the forward eta range? " << passCutRangeAbs(jet2.Eta(), stats.pmap.at("ForwardEtaRange")) << std::endl;
+        	passCuts = passCuts && ( !passCutRangeAbs(jet1.Eta(), stats.pmap.at("ForwardEtaRange")) || !passCutRangeAbs(jet2.Eta(), stats.pmap.at("ForwardEtaRange")) );
+        	if(passCuts){ std::cout << "dijet pair not coming from both jets in the forward region" << std::endl;}
+        	else{std::cout << "dijet pair -- coming -- from both jets in the forward region" << std::endl;}
+        }*/
+
         else std::cout << "cut: " << cut << " not listed" << std::endl;
       }
       ///Particlesp that lead to good combo are totjet * part1 + part2
@@ -4201,6 +4373,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
   if(group == "FillRun" && (&ihisto==&histo)) {
     if(crbins != 1) {
       for(int i = 0; i < crbins; i++) {
+        std::cout << "nominal, crbins !=1" << std::endl;
         ihisto.addVal(false, group, i, "Events", 1);
         if(distats["Run"].bfind("ApplyGenWeight")) {
           //put the weighted events in bin 3
@@ -4210,18 +4383,77 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       }
     }
     else{
-      ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1);
-      if(distats["Run"].bfind("ApplyGenWeight")) {
-        //put the weighted events in bin 3
-        ihisto.addVal(2, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0);
-      }
+	    
+      if(isSignalMC){ // For signal samples (unskimmed)
+        if(finalInputSignal){
+          
+	    	  // Bin 1 will contain only the events that correspond to a certain signal mass point
+          ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1); 
+          
+          if(distats["Run"].bfind("ApplyGenWeight")) {
+            
+            if(finalInputSignal){
+              // Bin 3 contains the number of raw signal MC events passing a particular cut, same as bin1 but without any weights.
+              ihisto.addVal(2, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+            }
+            // Bin 4 contains number of raw MC events for a given signal point for which the gen_weight is positive.
+            ihisto.addVal(3, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+          }
+        }
+        // Bin 5 contains the full number of events analyzed in the signal sample (including all signal points)
+        ihisto.addVal(4,group,ihisto.get_maxfolder(),"Events",1.0); 
+	    }
+	    else if(!isSignalMC || isData ){ // For backgrounds or data.
+        // Bin 1 contains the number of events analyzed in a given sample.
+	    	ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1);
+
+        if(distats["Run"].bfind("ApplyGenWeight")) {
+          // Bin 3 contains the raw (unweighted) number of events (data or MC) passing a certain selection.
+          ihisto.addVal(2, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0);
+        }
+	    }
       ihisto.addVal(wgt, group, ihisto.get_maxfolder(), "Weight", 1);
       ihisto.addVal(nTruePU, group, ihisto.get_maxfolder(), "PUWeight", 1);
     }
+
+    // In all cases: Bin 2 contains the weighted number of events passing a certain selection.
     histAddVal(true, "Events");
     histAddVal(bestVertices, "NVertices");
+
   } else if(group == "FillRun" && issyst) {
-    // This is for systematics.
+
+    if(isSignalMC){ // For signal samples (unskimmed)
+      if(finalInputSignal){
+        
+        // Bin 1 will contain only the events that correspond to a certain signal mass point
+        syst_histo.addVal(false, group,max, "Events", 1); 
+        
+        if(distats["Run"].bfind("ApplyGenWeight")) {
+          
+          if(finalInputSignal){
+            // Bin 3 contains the number of raw signal MC events passing a particular cut, same as bin1 but without any weights.
+            syst_histo.addVal(2, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+          }
+          // Bin 4 contains number of raw MC events for a given signal point for which the gen_weight is positive.
+          syst_histo.addVal(3, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+        }
+      }
+      // Bin 5 contains the full number of events analyzed in the signal sample (including all signal points)
+      syst_histo.addVal(4,group,max,"Events",1.0); 
+    }
+    else if(!isSignalMC){ // For backgrounds 
+      // Bin 1 contains the number of events analyzed in a given sample.
+      syst_histo.addVal(false, group,max, "Events", 1);
+
+      if(distats["Run"].bfind("ApplyGenWeight")) {
+        // Bin 3 contains the raw (unweighted) number of events (data or MC) passing a certain selection.
+        syst_histo.addVal(2, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0);
+      }
+    }
+    syst_histo.addVal(wgt, group, max, "Weight", 1);
+    syst_histo.addVal(nTruePU, group, max, "PUWeight", 1);
+
+    // In all cases: Bin 2 contains the weighted number of events passing a certain selection.
     histAddVal(true, "Events");
     histAddVal(bestVertices, "NVertices");
 

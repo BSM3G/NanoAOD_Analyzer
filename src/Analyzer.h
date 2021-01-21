@@ -122,6 +122,10 @@ public:
   bool passHEMveto2018();
   bool passJetVetoEEnoise2017(int);
 
+  bool skimSignalMC(int);
+  std::string inputSignalModel="", inputSignalMassParam="";
+  bool finalInputSignal = false;
+
   void smearLepton(Lepton&, CUTS, const PartStats&, const PartStats&, int syst=0);
   void smearTaus(Lepton&, const PartStats&, const PartStats&, int syst=0);
   //void smearJet(Particle&, CUTS, const PartStats&, int syst=0);
@@ -286,7 +290,7 @@ public:
 
   double maxIso, minIso;
   int leadIndex, maxCut, crbins=1;
-  bool isData, CalculatePUSystematics, doSystematics;
+  bool isData, isSignalMC, CalculatePUSystematics, doSystematics;
 
   float nTruePU = 0;
   int bestVertices = 0;
