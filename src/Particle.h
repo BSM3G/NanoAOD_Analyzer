@@ -178,6 +178,7 @@ public:
   std::vector<CUTS> overlapCuts(CUTS);
   bool passedLooseJetID(int);
   bool passedTightJetID(int);
+  bool getPileupJetID(int, int);
    
   float area[MAXINDEX];
   // float bDiscriminator[MAXINDEX];
