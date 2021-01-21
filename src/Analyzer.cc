@@ -481,20 +481,23 @@ void Analyzer::setupEventGeneral(int nevent){
   // We want to set those branches first here and then call BOOM->GetEntry(nevent) so that the variables change properly for each event.
 
   // For MC samples, set number of true pileup interactions, gen-HT and gen-weights.
-  if(!isData){ 
+  if(!isData){
+ 
     SetBranch("Pileup_nTrueInt",nTruePU);
     SetBranch("genWeight",gen_weight);
-    SetBranch("L1PreFiringWeight_Nom", l1prefiringwgt);
+
+    if(BOOM->FindBranch("L1PreFiringWeight_Nom") != 0){
+      SetBranch("L1PreFiringWeight_Nom", l1prefiringwgt);
+ 
+      if(distats["Systematics"].bfind("useSystematics")){
+        SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);  
+        SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
+      }
+    }
 
     if (BOOM->FindBranch("LHE_HT") != 0){
       SetBranch("LHE_HT",generatorht);
     }
-
-    if(syst_names.size() > 1){
-      SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);
-      SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
-    }
-
 
   }
   // Get the number of primary vertices, applies to both data and MC
@@ -4065,13 +4068,9 @@ void Analyzer::fill_histogram(std::string year) {
     if(distats["Run"].bfind("ApplyWKfactor")){
       wgt *= getWkfactor();
     }
-    // Apply Z-boost weights from the SUSY PAG for Run II analyses
-    if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // September 10, 2020 - Brenda FE
-      // prefiring_wgt = prefiringwgtprod.getPrefiringWeight("");
-      // std::cout << "Prefiring weight = " << prefiringwgtprod.getPrefiringWeight("") << std::endl;
-      // std::cout << "Prefiring wgt in sample = " << l1prefiringwgt << std::endl;
-      //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
-      // wgt *= prefiringwgtprod.getPrefiringWeight(""); // nominal value
+    // Apply L1 prefiring weights for 2016/2017
+    if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // January 20, 2021 - Brenda FE
+      // std::cout << "L1 prefiring weight = " << l1prefiringwgt << std::endl;
       wgt *= l1prefiringwgt;
     }
 
@@ -4232,7 +4231,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(nTruePU, "PUNTrueInt");
     histAddVal(generatorht, "HT");
     histAddVal(gen_weight, "Weight");
-    histAddVal(prefiring_wgt, "PrefiringWeight");
+    histAddVal(l1prefiringwgt, "PrefiringWeight");
 
     int nhadtau = 0;
     TLorentzVector genVec(0,0,0,0);
