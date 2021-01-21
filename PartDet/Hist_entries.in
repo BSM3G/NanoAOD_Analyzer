@@ -33,6 +33,7 @@ FillGen 1
 PUNTrueInt    99 0. 99. // nTruePU - change the number of bins accordingly for each year's datatset
 GenHT       4000 0. 4000.
 GenWeight  10000 -50000. 50000. 
+L1PrefiringWeight 200 0. 1.
 
 GenVisHadTauPt 				100   0.     250.
 GenVisHadTauEta 			72  -3.6      +3.6
@@ -161,6 +162,9 @@ Jet1Energy   200   0.   500.
 Jet1Pt       200   0.   500.
 Jet1Eta      100  -5.0   +5.0
 Jet1Phi      144  -6.3   +6.3
+Jet1DPhiMet       126  -6.3    +6.3
+Jet1AbsDPhiMet    126   0.0    +6.3
+Jet1MinAbsDPhiMet  126   0.0    +6.3
 
 FillJet2 1
 
@@ -169,6 +173,9 @@ Jet2Energy   200   0.   500.
 Jet2Pt       200   0.   500.
 Jet2Eta      100  -5.0   +5.0
 Jet2Phi      144  -6.3   +6.3
+Jet2DPhiMet       126  -6.3  +6.3
+Jet2AbsDPhiMet    126   0.0  +6.3
+Jet2MinAbsDPhiMet 126   0.0  +6.3
 
 FillBJet 1
 
@@ -177,8 +184,9 @@ BJetEnergy   200   0.    500.
 BJetPt       200   0.    500.
 BJetEta       72  -3.6    +3.6
 BJetPhi       36  -3.15   +3.15
+BJetPtVsEta   100 -2.5 +2.5 500 0. 1000.
 
-FillCentralJet 0
+FillCentralJet 1
 
 NCentralJet      20   0.    20.
 CentralJetPt    200   0.   500.

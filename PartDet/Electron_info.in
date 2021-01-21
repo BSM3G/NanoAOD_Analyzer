@@ -31,7 +31,7 @@ IsoSumPtCutValue 0.0 0.15
 
 //(0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
 DoDiscrByCBID false
-DiscrByCBID 2
+DiscrByCBID 3
 
 DoDiscrBymvaID false
 DiscrBymvaWP80 0
@@ -67,8 +67,9 @@ DoDiscrByIsolation 0
 IsoSumPtCutValue 0.1 0.2
 
 //(0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
-DoDiscrByCBID false
-DiscrByCBID 2
+DoDiscrByCBID true
+DiscrByCBID 3
+
 
 DoDiscrBymvaID false
 DiscrBymvaWP80 0

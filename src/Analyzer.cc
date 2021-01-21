@@ -420,7 +420,6 @@ void Analyzer::setupCR(std::string var, double val) {
 
 ////destructor
 Analyzer::~Analyzer() {
-
   clear_values();
   delete BOOM;
   delete _Electron;
@@ -484,7 +483,8 @@ void Analyzer::setupEventGeneral(int nevent){
   // We want to set those branches first here and then call BOOM->GetEntry(nevent) so that the variables change properly for each event.
 
   // For MC samples, set number of true pileup interactions, gen-HT and gen-weights.
-  if(!isData){ 
+  if(!isData){
+ 
     SetBranch("Pileup_nTrueInt",nTruePU);
     SetBranch("genWeight",gen_weight);
 
@@ -498,7 +498,7 @@ void Analyzer::setupEventGeneral(int nevent){
     }
 
     if (BOOM->FindBranch("LHE_HT") != 0){
-    	SetBranch("LHE_HT",generatorht);
+      SetBranch("LHE_HT",generatorht);
     }
 
   }
@@ -527,19 +527,38 @@ void Analyzer::setupEventGeneral(int nevent){
   // Get the trigger decision vector.
   triggerDecision = false; // Reset the decision flag for each event.
 
-  for(std::string triggname : triggerBranchesList){
-    // std::cout << "Trigger name: " << triggname << std::endl;
-    
-    TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
-    triggerBranch->SetStatus(1);
-    triggerBranch->SetAddress(&triggerDecision);
+  if(trigger1BranchesList.size() > 0){
+    for(std::string triggname : trigger1BranchesList){
+      // std::cout << "Trigger name: " << triggname << std::endl;
+      
+      TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
+      triggerBranch->SetStatus(1);
+      triggerBranch->SetAddress(&triggerDecision);
 
-    // SetBranch(triggname.c_str(), triggerDecision);
-    BOOM->GetEntry(nevent);
+      // SetBranch(triggname.c_str(), triggerDecision);
+      BOOM->GetEntry(nevent);
 
-    // std::cout << "Decision = " << triggerDecision << std::endl;
-    triggernamedecisions.push_back(triggerDecision);
-    triggerBranch->ResetAddress();
+      // std::cout << "Decision = " << triggerDecision << std::endl;
+      trigger1namedecisions.push_back(triggerDecision);
+      triggerBranch->ResetAddress();
+    }
+  }
+
+  if(trigger2BranchesList.size() > 0){
+    for(std::string triggname : trigger2BranchesList){
+      // std::cout << "Trigger name: " << triggname << std::endl;
+      
+      TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
+      triggerBranch->SetStatus(1);
+      triggerBranch->SetAddress(&triggerDecision);
+
+      // SetBranch(triggname.c_str(), triggerDecision);
+      BOOM->GetEntry(nevent);
+
+      // std::cout << "Decision = " << triggerDecision << std::endl;
+      trigger2namedecisions.push_back(triggerDecision);
+      triggerBranch->ResetAddress();
+    }
   }
 
   /*
@@ -692,6 +711,7 @@ bool Analyzer::passHEMveto2018(){
 
 bool Analyzer::skimSignalMC(int event){
   // Check if we should use this function at all... to be called only for signal samples
+
   if(!isSignalMC) return true;
 
   // Construct the name of the branch:
@@ -814,6 +834,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
   // ---------------- Trigger requirement ------------------ //
   TriggerCuts(CUTS::eRTrig1);
+  TriggerCuts(CUTS::eRTrig2);
 
   for(size_t i=0; i < syst_names.size(); i++) {
   	std::string systname = syst_names.at(i);
@@ -1448,28 +1469,49 @@ void Analyzer::branchException(std::string branch){
   }
 }
 
-void Analyzer::getTriggerBranchesList(std::string trigger, bool usewildcard){
+void Analyzer::getTriggerBranchesList(CUTS ePos, std::string trigger, bool usewildcard){
 
- if(usewildcard){
-  for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+  if(ePos == CUTS::eRTrig1){
+    if(usewildcard){
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        if(branch_name.find(trigger) == std::string::npos) continue;
+        //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger1BranchesList.push_back(branch_name);
+      }
+    } else {
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        // Look for branches that match exactly the trigger name
+        if(branch_name.compare(trigger.c_str()) != 0) continue;
+        // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger1BranchesList.push_back(branch_name);
+      }
+    }
 
-    std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
-    if(branch_name.find(trigger) == std::string::npos) continue;
-    //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
-    triggerBranchesList.push_back(branch_name);
+    if(trigger1BranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.\n";
   }
- }
- else{
-    for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
-       std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
-       // Look for branches that match exactly the trigger name
-       if(branch_name.compare(trigger.c_str()) != 0) continue;
-       // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
-       triggerBranchesList.push_back(branch_name);
- }
-}
 
-  if(triggerBranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.";
+  if(ePos == CUTS::eRTrig2){
+    if(usewildcard){
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        if(branch_name.find(trigger) == std::string::npos) continue;
+        //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger2BranchesList.push_back(branch_name);
+      }
+    } else {
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        // Look for branches that match exactly the trigger name
+        if(branch_name.compare(trigger.c_str()) != 0) continue;
+        // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger2BranchesList.push_back(branch_name);
+      }
+    }
+
+    if(trigger2BranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.\n";
+  }
 }
 
 /////sets up other values needed for analysis that aren't particle specific
@@ -1501,24 +1543,63 @@ void Analyzer::setupGeneral(std::string year) {
   // Call readinJSON and save this in the jsonlinedict we declared in Analyzer.h
   jsonlinedict = readinJSON(year);
 
-  for(std::string trigger : inputTriggerNames){
-    try{
-      getTriggerBranchesList(trigger, distats["Run"].bfind("UseTriggerWildcard"));
+  if(inputTrigger1Names.size() > 0){
+    for(std::string trigger : inputTrigger1Names){
+      try{
+        getTriggerBranchesList(CUTS::eRTrig1, trigger, distats["Run"].bfind("UseTriggerWildcard"));
+      }
+      catch(const char* msg){
+        std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
+        continue;
+      }
     }
-    catch(const char* msg){
-      std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
-      continue;
-    }
+
+  // Check that there are no elements on the trigger list that refer to the same trigger to speed up the process.
+  removeDuplicates(trigger1BranchesList);
+
   }
 
-  // Check that there are no elements on the trigger list that refer to the same trigger 
-  // to speed up the process.
-  removeDuplicates(triggerBranchesList);
+  if(inputTrigger2Names.size() > 0){
+    for(std::string trigger : inputTrigger2Names){
+      try{
+        getTriggerBranchesList(CUTS::eRTrig2, trigger, distats["Run"].bfind("UseTriggerWildcard"));
+      }
+      catch(const char* msg){
+        std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
+        continue;
+      }
+    } 
+
+    // Check that there are no elements on the trigger list that refer to the same trigger to speed up the process.
+    removeDuplicates(trigger2BranchesList);
+  }
 
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
-  std::cout << "Full list of triggers to be probed: " << std::endl;
-  for(std::string name : triggerBranchesList){
-    std::cout << name << std::endl;
+  if(trigger1BranchesList.size() > 0){
+    std::cout << "Full list of trigger to be probed (1): " << std::endl;
+    for(std::string name : trigger1BranchesList){
+      std::cout << name << std::endl;
+    }
+  }
+  if(trigger2BranchesList.size() > 0){
+    std::cout << "Full list of trigger to be probed (2): " << std::endl;
+    for(std::string name : trigger2BranchesList){
+      std::cout << name << std::endl;
+    }
+  }
+  std::cout << " ---------------------------------------------------------------------- " << std::endl;
+
+  // Check if it is a signal MC sample:
+  // isSignalMC = distats["SignalMC"].bfind("isSignalMC");
+
+  // double check 
+  if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) == 0){
+   isSignalMC = false;
+   std::cout << "This is not a signal MC sample." << std::endl;
+  }
+  else if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) != 0){
+   isSignalMC = true;
+   std::cout << "This is a signal MC sample!" << std::endl;
   }
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
 
@@ -1620,10 +1701,18 @@ void Analyzer::read_info(std::string filename) {
         if(*p) distats[group].smap[stemp[0]] = stemp[1];
         else  distats[group].dmap[stemp[0]]=std::stod(stemp[1]);
       }
-      if(stemp.at(0).find("Trigger") != std::string::npos) {
+      if(stemp.at(0).find("Trigger1") != std::string::npos) {
         for(auto trigger : stemp){
           if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
-            inputTriggerNames.push_back(trigger);
+            inputTrigger1Names.push_back(trigger);
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("Trigger2") != std::string::npos) {
+        for(auto trigger : stemp){
+          if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
+            inputTrigger2Names.push_back(trigger);
           }
         }
         continue;
@@ -1647,10 +1736,11 @@ void Analyzer::read_info(std::string filename) {
     } else if(stemp.size() == 3 and stemp.at(0).find("Trigger") == std::string::npos){
       distats[group].pmap[stemp[0]] = std::make_pair(std::stod(stemp[1]), std::stod(stemp[2]));
     } else{
+
       if(stemp.at(0).find("Trigger") != std::string::npos) {
         for(auto trigger : stemp){
-          if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
-            inputTriggerNames.push_back(trigger);
+          if(trigger.find("Trigger") == std::string::npos and "=" != trigger ){
+            inputTrigger1Names.push_back(trigger);
           }
         }
         continue;
@@ -2038,6 +2128,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     jet_Pt = newjetP4.Pt();
     jet_RawFactor = 0.0;
 
+
     // get the proper jet pts for type-I MET.
     // condition ? result_if_true : result_if_false
     double jet_pt_noMuL1L2L3 = 0.0, jet_pt_noMuL1 = 0.0;
@@ -2174,10 +2265,11 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
     double jetTotalEmEF = _Jet->neutralEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
     
-    // Propagate JER and JES corrections and uncertanties to the MET. 
-    // Only propagate JECs to MET if the corrected pt without the muon is above the threshold.
+    // Propagate JER and JES corrections and uncertainties to MET.
+    // Only propagate JECs to MET if the corrected pt without the muon is above the unclustered energy threshold.
+
     if(jet_pt_noMuL1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
-    
+
       if(!(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_rawPt < 50.0)){
         
         if(isData){ 
@@ -2909,7 +3001,7 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
     */
     bool passCuts = true;
     double dphi1rjets = normPhi(lvec.Phi() - _MET->phi());
-    if( ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
+    if(ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
     else  passCuts = passCuts && passCutRange(fabs(lvec.Eta()), stats.pmap.at("EtaCut"));
     passCuts = passCuts && (lvec.Pt() > stats.dmap.at("PtCut")) ;
 
@@ -3064,6 +3156,7 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
+
         else if(cut == "ApplyLooseID"){
             // std::cout << "applying loose jet ID to jet with pt = " << lvec.Pt() << std::endl;
             if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){
@@ -3219,7 +3312,7 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
       else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
-      else if(cut == "MatchBToGen"){
+      else if(cut == "MatchBToGen" && !isData){
            int matchedGenJetIndex = _Jet->genJetIdx[i];
            int jetPartonFlavor = abs(_GenJet->genPartonFlavor[matchedGenJetIndex]);
            int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[matchedGenJetIndex]); 
@@ -3631,23 +3724,46 @@ bool Analyzer::isInTheCracks(float etaValue){
 
 ///sees if the event passed one of the two cuts provided
 void Analyzer::TriggerCuts(CUTS ePos) {
+
 	if(! neededCuts.isPresent(ePos)) return;
 
-	// Loop over all elements of the trigger decisions vector
-	for(bool decision : triggernamedecisions){
-		if(decision){
-			// If one element is true (1), then store back the event in the triggers vector
-			active_part->at(ePos)->push_back(0);
-			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
-			triggernamedecisions.clear();
-   			triggernamedecisions.shrink_to_fit();
-			// End of the function
-			return;
-		}
-	}
-	// If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
-	triggernamedecisions.clear();
-	triggernamedecisions.shrink_to_fit();
+  if(ePos == CUTS::eRTrig1){
+  	// Loop over all elements of the trigger decisions vector
+  	for(bool decision : trigger1namedecisions){
+  		if(decision){
+  			// If one element is true (1), then store back the event in the triggers vector
+  			active_part->at(ePos)->push_back(0);
+  			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
+  			trigger1namedecisions.clear();
+        trigger1namedecisions.shrink_to_fit();
+  			// End of the function
+  			return;
+  		}
+  	}
+  	// If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
+  	trigger1namedecisions.clear();
+    trigger1namedecisions.shrink_to_fit();
+  }
+
+  if(ePos == CUTS::eRTrig2){
+    // Loop over all elements of the trigger decisions vector
+    for(bool decision : trigger2namedecisions){
+      if(decision){
+        // If one element is true (1), then store back the event in the triggers vector
+        active_part->at(ePos)->push_back(0);
+        // Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
+        trigger2namedecisions.clear();
+        trigger2namedecisions.shrink_to_fit();
+        // End of the function
+        return;
+      }
+    }
+    // If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
+    trigger2namedecisions.clear();
+    trigger2namedecisions.shrink_to_fit();
+  }
+
+
 }
 
 
@@ -3969,6 +4085,7 @@ void Analyzer::getGoodDiJets(const PartStats& stats, const int syst) {
         else if(cut == "DiscrByMassReco") passCuts = passCuts && passCutRange((jet1+jet2).M(), stats.pmap.at("MassCut"));
         else if(cut == "DiscrByCosDphi") passCuts = passCuts && passCutRange(cos(absnormPhi(jet1.Phi() - jet2.Phi())), stats.pmap.at("CosDphiCut"));
         else if(cut == "RejectForwardDiJetPairs") passCuts = passCuts && ( !passCutRangeAbs(jet1.Eta(), stats.pmap.at("ForwardEtaRange")) || !passCutRangeAbs(jet2.Eta(), stats.pmap.at("ForwardEtaRange")) );
+
         /*
         {
         	std::cout << "Checking if this is a forward dijet pair..." << std::endl;
@@ -4377,8 +4494,12 @@ void Analyzer::fill_histogram(std::string year) {
     if(distats["Run"].bfind("ApplyWKfactor")){
       wgt *= getWkfactor();
     }
-    if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // September 10, 2020 - Brenda FE
+
+    // Apply L1 prefiring weights for 2016/2017
+    if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // January 20, 2021 - Brenda FE
+      // std::cout << "L1 prefiring weight = " << l1prefiringwgt << std::endl;
       wgt *= l1prefiringwgt; // nominal value
+
     }
 
     wgt *= getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]); //01.16.19
