@@ -111,7 +111,7 @@ public:
   void read_info(std::string);
   void setupGeneral(std::string);
   void setupEventGeneral(int);
-  void getTriggerBranchesList(std::string, bool);
+  void getTriggerBranchesList(CUTS, std::string, bool);
   bool passGenHTFilter(float);
   bool passGenMassFilterZ(float mass_lowbound, float mass_upbound);
   bool checkGoodRunsAndLumis(int);
@@ -121,6 +121,10 @@ public:
 
   bool passHEMveto2018();
   bool passJetVetoEEnoise2017(int);
+
+  bool skimSignalMC(int);
+  std::string inputSignalModel="", inputSignalMassParam="";
+  bool finalInputSignal = false;
 
   void smearLepton(Lepton&, CUTS, const PartStats&, const PartStats&, int syst=0);
   void smearTaus(Lepton&, const PartStats&, const PartStats&, int syst=0);
@@ -274,10 +278,10 @@ public:
 
   std::vector<int>* trigPlace[nTrigReq];
   bool setTrigger = false;
-  std::vector<std::string> triggerBranchesList;
+  std::vector<std::string> trigger1BranchesList, trigger2BranchesList;
   bool triggerDecision = false;
-  std::vector<std::string> inputTriggerNames; // Brenda: This will take the triggers from the configuration file Run_info.in
-  std::vector<bool> triggernamedecisions; // Brenda
+  std::vector<std::string> inputTrigger1Names, inputTrigger2Names; // Brenda: This will take the triggers from the configuration file Run_info.in
+  std::vector<bool> trigger1namedecisions, trigger2namedecisions; // Brenda
   std::vector<int> cuts_per, cuts_cumul;
 
   std::vector<std::pair<double, int> > jetPtIndexVector;
@@ -286,12 +290,11 @@ public:
 
   double maxIso, minIso;
   int leadIndex, maxCut, crbins=1;
-  bool isData, CalculatePUSystematics, doSystematics;
+  bool isData, isSignalMC, CalculatePUSystematics, doSystematics;
 
   float nTruePU = 0;
   int bestVertices = 0;
-  float gen_weight = 0;
-  float prefiring_wgt = 1.0;
+  float gen_weight = 0; 
   float generatorht = 0;
   float gendilepmass = 0;
 
@@ -328,7 +331,7 @@ public:
   bool failtau1iso = false, failtau2iso = false;
 
   // Prefiring weights
-  L1ECALPrefiringWgtProd prefiringwgtprod;
+  float l1prefiringwgt = 1.0, l1prefiringwgt_up = 1.0, l1prefiringwgt_dn = 1.0;
   
   Float_t jec_rho =20.;
   std::vector< std::vector<float> > jets_jer_sfs;

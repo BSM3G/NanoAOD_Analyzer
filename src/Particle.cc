@@ -298,7 +298,13 @@ bool Jet::passedTightJetID(int nobj) {
   return bit_jet[1]; // This will return the Tight ID bit
 }
 
-
+bool Jet::getPileupJetID(int nobj, int bit_id) {
+   // bit0 - tight ID (true) or fail ID (false), bit1 - medium ID, bit2 - looseID
+   std::bitset<8> bit_jet(puID[nobj]);
+   // std::cout << "PU jet ID = " << puID[nobj] << ", bit_jet = " << bit_jet << ", bit_jet[" << bit_id << "] = " << bit_jet[bit_id] << std::endl;
+   return bit_jet[bit_id];
+ }
+ 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////    FATJET   ////////////////////////////////////////

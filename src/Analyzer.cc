@@ -170,9 +170,9 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   setupTauResSFsInfo(distats["Run"].bfind("ApplyETauFakeRateESSF"));
 
   // L1 prefiring weights only for 2016 or 2017
-  if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
-    prefiringwgtprod = L1ECALPrefiringWgtProd((PUSPACE+"L1Prefiring").c_str(), year, distats["Run"].bfind("UseJetEMPt"));
-  }
+  //if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
+  //  prefiringwgtprod = L1ECALPrefiringWgtProd((PUSPACE+"L1Prefiring").c_str(), year, distats["Run"].bfind("UseJetEMPt"));
+  //}
 
   if(!isData) {
     std::cout<<"This is MC if not, change the flag!"<<std::endl;
@@ -231,32 +231,6 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   setupJetCorrections(year, outfile);
 
 
-  ///this can be done nicer
-  //put the variables that you use here:
-  /*
-  zBoostTree["tau1_pt"] =0;
-  zBoostTree["tau1_eta"]=0;
-  zBoostTree["tau1_phi"]=0;
-  zBoostTree["tau2_pt"] =0;
-  zBoostTree["tau2_eta"]=0;
-  zBoostTree["tau2_phi"]=0;
-  zBoostTree["met"]     =0;
-  zBoostTree["mt_tau1"] =0;
-  zBoostTree["mt_tau2"] =0;
-  zBoostTree["mt2"]     =0;
-  zBoostTree["cosDphi1"]=0;
-  zBoostTree["cosDphi2"]=0;
-  zBoostTree["jet1_pt"] =0;
-  zBoostTree["jet1_eta"]=0;
-  zBoostTree["jet1_phi"]=0;
-  zBoostTree["jet2_pt"] =0;
-  zBoostTree["jet2_eta"]=0;
-  zBoostTree["jet2_phi"]=0;
-  zBoostTree["jet_mass"]=0;
-  
-  histo.createTree(&zBoostTree,"TauTauTree");
-  */
-
   if(setCR) {
     cuts_per.resize(histo.get_folders()->size());
     cuts_cumul.resize(histo.get_folders()->size());
@@ -293,19 +267,9 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     isVSample = false;
   }
 
-  //std::cout << "isVSample = " << isVSample << std::endl;
-  
-  //if(distats["Run"].bfind("InitializeMCSelection")){
-     // std::cout << "MC selection initialized." << std::endl;
-     //initializeMCSelection(infiles);
-  //}
-
-
   initializeWkfactor(infiles);
   setCutNeeds();
   
-  
-
   std::cout << "setup complete" << std::endl << std::endl;
   start = std::chrono::system_clock::now();
 }
@@ -457,9 +421,6 @@ void Analyzer::setupCR(std::string var, double val) {
 
 ////destructor
 Analyzer::~Analyzer() {
-  // routfile->Write();
-  // routfile->Close();
-
   clear_values();
   delete BOOM;
   delete _Electron;
@@ -483,16 +444,6 @@ Analyzer::~Analyzer() {
     delete goodParts[e];
     goodParts[e]=nullptr;
   }
-  //for(auto &it: syst_parts) {
-    //for(auto e: Enum<CUTS>()) {
-      //if( it[e] != nullptr) {
-      //if(it.find(e) != it.end()){
-        //delete it[e];
-        //it[e]=nullptr;
-      //}
-      //}
-    //}
-  //}
   for(auto it: testVec){
     delete it;
     it=nullptr;
@@ -530,12 +481,24 @@ void Analyzer::setupEventGeneral(int nevent){
   // We want to set those branches first here and then call BOOM->GetEntry(nevent) so that the variables change properly for each event.
 
   // For MC samples, set number of true pileup interactions, gen-HT and gen-weights.
-  if(!isData){ 
+  if(!isData){
+ 
     SetBranch("Pileup_nTrueInt",nTruePU);
     SetBranch("genWeight",gen_weight);
-    if (BOOM->FindBranch("LHE_HT") != 0){
-    	SetBranch("LHE_HT",generatorht);
+
+    if(BOOM->FindBranch("L1PreFiringWeight_Nom") != 0){
+      SetBranch("L1PreFiringWeight_Nom", l1prefiringwgt);
+ 
+      if(distats["Systematics"].bfind("useSystematics")){
+        SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);  
+        SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
+      }
     }
+
+    if (BOOM->FindBranch("LHE_HT") != 0){
+      SetBranch("LHE_HT",generatorht);
+    }
+
   }
   // Get the number of primary vertices, applies to both data and MC
   SetBranch("PV_npvs", bestVertices);
@@ -562,19 +525,38 @@ void Analyzer::setupEventGeneral(int nevent){
   // Get the trigger decision vector.
   triggerDecision = false; // Reset the decision flag for each event.
 
-  for(std::string triggname : triggerBranchesList){
-    // std::cout << "Trigger name: " << triggname << std::endl;
-    
-    TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
-    triggerBranch->SetStatus(1);
-    triggerBranch->SetAddress(&triggerDecision);
+  if(trigger1BranchesList.size() > 0){
+    for(std::string triggname : trigger1BranchesList){
+      // std::cout << "Trigger name: " << triggname << std::endl;
+      
+      TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
+      triggerBranch->SetStatus(1);
+      triggerBranch->SetAddress(&triggerDecision);
 
-    // SetBranch(triggname.c_str(), triggerDecision);
-    BOOM->GetEntry(nevent);
+      // SetBranch(triggname.c_str(), triggerDecision);
+      BOOM->GetEntry(nevent);
 
-    // std::cout << "Decision = " << triggerDecision << std::endl;
-    triggernamedecisions.push_back(triggerDecision);
-    triggerBranch->ResetAddress();
+      // std::cout << "Decision = " << triggerDecision << std::endl;
+      trigger1namedecisions.push_back(triggerDecision);
+      triggerBranch->ResetAddress();
+    }
+  }
+
+  if(trigger2BranchesList.size() > 0){
+    for(std::string triggname : trigger2BranchesList){
+      // std::cout << "Trigger name: " << triggname << std::endl;
+      
+      TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
+      triggerBranch->SetStatus(1);
+      triggerBranch->SetAddress(&triggerDecision);
+
+      // SetBranch(triggname.c_str(), triggerDecision);
+      BOOM->GetEntry(nevent);
+
+      // std::cout << "Decision = " << triggerDecision << std::endl;
+      trigger2namedecisions.push_back(triggerDecision);
+      triggerBranch->ResetAddress();
+    }
   }
 
   /*
@@ -725,6 +707,29 @@ bool Analyzer::passHEMveto2018(){
 
 }
 
+bool Analyzer::skimSignalMC(int event){
+  // Check if we should use this function at all... to be called only for signal samples
+  if(! isSignalMC ) return true;
+
+  // Construct the name of the branch:
+  std::string signalBranchName = ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str();
+  
+  // std::cout << "Name of the branch: " << signalBranchName << std::endl;
+  bool isInputSignal = false;
+  
+  TBranch *signalBranch = BOOM->GetBranch(signalBranchName.c_str());
+  signalBranch->SetStatus(1);
+  signalBranch->SetAddress(&isInputSignal);
+
+  BOOM->GetEntry(event);
+
+  finalInputSignal = isInputSignal;
+
+  signalBranch->ResetAddress();
+  // std::cout << "Input signal: " << signalBranchName << ", isInputSignal? " << finalInputSignal << std::endl;
+  return finalInputSignal;
+}
+
 ///Function that does most of the work.  Calculates the number of each particle
 void Analyzer::preprocess(int event, std::string year){ // This function no longer needs to get the JSON dictionary as input.
 
@@ -754,16 +759,12 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   setupEventGeneral(event);
 
   // Call the L1 weight producer here, only for 2016 or 2017
+  //if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
 
-  // std::cout << "Number of photons (default) = " << _Photon->size() << std::endl;
-  // std::cout << "Number of jets (default) = " << _Jet->size() << std::endl; 
-
-  if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
     // Reset weights for each event before producing them
-    prefiringwgtprod.resetWeights();
-
-    prefiringwgtprod.produceWeights(*_Photon, *_Jet);
-  }
+    // prefiringwgtprod.resetWeights();
+    // prefiringwgtprod.produceWeights(*_Photon, *_Jet);
+  //}
   
   if(!isData){ // Do everything that corresponds only to MC
 
@@ -795,6 +796,14 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
          clear_values();
          return;
        }
+     }
+
+     // -- For signal samples -- //
+     if(isSignalMC){
+      if(skimSignalMC(event) == false){
+        clear_values();
+        return;
+      }
      }
 
   }
@@ -837,6 +846,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
   // ---------------- Trigger requirement ------------------ //
   TriggerCuts(CUTS::eRTrig1);
+  TriggerCuts(CUTS::eRTrig2);
 
   for(size_t i=0; i < syst_names.size(); i++) {
   	std::string systname = syst_names.at(i);
@@ -1470,28 +1480,49 @@ void Analyzer::branchException(std::string branch){
   }
 }
 
-void Analyzer::getTriggerBranchesList(std::string trigger, bool usewildcard){
+void Analyzer::getTriggerBranchesList(CUTS ePos, std::string trigger, bool usewildcard){
 
- if(usewildcard){
-  for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+  if(ePos == CUTS::eRTrig1){
+    if(usewildcard){
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        if(branch_name.find(trigger) == std::string::npos) continue;
+        //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger1BranchesList.push_back(branch_name);
+      }
+    } else {
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        // Look for branches that match exactly the trigger name
+        if(branch_name.compare(trigger.c_str()) != 0) continue;
+        // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger1BranchesList.push_back(branch_name);
+      }
+    }
 
-    std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
-    if(branch_name.find(trigger) == std::string::npos) continue;
-    //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
-    triggerBranchesList.push_back(branch_name);
+    if(trigger1BranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.\n";
   }
- }
- else{
-    for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
-       std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
-       // Look for branches that match exactly the trigger name
-       if(branch_name.compare(trigger.c_str()) != 0) continue;
-       // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
-       triggerBranchesList.push_back(branch_name);
- }
-}
 
-  if(triggerBranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.";
+  if(ePos == CUTS::eRTrig2){
+    if(usewildcard){
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        if(branch_name.find(trigger) == std::string::npos) continue;
+        //std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger2BranchesList.push_back(branch_name);
+      }
+    } else {
+      for(int i=0; i < BOOM->GetListOfBranches()->GetSize(); i++){
+        std::string branch_name = BOOM->GetListOfBranches()->At(i)->GetName();
+        // Look for branches that match exactly the trigger name
+        if(branch_name.compare(trigger.c_str()) != 0) continue;
+        // std::cout << "The branch: " << branch_name << " is a selected trigger branch." << std::endl;
+        trigger2BranchesList.push_back(branch_name);
+      }
+    }
+
+    if(trigger2BranchesList.size() == 0) throw "no branches matching this name were found. Check the trigger name requirement.\n";
+  }
 }
 
 /////sets up other values needed for analysis that aren't particle specific
@@ -1518,28 +1549,68 @@ void Analyzer::setupGeneral(std::string year) {
   read_info(filespace + "VBFCuts_info.in");
   read_info(filespace + "Run_info.in");
   read_info(filespace + "Systematics_info.in");
+  read_info(filespace + "SignalMC_info.in");
 	
   // Call readinJSON and save this in the jsonlinedict we declared in Analyzer.h
   jsonlinedict = readinJSON(year);
 
-  for(std::string trigger : inputTriggerNames){
-    try{
-      getTriggerBranchesList(trigger, distats["Run"].bfind("UseTriggerWildcard"));
+  if(inputTrigger1Names.size() > 0){
+    for(std::string trigger : inputTrigger1Names){
+      try{
+        getTriggerBranchesList(CUTS::eRTrig1, trigger, distats["Run"].bfind("UseTriggerWildcard"));
+      }
+      catch(const char* msg){
+        std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
+        continue;
+      }
     }
-    catch(const char* msg){
-      std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
-      continue;
-    }
+
+  // Check that there are no elements on the trigger list that refer to the same trigger to speed up the process.
+  removeDuplicates(trigger1BranchesList);
+
   }
 
-  // Check that there are no elements on the trigger list that refer to the same trigger 
-  // to speed up the process.
-  removeDuplicates(triggerBranchesList);
+  if(inputTrigger2Names.size() > 0){
+    for(std::string trigger : inputTrigger2Names){
+      try{
+        getTriggerBranchesList(CUTS::eRTrig2, trigger, distats["Run"].bfind("UseTriggerWildcard"));
+      }
+      catch(const char* msg){
+        std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
+        continue;
+      }
+    } 
+
+    // Check that there are no elements on the trigger list that refer to the same trigger to speed up the process.
+    removeDuplicates(trigger2BranchesList);
+  }
 
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
-  std::cout << "Full list of triggers to be probed: " << std::endl;
-  for(std::string name : triggerBranchesList){
-    std::cout << name << std::endl;
+  if(trigger1BranchesList.size() > 0){
+    std::cout << "Full list of trigger to be probed (1): " << std::endl;
+    for(std::string name : trigger1BranchesList){
+      std::cout << name << std::endl;
+    }
+  }
+  if(trigger2BranchesList.size() > 0){
+    std::cout << "Full list of trigger to be probed (2): " << std::endl;
+    for(std::string name : trigger2BranchesList){
+      std::cout << name << std::endl;
+    }
+  }
+  std::cout << " ---------------------------------------------------------------------- " << std::endl;
+
+  // Check if it is a signal MC sample:
+  // isSignalMC = distats["SignalMC"].bfind("isSignalMC");
+
+  // double check 
+  if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) == 0){
+   isSignalMC = false;
+   std::cout << "This is not a signal MC sample." << std::endl;
+  }
+  else if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) != 0){
+   isSignalMC = true;
+   std::cout << "This is a signal MC sample!" << std::endl;
   }
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
 }
@@ -1627,10 +1698,34 @@ void Analyzer::read_info(std::string filename) {
         if(*p) distats[group].smap[stemp[0]] = stemp[1];
         else  distats[group].dmap[stemp[0]]=std::stod(stemp[1]);
       }
-      if(stemp.at(0).find("Trigger") != std::string::npos) {
+      if(stemp.at(0).find("Trigger1") != std::string::npos) {
         for(auto trigger : stemp){
           if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
-            inputTriggerNames.push_back(trigger);
+            inputTrigger1Names.push_back(trigger);
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("Trigger2") != std::string::npos) {
+        for(auto trigger : stemp){
+          if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
+            inputTrigger2Names.push_back(trigger);
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("ModelTag") != std::string::npos){
+        for(auto model: stemp){
+          if(model.find("ModelTag") == std::string::npos and "=" != model){
+            inputSignalModel = model;
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("MassParameters") != std::string::npos){
+        for(auto massparam: stemp){
+          if(massparam.find("MassParameters") == std::string::npos and "=" != massparam){
+            inputSignalMassParam = massparam;
           }
         }
         continue;
@@ -1638,10 +1733,11 @@ void Analyzer::read_info(std::string filename) {
     } else if(stemp.size() == 3 and stemp.at(0).find("Trigger") == std::string::npos){
       distats[group].pmap[stemp[0]] = std::make_pair(std::stod(stemp[1]), std::stod(stemp[2]));
     } else{
+
       if(stemp.at(0).find("Trigger") != std::string::npos) {
         for(auto trigger : stemp){
-          if(trigger.find("Trigger")== std::string::npos and "="!=trigger ){
-            inputTriggerNames.push_back(trigger);
+          if(trigger.find("Trigger") == std::string::npos and "=" != trigger ){
+            inputTrigger1Names.push_back(trigger);
           }
         }
         continue;
@@ -2029,10 +2125,21 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     jet_RawFactor = 0.0;
 
     // get the proper jet pts for type-I MET, only correct the non-mu fraction of the jet
+
     // if the corrected pt > 15 GeV (unclEnThreshold), use the corrected jet, otherwise use raw
     // condition ? result_if_true : result_if_false
-    double jet_pt_noMuL1L2L3 = jet_Pt * jec > jetUnclEnThreshold ? jet_Pt * jec : jet_Pt;
-    double jet_pt_noMuL1 = jet_Pt * jecL1 > jetUnclEnThreshold ? jet_Pt * jecL1 : jet_Pt;
+    double jet_pt_noMuL1L2L3 = 0.0, jet_pt_noMuL1 = 0.0;
+
+    if(year.compare("2017") == 0){
+      // This step is only needed for v2 MET in 2017. Only correct the non-mu fraction of the jet.
+      jet_pt_noMuL1L2L3 = jet_Pt * jec > jetUnclEnThreshold ? jet_Pt * jec : jet_Pt;
+      jet_pt_noMuL1 = jet_Pt * jecL1 > jetUnclEnThreshold ? jet_Pt * jecL1 : jet_Pt;
+    }
+    else{
+      // For 2016 and 2018, simply apply the corrections as usual.
+      jet_pt_noMuL1L2L3 = jet_Pt * jec;
+      jet_pt_noMuL1 = jet_Pt * jecL1;      
+    }
 
     // Apply the JER corrections if desired to MC    
     // Define the JER scale factors:
@@ -2154,8 +2261,10 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
     double jetTotalEmEF = _Jet->neutralEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
     
-    // Propagate this correction to the MET: nominal values.
-    if(jet_pt_L1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
+    // Propagate JER and JES corrections and uncertainties to MET.
+    // Only propagate JECs to MET if the corrected pt without the muon is above the unclustered energy threshold.
+
+    if(jet_pt_noMuL1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
 
       if(!(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_rawPt < 50.0)){
         
@@ -2671,7 +2780,7 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
     */
     bool passCuts = true;
     double dphi1rjets = normPhi(lvec.Phi() - _MET->phi());
-    if( ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
+    if(ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
     else  passCuts = passCuts && passCutRange(fabs(lvec.Eta()), stats.pmap.at("EtaCut"));
     passCuts = passCuts && (lvec.Pt() > stats.dmap.at("PtCut")) ;
 
@@ -2682,8 +2791,31 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
-      else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+      // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
+      // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+      else if(cut == "ApplyLooseID"){
+         	if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+              if(!stats.bfind("FailPUJetID")){
+                  passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+              } else {
+                  passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              }
+          	}
+          else{
+              passCuts = passCuts && _Jet->passedLooseJetID(i); 
+          	}
+      	}
+      	else if(cut == "ApplyTightID"){ 
+          	if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
+            	if(!stats.bfind("FailPUJetID")){
+                	passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); 
+              	} else {
+                	passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              	}
+          	} else {
+              passCuts = passCuts && _Jet->passedTightJetID(i);
+          	} 
+      	} 
       else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(lvec, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
       else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(lvec, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
 
@@ -2694,7 +2826,8 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
       else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
       else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-      else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+      else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
+      
     }
     if(_Jet->pstats["BJet"].bfind("RemoveBJetsFromJets") and ePos!=CUTS::eRBJet){
       passCuts = passCuts && find(active_part->at(CUTS::eRBJet)->begin(), active_part->at(CUTS::eRBJet)->end(), i) == active_part->at(CUTS::eRBJet)->end();
@@ -2795,8 +2928,31 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
-        else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-        else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+        // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
+        // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+        else if(cut == "ApplyLooseID"){
+         	if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){
+              if(!stats.bfind("FailPUJetID")){
+                  passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+              } else {
+                  passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              }
+          	}
+          else{
+              passCuts = passCuts && _Jet->passedLooseJetID(i); 
+          	}
+      	}
+      	else if(cut == "ApplyTightID"){ 
+          	if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
+            	if(!stats.bfind("FailPUJetID")){
+                	passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); 
+              	} else {
+                	passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              	}
+          	} else {
+              passCuts = passCuts && _Jet->passedTightJetID(i);
+          	} 
+      	}        
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(leadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(leadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
       // ----anti-overlap requirements
@@ -2806,7 +2962,7 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-        else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
+        else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
         //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
       }
     }
@@ -2844,8 +3000,31 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[j] > stats.dmap.at("JetBTaggingCut")); 
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[j] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[j] > stats.dmap.at("JetBTaggingCut"));
-        else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(j);
-        else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(j);
+        // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(j);
+        // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(j);
+        else if(cut == "ApplyLooseID"){
+         	if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
+              if(!stats.bfind("FailPUJetID")){
+                  passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut"));
+              } else {
+                  passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
+              }
+          	}
+          else{
+              passCuts = passCuts && _Jet->passedLooseJetID(j); 
+          	}
+      	}
+      	else if(cut == "ApplyTightID"){ 
+          	if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
+            	if(!stats.bfind("FailPUJetID")){
+                	passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+              	} else {
+                	passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
+              	}
+          	} else {
+              passCuts = passCuts && _Jet->passedTightJetID(j);
+          	} 
+      	}
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(subleadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(subleadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
       // ----anti-overlap requirements
@@ -2855,8 +3034,7 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(subleadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
-        else if(cut == "DiscrByDphi1") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("Dphi1CutMet")); //01.17.19
-        //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
+        else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
       }
     }
 
@@ -2894,6 +3072,14 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
       else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
+      else if(cut == "MatchBToGen" && !isData ){
+           int matchedGenJetIndex = _Jet->genJetIdx[i];
+           int jetPartonFlavor = abs(_GenJet->genPartonFlavor[matchedGenJetIndex]);
+           int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[matchedGenJetIndex]); 
+ 	   // std::cout << "matchedGenJetIndex = " << matchedGenJetIndex << ", jetPartonFlavor = " << jetPartonFlavor << ", jetHadronFlavor = " << jetHadronFlavor << std::endl;
+ 	   // std::cout << "Is this a genuine b-jet? " << (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5) << std::endl;
+ 	   passCuts = passCuts && (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5);  
+      }
       else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
       else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
 
@@ -3272,21 +3458,45 @@ bool Analyzer::isInTheCracks(float etaValue){
 
 ///sees if the event passed one of the two cuts provided
 void Analyzer::TriggerCuts(CUTS ePos) {
+
 	if(! neededCuts.isPresent(ePos)) return;
 
-	// Loop over all elements of the trigger decisions vector
-	for(bool decision : triggernamedecisions){
-		if(decision){
-			// If one element is true (1), then store back the event in the triggers vector
-			active_part->at(ePos)->push_back(0);
-			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
-			triggernamedecisions.clear();
-			// End of the function
-			return;
-		}
-	}
-	// If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
-	triggernamedecisions.clear();
+  if(ePos == CUTS::eRTrig1){
+  	// Loop over all elements of the trigger decisions vector
+  	for(bool decision : trigger1namedecisions){
+  		if(decision){
+  			// If one element is true (1), then store back the event in the triggers vector
+  			active_part->at(ePos)->push_back(0);
+  			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
+  			trigger1namedecisions.clear();
+        trigger1namedecisions.shrink_to_fit();
+  			// End of the function
+  			return;
+  		}
+  	}
+  	// If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
+  	trigger1namedecisions.clear();
+    trigger1namedecisions.shrink_to_fit();
+  }
+
+  if(ePos == CUTS::eRTrig2){
+    // Loop over all elements of the trigger decisions vector
+    for(bool decision : trigger2namedecisions){
+      if(decision){
+        // If one element is true (1), then store back the event in the triggers vector
+        active_part->at(ePos)->push_back(0);
+        // Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
+        trigger2namedecisions.clear();
+        trigger2namedecisions.shrink_to_fit();
+        // End of the function
+        return;
+      }
+    }
+    // If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
+    trigger2namedecisions.clear();
+    trigger2namedecisions.shrink_to_fit();
+  }
+
 }
 
 
@@ -3607,6 +3817,19 @@ void Analyzer::getGoodDiJets(const PartStats& stats, const int syst) {
         else if(cut == "DiscrByOSEta") passCuts = passCuts && (jet1.Eta() * jet2.Eta() < 0);
         else if(cut == "DiscrByMassReco") passCuts = passCuts && passCutRange((jet1+jet2).M(), stats.pmap.at("MassCut"));
         else if(cut == "DiscrByCosDphi") passCuts = passCuts && passCutRange(cos(absnormPhi(jet1.Phi() - jet2.Phi())), stats.pmap.at("CosDphiCut"));
+        else if(cut == "RejectForwardDiJetPairs") passCuts = passCuts && ( !passCutRangeAbs(jet1.Eta(), stats.pmap.at("ForwardEtaRange")) || !passCutRangeAbs(jet2.Eta(), stats.pmap.at("ForwardEtaRange")) );
+        /*{
+        	std::cout << "Checking if this is a forward dijet pair..." << std::endl;
+        	std::cout << "Jet1 eta = " << jet1.Eta() << ", jet2 eta = " << jet2.Eta() << std::endl;
+        	// Check the first jet of the pair:
+        	std::cout << "Jet 1 in the forward eta range? " << passCutRangeAbs(jet1.Eta(), stats.pmap.at("ForwardEtaRange")) << std::endl;
+        	// Then go onto the second jet of the pair:
+        	std::cout << "Jet 2 in the forward eta range? " << passCutRangeAbs(jet2.Eta(), stats.pmap.at("ForwardEtaRange")) << std::endl;
+        	passCuts = passCuts && ( !passCutRangeAbs(jet1.Eta(), stats.pmap.at("ForwardEtaRange")) || !passCutRangeAbs(jet2.Eta(), stats.pmap.at("ForwardEtaRange")) );
+        	if(passCuts){ std::cout << "dijet pair not coming from both jets in the forward region" << std::endl;}
+        	else{std::cout << "dijet pair -- coming -- from both jets in the forward region" << std::endl;}
+        }*/
+
         else std::cout << "cut: " << cut << " not listed" << std::endl;
       }
       ///Particlesp that lead to good combo are totjet * part1 + part2
@@ -4002,12 +4225,10 @@ void Analyzer::fill_histogram(std::string year) {
     if(distats["Run"].bfind("ApplyWKfactor")){
       wgt *= getWkfactor();
     }
-    // Apply Z-boost weights from the SUSY PAG for Run II analyses
-    if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // September 10, 2020 - Brenda FE
-      prefiring_wgt = prefiringwgtprod.getPrefiringWeight("");
-      //std::cout << "Prefiring weight = " << prefiringwgtprod.getPrefiringWeight("") << std::endl;
-      //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
-      wgt *= prefiringwgtprod.getPrefiringWeight(""); // nominal value
+    // Apply L1 prefiring weights for 2016/2017
+    if(distats["Run"].bfind("ApplyL1PrefiringWeight")){ // January 20, 2021 - Brenda FE
+      // std::cout << "L1 prefiring weight = " << l1prefiringwgt << std::endl;
+      wgt *= l1prefiringwgt;
     }
 
     wgt *= getBJetSF(CUTS::eRBJet, _Jet->pstats["BJet"]); //01.16.19
@@ -4065,14 +4286,17 @@ void Analyzer::fill_histogram(std::string year) {
         // --------- Prefiring weights ----------- //
         if(syst_names[i]=="L1Prefiring_weight_Up"){
           if(distats["Run"].bfind("ApplyL1PrefiringWeight")){
-            wgt /= prefiringwgtprod.getPrefiringWeight("");
+            // wgt /= prefiringwgtprod.getPrefiringWeight("");
+            wgt /= l1prefiringwgt;
             //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
-            wgt *= prefiringwgtprod.getPrefiringWeight("Up");
+            // wgt *= prefiringwgtprod.getPrefiringWeight("Up");
+            wgt *= l1prefiringwgt_up;
           }
         } else if(syst_names[i]=="L1Prefiring_weight_Down"){
           if(distats["Run"].bfind("ApplyL1PrefiringWeight")){
-            wgt /= prefiringwgtprod.getPrefiringWeight("");
-            wgt *= prefiringwgtprod.getPrefiringWeight("Down");
+            // wgt /= prefiringwgtprod.getPrefiringWeight("");
+            wgt /= l1prefiringwgt;
+            wgt *= l1prefiringwgt_dn;
           }
         }
       }
@@ -4134,6 +4358,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
   if(group == "FillRun" && (&ihisto==&histo)) {
     if(crbins != 1) {
       for(int i = 0; i < crbins; i++) {
+        std::cout << "nominal, crbins !=1" << std::endl;
         ihisto.addVal(false, group, i, "Events", 1);
         if(distats["Run"].bfind("ApplyGenWeight")) {
           //put the weighted events in bin 3
@@ -4143,18 +4368,77 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       }
     }
     else{
-      ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1);
-      if(distats["Run"].bfind("ApplyGenWeight")) {
-        //put the weighted events in bin 3
-        ihisto.addVal(2, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0);
-      }
+	    
+      if(isSignalMC){ // For signal samples (unskimmed)
+        if(finalInputSignal){
+          
+	    	  // Bin 1 will contain only the events that correspond to a certain signal mass point
+          ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1); 
+          
+          if(distats["Run"].bfind("ApplyGenWeight")) {
+            
+            if(finalInputSignal){
+              // Bin 3 contains the number of raw signal MC events passing a particular cut, same as bin1 but without any weights.
+              ihisto.addVal(2, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+            }
+            // Bin 4 contains number of raw MC events for a given signal point for which the gen_weight is positive.
+            ihisto.addVal(3, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+          }
+        }
+        // Bin 5 contains the full number of events analyzed in the signal sample (including all signal points)
+        ihisto.addVal(4,group,ihisto.get_maxfolder(),"Events",1.0); 
+	    }
+	    else if(!isSignalMC || isData ){ // For backgrounds or data.
+        // Bin 1 contains the number of events analyzed in a given sample.
+	    	ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1);
+
+        if(distats["Run"].bfind("ApplyGenWeight")) {
+          // Bin 3 contains the raw (unweighted) number of events (data or MC) passing a certain selection.
+          ihisto.addVal(2, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0);
+        }
+	    }
       ihisto.addVal(wgt, group, ihisto.get_maxfolder(), "Weight", 1);
       ihisto.addVal(nTruePU, group, ihisto.get_maxfolder(), "PUWeight", 1);
     }
+
+    // In all cases: Bin 2 contains the weighted number of events passing a certain selection.
     histAddVal(true, "Events");
     histAddVal(bestVertices, "NVertices");
+
   } else if(group == "FillRun" && issyst) {
-    // This is for systematics.
+
+    if(isSignalMC){ // For signal samples (unskimmed)
+      if(finalInputSignal){
+        
+        // Bin 1 will contain only the events that correspond to a certain signal mass point
+        syst_histo.addVal(false, group,max, "Events", 1); 
+        
+        if(distats["Run"].bfind("ApplyGenWeight")) {
+          
+          if(finalInputSignal){
+            // Bin 3 contains the number of raw signal MC events passing a particular cut, same as bin1 but without any weights.
+            syst_histo.addVal(2, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+          }
+          // Bin 4 contains number of raw MC events for a given signal point for which the gen_weight is positive.
+          syst_histo.addVal(3, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+        }
+      }
+      // Bin 5 contains the full number of events analyzed in the signal sample (including all signal points)
+      syst_histo.addVal(4,group,max,"Events",1.0); 
+    }
+    else if(!isSignalMC){ // For backgrounds 
+      // Bin 1 contains the number of events analyzed in a given sample.
+      syst_histo.addVal(false, group,max, "Events", 1);
+
+      if(distats["Run"].bfind("ApplyGenWeight")) {
+        // Bin 3 contains the raw (unweighted) number of events (data or MC) passing a certain selection.
+        syst_histo.addVal(2, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0);
+      }
+    }
+    syst_histo.addVal(wgt, group, max, "Weight", 1);
+    syst_histo.addVal(nTruePU, group, max, "PUWeight", 1);
+
+    // In all cases: Bin 2 contains the weighted number of events passing a certain selection.
     histAddVal(true, "Events");
     histAddVal(bestVertices, "NVertices");
 
@@ -4164,7 +4448,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(nTruePU, "PUNTrueInt");
     histAddVal(generatorht, "HT");
     histAddVal(gen_weight, "Weight");
-    histAddVal(prefiring_wgt, "PrefiringWeight");
+    histAddVal(l1prefiringwgt, "L1PrefiringWeight");
 
     int nhadtau = 0;
     TLorentzVector genVec(0,0,0,0);
@@ -4258,6 +4542,10 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     Particle* part = fillInfo[group]->part;
     CUTS ePos = fillInfo[group]->ePos;
 
+    // Added variable to calculate minimum deltaPhi between particle and MET
+    float minDeltaPhiMet = 9999.9;
+
+    // int i = 0;
     for(auto it : *active_part->at(ePos)) {
       histAddVal(part->p4(it).Energy(), "Energy");
       histAddVal(part->p4(it).Pt(), "Pt");
@@ -4277,6 +4565,27 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(_FatJet->tau2[it], "tau2");
         histAddVal(_FatJet->tau2[it]/_FatJet->tau1[it], "tau2Overtau1");
       }
+      if(part->type == PType::Jet){
+        // Find out if this is the closest jet to the MET
+        float deltaPhiMet = absnormPhi(part->p4(it).Phi() - _MET->phi());
+        // std::cout << "jet #" << i << ", dPhi(j,MET) = " <<  normPhi(part->p4(it).Phi() - _MET->phi()) << std::endl;
+        // std::cout << "minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
+        histAddVal(deltaPhiMet, "AbsDPhiMet");
+        histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "DPhiMet");
+
+        if(deltaPhiMet < minDeltaPhiMet){
+          minDeltaPhiMet = deltaPhiMet;
+        }
+      }
+
+      if(ePos == CUTS::eRBJet){
+         histAddVal2(part->p4(it).Eta(), part->p4(it).Pt(), "PtVsEta");
+      }
+    }
+
+    if(part->type == PType::Jet){
+      // std::cout << "the minimum minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
+      histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
     }
 
     if((part->type != PType::Jet ) && active_part->at(ePos)->size() > 0) {
