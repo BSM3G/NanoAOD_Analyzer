@@ -893,7 +893,7 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon2, CUTS::eGMuon, _Muon->pstats["Muon2"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGHadTau, _Tau->pstats["Tau1"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGHadTau, _Tau->pstats["Tau2"],syst);
-  getGoodRecoBJets(CUTS::eRBJet, _Jet->pstats["BJet"],syst); //01.16.19
+  getGoodRecoBJets(CUTS::eRBJet, CUTS::eGBJet, _Jet->pstats["BJet"],syst); //01.16.19
   getGoodRecoJets(CUTS::eRJet1, _Jet->pstats["Jet1"],syst);
   getGoodRecoJets(CUTS::eRJet2, _Jet->pstats["Jet2"],syst);
   getGoodRecoJets(CUTS::eRCenJet, _Jet->pstats["CentralJet"],syst);
@@ -2615,14 +2615,85 @@ void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
 
    // Loop over all gen-level jets from the GenJet collection to apply certain selections 
    for(size_t i=0; i < _GenJet->size(); i++){
-     int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[i]); // b-jet: jetFlavor = 5, c-jet: jetFlavor = 4, light-jet: jetFlavor = 0
+    //std::cout << "GenJet #" << i << std::endl;
 
-     // Only consider those jets that have parton/hadron flavor = 5
-     if(abs(_GenJet->genPartonFlavor[i]) != 5 || abs(jetHadronFlavor) != 5) continue;
-     else if(stats.bfind("DiscrBJetByPtandEta")){
-       if(_GenJet->pt(i) < stats.pmap.at("BJetPtCut").first || _GenJet->pt(i) > stats.pmap.at("BJetPtCut").second || abs(_GenJet->eta(i)) > stats.dmap.at("BJetEtaCut")) continue;
-     }
-     active_part->at(CUTS::eGBJet)->push_back(i); 
+    int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[i]); // b-jet: jetFlavor = 5, c-jet: jetFlavor = 4, light-jet: jetFlavor = 0
+    //std::cout << "GenJet hadron flavor = " << jetHadronFlavor << ", parton flavor = " << _GenJet->genPartonFlavor[i] << std::endl;
+    // Only consider those jets that have parton/hadron flavor = 5
+    if(abs(_GenJet->genPartonFlavor[i]) != 5 || abs(jetHadronFlavor) != 5) continue; 
+    // std::cout << "This is a b-jet!!" << std::endl;
+
+    if(stats.bfind("DiscrBJetByPtandEta")){
+      // std::cout << "Applied a gen level cut to the pt and eta of the b-jets" << std::endl;
+      // std::cout << "b-jet pt = " << _GenJet->pt(i) << ", eta = " << _GenJet->eta(i) << std::endl;
+      if(_GenJet->pt(i) < stats.pmap.at("BJetPtCut").first || _GenJet->pt(i) > stats.pmap.at("BJetPtCut").second || abs(_GenJet->eta(i)) > stats.dmap.at("BJetEtaCut")) continue;
+      // std::cout << "Passed kinematic cuts." << std::endl;
+    }
+
+    if(stats.bfind("DiscrBJetByMotherID")){
+
+      // std::cout << "Discriminating by mother particle ID" << std::endl;
+      TLorentzVector gen_jet = _GenJet->p4(i);
+      TLorentzVector genparticle(0,0,0,0);
+      int nmatches = 0; 
+      
+      for(size_t j = 0; j < _Gen->size(); j++){
+        // Find the same particle but in the full gen particle collection, to have access to the mother particle ID information.
+        genparticle = _Gen->p4(j);
+        // std::cout << "Gen particle #" << j << std::endl;
+        // std::cout << "Gen particle pt = " << genparticle.Pt() << ", eta = " <<  genparticle.Eta() << ", pdg_id = " << _Gen->pdg_id[j] << ", mother ID = " << _Gen->pdg_id[_Gen->genPartIdxMother[j]] << std::endl;
+        // Check through a stringent deltaR requirement
+        /*
+        if(genparticle.DeltaR(gen_jet) < stats.dmap.at("BJetQuarkDeltaR") && abs(_Gen->pdg_id[j]) == 5 && abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) == 6){
+          std::cout << "This particle matches the original b-jet" << std::endl;
+          nmatches++;
+        }
+        */
+        if(genparticle.DeltaR(gen_jet) < stats.dmap.at("BJetQuarkDeltaR") && abs(_Gen->pdg_id[j]) == 5){
+          // Get the ID of the mother particle
+          int motherPID = _Gen->pdg_id[_Gen->genPartIdxMother[j]];
+          // std::cout << "ID of matched gen particle = " << _Gen->pdg_id[j] << ", and its mother particle = " << motherPID << std::endl;
+          
+          if( abs(motherPID) == 6){ 
+            // std::cout << "Directly matched to a top quark decay." << std::endl;
+            nmatches++;
+            break;
+          }
+          else if ( abs(motherPID) != 6){
+            // std::cout << "Not directly matched to a top quark decay. Checking decay chain..." << std::endl;
+
+            int motheridx = _Gen->genPartIdxMother[j];
+            int mPID_tmp = motherPID;
+            // std::cout << "Initial mother particle ID = " << motherPID << std::endl;
+            int decaylevel = 0;
+            while(abs(mPID_tmp) != 6){
+              decaylevel++;
+              // Get the index of the mother particle and assign the new mother PID
+              int motheridx_tmp = _Gen->genPartIdxMother[motheridx];
+              mPID_tmp = _Gen->pdg_id[motheridx_tmp];
+              // std::cout << "mother ID (" << decaylevel << " generations before) = " << mPID_tmp << std::endl;
+              motheridx = motheridx_tmp;
+              if(abs(mPID_tmp) == 6){
+                // std::cout << "Found it's coming from a top quark! " << std::endl;
+                nmatches++;
+                break;
+              }
+              else if(mPID_tmp == 0){
+                // std::cout << "Never matched to a top quark :( " << std::endl;
+                break;
+              }
+            }
+          }
+        }
+      }
+      // std::cout << "nmatches = " << nmatches << std::endl;
+      //std::cout << "genparticle mother ID = " << _Gen->pdg_id[_Gen->genPartIdxMother[gen_index]] << ", pdg_id = " << _Gen->pdg_id[gen_index] << std::endl;
+      // Get mother particle ID:
+      if(nmatches != 1) continue;
+      // std::cout << "This b-quark is coming from a top quark! " << std::endl;
+    }
+    // std::cout << "Gen b-jet vector with index = " << i << " stored in eGBJet." << std::endl;
+    active_part->at(CUTS::eGBJet)->push_back(i); 
    }
  }
 
@@ -2682,7 +2753,7 @@ void Analyzer::getGoodGenHadronicTauNeutrinos(const PartStats& stats){
   }
 
 }
-
+/*
 void Analyzer::getGoodGenBJet() { //01.16.19
   for (size_t j=0; j < _Gen->size(); j++){
     int id = abs(_Gen->pdg_id[j]);
@@ -2697,6 +2768,7 @@ void Analyzer::getGoodGenBJet() { //01.16.19
       }
   }
 }
+*/
 
 double Analyzer::getTopBoostWeight(){ //01.15.19
   double topPt; //initialize a value to hold the p_T of the top
@@ -3289,7 +3361,7 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
 }
 
 
-void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int syst) { //01.16.19   
+void Analyzer::getGoodRecoBJets(CUTS ePos, const CUTS eGenPos, const PartStats& stats, const int syst) { //01.16.19   
   if(! neededCuts.isPresent(ePos)) return;
 
   std::string systname = syst_names.at(syst);
@@ -3313,41 +3385,37 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "MatchBToGen" && !isData){
-           int matchedGenJetIndex = _Jet->genJetIdx[i];
-           int jetPartonFlavor = abs(_GenJet->genPartonFlavor[matchedGenJetIndex]);
-           int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[matchedGenJetIndex]); 
-	   // std::cout << "matchedGenJetIndex = " << matchedGenJetIndex << ", jetPartonFlavor = " << jetPartonFlavor << ", jetHadronFlavor = " << jetHadronFlavor << std::endl;
-           // std::cout << "Is this a genuine b-jet? " << (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5) << std::endl;
-           passCuts = passCuts && (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5);  
+        int matchedGenJetIndex = _Jet->genJetIdx[i];
+        passCuts = passCuts && ( std::find(active_part->at(eGenPos)->begin(), active_part->at(eGenPos)->end(), matchedGenJetIndex) != active_part->at(eGenPos)->end() );
       }
       else if(cut == "ApplyLooseID"){
-          // std::cout << "applying loose jet ID to jet with pt = " << lvec.Pt() << std::endl;
-          if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
-              // std::cout << "PU jet ID flag on, this jet is below 50 GeV... applying PU jet ID instead." << std::endl;
-              if(!stats.bfind("FailPUJetID")){
-                  passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
-              } else {
-                  passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-              }
+        // std::cout << "applying loose jet ID to jet with pt = " << lvec.Pt() << std::endl;
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+          // std::cout << "PU jet ID flag on, this jet is below 50 GeV... applying PU jet ID instead." << std::endl;
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
           }
-          else{
-              // if(stats.bfind("ApplyPileupJetID")){ std::cout << "PU jet ID flag on but this jet is above 50 GeV, applying loose ID instead." << std::endl; }
-              // else{ std::cout << "PU jet ID flag off, simply applying loose ID" << std::endl;}
-              passCuts = passCuts && _Jet->passedLooseJetID(i); 
-          }
+        }
+        else{
+          // if(stats.bfind("ApplyPileupJetID")){ std::cout << "PU jet ID flag on but this jet is above 50 GeV, applying loose ID instead." << std::endl; }
+          // else{ std::cout << "PU jet ID flag off, simply applying loose ID" << std::endl;}
+          passCuts = passCuts && _Jet->passedLooseJetID(i); 
+        }
       }
       else if(cut == "ApplyTightID"){ 
-          if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
-              if(!stats.bfind("FailPUJetID")){
-              // std::cout << "PUJetIDCut = " << stats.dmap.at("PUJetIDCut") << ", PUJetID = " << _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")) << std::endl;
-                 passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
-              } else {
-              // std::cout << "FailPUJetID = " << stats.dmap.at("FailPUJetID") << ", PUJetID = " << _Jet->getPileupJetID(i, 0) << std::endl;
-                 passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-              }
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+          if(!stats.bfind("FailPUJetID")){
+            // std::cout << "PUJetIDCut = " << stats.dmap.at("PUJetIDCut") << ", PUJetID = " << _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")) << std::endl;
+              passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
           } else {
-              passCuts = passCuts && _Jet->passedTightJetID(i);
-          } 
+            // std::cout << "FailPUJetID = " << stats.dmap.at("FailPUJetID") << ", PUJetID = " << _Jet->getPileupJetID(i, 0) << std::endl;
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedTightJetID(i);
+        } 
       }
     // ----anti-overlap requirements
       else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
@@ -4755,11 +4823,9 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     }
     histAddVal(active_part->at(CUTS::eGHadTau)->size(), "NMatchedVisTauH");
 
-    int grbj = 0;
     for(auto it : *active_part->at(CUTS::eGBJet)){
-      histAddVal(_Gen->pt(it), "BJPt");
-      histAddVal(_Gen->eta(it), "BJEta");
-      grbj = grbj + 1;
+      histAddVal(_GenJet->pt(it), "BJPt");
+      histAddVal(_GenJet->eta(it), "BJEta");
     }
 
     histAddVal(active_part->at(CUTS::eGTau)->size(), "NTau");

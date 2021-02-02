@@ -19,8 +19,11 @@ DiscrByPartonFlavor  false
 PartonFlavorRange  0    22
 
 DiscrBJetByPtandEta  false
-BJetPtCut 0.0 9999.9
-BJetEtaCut 5.0 
+BJetPtCut 20.0 9999.9
+BJetEtaCut 2.5
+DiscrBJetByMotherID false
+BJetMotherID 6
+BJetQuarkDeltaR 0.2
 
 DiscrLightLepByMotherID 0
 LightLepMotherIDs 23. 24.
@@ -46,4 +49,4 @@ WID 24.
 WStatus 2.
 
 HiggsID 25.
-HiggsStatus 2.
+HiggsStatus 2

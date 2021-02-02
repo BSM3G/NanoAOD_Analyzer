@@ -152,7 +152,7 @@ public:
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
   void getGoodRecoLeadJets(CUTS, const PartStats&, const int); 
-  void getGoodRecoBJets(CUTS, const PartStats&, const int); //01.16.19
+  void getGoodRecoBJets(CUTS, const CUTS, const PartStats&, const int); //01.16.19
   void getGoodRecoFatJets(CUTS, const PartStats&, const int);
 
   bool discrBySUSYSoftElectrons(int, bool, bool);
