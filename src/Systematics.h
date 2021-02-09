@@ -22,6 +22,7 @@ public:
 
   void init();
 
+  void shiftJet(Particle& jet, TLorentzVector recoJet, std::string& syst_name, int syst);
   void shiftParticle(Particle& jet, TLorentzVector recoJet, double const& corrJetPt, double const& corrJetMass, std::string& syst_name, int syst);
   // void shiftParticle(Particle& jet, TLorentzVector recJet, double const& ratio, double& dPx, double& dPy, int syst);
   void shiftLepton(Lepton& lepton, TLorentzVector recoLep, TLorentzVector genLep, double& dPx, double& dPy, int syst);

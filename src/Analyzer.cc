@@ -2338,18 +2338,18 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     // Shift the jet 4-momentum accordingly:
     if(isData){
     	// Here, jet_pt_jerShifted and jet_mass_jerShifted are unchanged w.r.t. the original values. We need to do this in order to keep these jets in the _Jet vector.
-    	systematics.shiftParticle(jet, origJetReco, jetL1L2L3_jerShiftedP4.Pt(), jetL1L2L3_jerShiftedP4.M(), systname, syst);
+    	systematics.shiftJet(jet, jetL1L2L3_jerShiftedP4, systname, syst);
     }
     else if(!isData){
     	if(stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos){
     		// Correct the jet 4-momentum according to the systematic applied for JES.
-      	systematics.shiftParticle(jet, origJetReco, jetL1L2L3_jer_jesShiftedP4.Pt(), jetL1L2L3_jer_jesShiftedP4.M(), systname, syst);
+      	systematics.shiftJet(jet, jetL1L2L3_jer_jesShiftedP4, systname, syst);
     	} else if(!stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos){
         // Correct the jet 4-momentum according to the systematic applied for JES.
-        systematics.shiftParticle(jet, origJetReco, jetL1L2L3_T1_jesShiftedP4.Pt(), jetL1L2L3_T1_jesShiftedP4.M(), systname, syst);
+        systematics.shiftJet(jet, jetL1L2L3_T1_jesShiftedP4, systname, syst);
       } else {
     		// Correct the jet 4-momentum according to the systematic applied for JER
-        systematics.shiftParticle(jet, origJetReco, jetL1L2L3_jerShiftedP4.Pt(), jetL1L2L3_jerShiftedP4.M(), systname, syst);
+        systematics.shiftJet(jet, jetL1L2L3_jerShiftedP4, systname, syst);
     	}
     }
 
@@ -2363,25 +2363,25 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
     if(jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9){
 
-      if(!(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && rawJetP4.Pt() < 50.0)){
+      if(!(year.compare("2017") == 0 && (abs(rawJetP4.Eta()) > 2.65 && abs(rawJetP4.Eta()) < 3.14 ) && rawJetP4.Pt() < 50.0)){
 
         if(isData){
-          _MET->propagateJetEnergyCorr(origJetReco, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst); // here the jer sf is 1, therefore we just keep the original vector.
+          _MET->propagateJetEnergyCorr(jetL1L2L3_jerNom_noMuonP4, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst); // here the jer sf is 1, therefore we just keep the original vector.
         }
         else{
           if(systname.find("orig") != std::string::npos){
-            _MET->propagateJetEnergyCorr(origJetReco, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jerNom_noMuonP4, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
           }
           else if(systname.find("_Res_") != std::string::npos){
-            _MET->propagateJetEnergyCorr(origJetReco, jetL1L2L3_jerShifted_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jerShifted_noMuonP4, jetL1L2L3_jerShifted_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
           }
           else if(stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos){
             // Propagation of JES including JER (jet_pt_jesShifted)
-            _MET->propagateJetEnergyCorr(origJetReco, jetL1L2L3_jer_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jer_noMuon_jesShiftedP4, jetL1L2L3_jer_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
           }
           else if(!stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos){
             // Propagation of JES when no JERS are included (jet_pet_jesShiftedT1)
-            _MET->propagateJetEnergyCorr(origJetReco, jetL1L2L3_T1_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+            _MET->propagateJetEnergyCorr(jetL1L2L3_T1_noMuon_jesShiftedP4, jetL1L2L3_T1_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
           }
         }
       }

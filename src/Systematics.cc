@@ -12,6 +12,13 @@ void Systematics::init(){
 
 }
 
+void Systematics::shiftJet(Particle& jet, TLorentzVector recoJet, std::string& syst_name, int syst){
+
+  jet.addP4Syst(recoJet, syst);
+  return;
+
+}
+
 void Systematics::shiftParticle(Particle& jet, TLorentzVector recoJet, double const& corrJetPt, double const& corrJetMass, std::string& syst_name, int syst){
 
   TLorentzVector shiftedRecoJet;
