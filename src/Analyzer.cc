@@ -2082,110 +2082,104 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
   for(size_t i = 0; i < jet.size(); i++){
 
-    // Get the reconstruced 4-vector (original vector straight from the corresponding branches)
+    // Get the reconstruced 4-vector (original vector straight from the corresponding branches), these jets have applied L1L2L3 JECs
     const TLorentzVector origJetReco = jet.RecoP4(i);
     std::cout << "Original JEC corrected jet #" << i << " pt = " << origJetReco.Pt() << ", eta = " << origJetReco.Eta() << ", phi = " << origJetReco.Phi() << ", mass = "<< origJetReco.M() << std::endl;
 
-    // Initialize these values to zero for each jet.
-    jet_pt_L1L2L3 = 0.0, jet_pt_L1 = 0.0;
-
-    // Revert the calibrations applied to this jet by getting the rawFactor.
-    float jet_Pt = origJetReco.Pt(), jet_Mass = origJetReco.M();
+    // Step 1: get the raw jet 4-momentum from the raw factor
     float jet_RawFactor = _Jet->rawFactor[i];
+    float jet_Pt = origJetReco.Pt(), jet_Mass = origJetReco.M(); // L1L2L3 corrected.
+    float jet_rawPt = jet_Pt * (1.0 - jet_RawFactor), jet_rawMass = jet_Mass * (1.0 - jet_RawFactor); // raw jet pt and mass (no corrections)
+    TLorentzVector rawJetP4(0,0,0,0);
+    rawJetP4.SetPtEtaPhiM(jet_rawPt, origJetReco.Eta(), origJetReco.Phi(), jet_rawMass); // This is our raw jet 4-momentum
 
-    float jet_rawPt = jet_Pt * (1.0 - jet_RawFactor); //, jet_rawMass = jet_Mass * (1.0 - jet_RawFactor);
-    std::cout << "Jet raw factor = " << jet_RawFactor << std::endl;
-
-    // Re-do the JECs to make everything consistent:
-    double jec = jetRecalib.getCorrection(origJetReco, _Jet->area[i], jet_RawFactor, jec_rho);
-    double jecL1 = jetRecalibL1.getCorrection(origJetReco, _Jet->area[i], jet_RawFactor, jec_rho);
-
-    std::cout << "JEC L1L2L3 sf = " << jec << ", JEC L1 sf = " << jecL1 << std::endl;
-
-    // Update the values of pt and mass with these factors
-    jet_Pt = jetRecalib.correctedP4(origJetReco, jec, jet_RawFactor).Pt();
-    jet_Mass = jetRecalib.correctedP4(origJetReco, jec, jet_RawFactor).M();
-
-    std::cout << "Jet after reapplying L1L2L3 JECs: pt = " << jet_Pt << ", mass = " << jet_Mass << std::endl;
-
-    // Calculate the pt only for the L1 corrections since it will be used later.
-    jet_pt_L1 = jetRecalibL1.correctedP4(origJetReco, jecL1, jet_RawFactor).Pt();
-    // jet_mass_L1 = jetRecalibL1.correctedP4(origJetReco, jecL1, jet_RawFactor).M();
-    std::cout << "Jet after reapplying L1 JECs: pt = " << jet_pt_L1 << std::endl;
-
-    // Check if this jet is used for type-I MET
-    TLorentzVector newjetP4(0,0,0,0);
-    newjetP4.SetPtEtaPhiM(origJetReco.Pt() * (1.0 - jet_RawFactor), origJetReco.Eta(), origJetReco.Phi(), origJetReco.M() * (1.0 - jet_RawFactor));
-
-    std::cout << "Raw jet p4: pt = " << newjetP4.Pt() << ", eta = " << newjetP4.Eta() << ", phi = " << newjetP4.Phi() << ", mass = " << newjetP4.M() << std::endl;
-
-    double muon_pt = 0.0;
+    // Step 2: check if there is any muon overlapping with this jet. If so, remove the muon(s) 4-momentum(a) from the raw jet 4-momentum
+    TLorentzVector rawJetP4_noMuon(0,0,0,0);
 
     if(_Jet->matchingMuonIdx1[i] > -1){
       if(_Muon->isGlobal[_Jet->matchingMuonIdx1[i]] == true){
-        newjetP4 = newjetP4 - _Muon->p4(_Jet->matchingMuonIdx1[i]);
-        muon_pt += _Muon->pt(_Jet->matchingMuonIdx1[i]);
-        std::cout << "Muon 1 pt = " << _Muon->pt(_Jet->matchingMuonIdx1[i]) << ", raw jet pt - muon 1 pt = " << newjetP4.Pt() << std::endl;
+        rawJetP4_noMuon = rawJetP4 - _Muon->p4(_Jet->matchingMuonIdx1[i]);
       }
     }
 
-    if(_Jet->matchingMuonIdx2[i] > -1){
+    if(_Jet->matchingMuonIdx2[i] > -1 && _Jet->matchingMuonIdx1[i] > -1){
       if(_Muon->isGlobal[_Jet->matchingMuonIdx2[i]] == true){
-        newjetP4 = newjetP4 - _Muon->p4(_Jet->matchingMuonIdx2[i]);
-        muon_pt += _Muon->pt(_Jet->matchingMuonIdx2[i]);
-        std::cout << "Muon 2 pt = " << _Muon->pt(_Jet->matchingMuonIdx2[i]) << ", raw jet pt - muon 2 pt = " << newjetP4.Pt() << std::endl;
+        rawJetP4_noMuon = rawJetP4_noMuon - _Muon->p4(_Jet->matchingMuonIdx2[i]);
+      }
+    } else if(_Jet->matchingMuonIdx2[i] > -1 && _Jet->matchingMuonIdx1[i] < 0){
+      if(_Muon->isGlobal[_Jet->matchingMuonIdx2[i]] == true){
+        rawJetP4_noMuon = rawJetP4 - _Muon->p4(_Jet->matchingMuonIdx2[i]);
       }
     }
 
-    // Set the jet pt to the muon substracted raw pt
-    double jet_rawpt_nomuon = newjetP4.Pt();
-    std::cout << "Jet raw p4 without muons: pt = " << jet_rawpt_nomuon << ", eta = " << newjetP4.Eta() << ", phi = " << newjetP4.Phi() << ", mass = " << newjetP4.M() << std::endl;
-    // double jet_rawfactor_nomuon = 0.0;
-    std::cout << "Is true raw jet pt > unclustered energy threshold (15 GeV)? " << std::boolalpha << (jet_rawpt_nomuon > jetUnclEnThreshold) << std::endl;
-    // get the proper jet pts for type-I MET.
-    // condition ? result_if_true : result_if_false
-    double jet_pt_noMuL1L2L3 = jet_rawpt_nomuon * jec;
-    double jet_pt_noMuL1 = jet_rawpt_nomuon * jecL1;
+    // Step 3: check if the jet pt of the corrected rawJetP4 with L1L2L3 corrections is above the unclustered energy threshold.
 
-    std::cout << "jet_pt_noMuL1L2L3 = " << jet_pt_noMuL1L2L3 << std::endl;
+    // Step 3.1: get the JEC L1L2L3 and JEC L1 factors for this jet (L1 to be used later)
+    double jecL1L2L3 = jetRecalib.getCorrection(rawJetP4_noMuon, _Jet->area[i], jec_rho);
+    double jecL1 = jetRecalibL1.getCorrection(rawJetP4_noMuon, _Jet->area[i], jec_rho);
 
-    if(year.compare("2017") == 0){
-       // This step is only needed for v2 MET in 2017, when different JECs are applied compared to the nanoAOD production.
-       // only correct the non-mu fraction of the jet. If the corrected pt > 15 GeV (unclEnThreshold), use the corrected jet, otherwise use raw
-       jet_pt_noMuL1L2L3 = jet_rawpt_nomuon * jec > jetUnclEnThreshold ? jet_rawpt_nomuon * jec : jet_rawpt_nomuon;
-       jet_pt_noMuL1 = jet_rawpt_nomuon * jecL1 > jetUnclEnThreshold ? jet_rawpt_nomuon * jecL1 : jet_rawpt_nomuon;
+    // Step 3.2: check if is above the unclustered threshold. If it is, then apply the correction factor, otherwise, don't apply it.
+    TLorentzVector jetL1L2L3CorrectedP4(0,0,0,0);
+    TLorentzVector jetL1CorrectedP4(0,0,0,0);
+
+    if(year.compare("2017") != 0 ){
+      // For 2016 and 2018, apply the corrections as usual.
+      if( jecL1L2L3 * rawJetP4_noMuon.Pt() > jetUnclEnThreshold ){
+        jetL1L2L3CorrectedP4 = jetRecalib.correctedP4(rawJetP4_noMuon, jecL1L2L3); // L1L2L3 correction.
+        jetL1CorrecttedP4 = jetRecalibL1.correctedP4(rawJetP4_noMuon, jecL1); // L1 correction.
+      } else {
+        jetL1L2L3CorrectedP4 = rawJetP4_noMuon; // No correction.
+        jetL1CorrecttedP4 = rawJetP4_noMuon); // No correction.
+      }
+    } else {
+      // This step is only needed for v2 MET in 2017, when different JECs are applied compared to the nanoAOD production.
+      // only correct the non-mu fraction of the jet. If the corrected pt > 15 GeV (unclEnThreshold), use the corrected jet, otherwise use raw
+      if(jecL1L2L3 * rawJetP4_noMuon.Pt() > jetUnclEnThreshold){
+        jetL1L2L3CorrectedP4 = jetRecalib.correctedP4(rawJetP4_noMuon, jecL1L2L3); // L1L2L3 correction.
+      } else {
+        jetL1L2L3CorrectedP4 = rawJetP4_noMuon; // No correction.
+      }
+
+      if(jecL1 * rawJetP4_noMuon.Pt() > jetUnclEnThreshold){
+        jetL1CorrectedP4 = jetRecalib.correctedP4(rawJetP4_noMuon, jecL1L2L3); // L1L2L3 correction.
+      } else {
+        jetL1CorrectedP4 = rawJetP4_noMuon; // No correction.
+      }
     }
-    else{
-       // For 2016 and 2018, simply apply the corrections as usual
-       jet_pt_noMuL1L2L3 = jet_rawpt_nomuon * jec;
-       jet_pt_noMuL1 = jet_rawpt_nomuon * jecL1;
-    }
 
-    // Apply the JER corrections if desired to MC
+    // Step 4 (optional): Apply the JER corrections if desired to MC
     // Define the JER scale factors:
     double jer_sf_nom = 1.0, jer_shift = 1.0;
-    // The JER corrections should be applied on top of the JECs. Then, we must use the jec corrected pt/mass.
-    double jet_pt_nom = jet_Pt * jer_sf_nom, jet_mass_nom = jet_Mass * jer_sf_nom;
+    // The JER corrections should be applied on top of the JECs. Then, we must use the jec corrected pt/mass of the jet without the muon!
+    double jet_pt_nom = jetL1L2L3CorrectedP4.Pt() * jer_sf_nom, jet_mass_nom = jetL1L2L3CorrectedP4.M() * jer_sf_nom;
 
     std::cout << " (before smearing) jet_pt_nom = " << jet_pt_nom << ", jer_sf_nom = " << jer_sf_nom << ", jet_Pt = " << jet_Pt << std::endl;
 
     // Define the new jet pt and mass variables to be updated after applying the JER corrections.
-    double jet_pt_jerShifted = jet_Pt * jer_shift, jet_mass_jerShifted = jet_Mass * jer_shift;
+    double jet_pt_jerShifted = jetL1L2L3CorrectedP4.Pt() * jer_shift, jet_mass_jerShifted = jetL1L2L3CorrectedP4.M() * jer_shift;
 
     if(!isData){
 
       bool jetlepmatch = false;
-      std::cout << "GenJet matched index (-1 means no match) = " << _Jet->genJetIdx[i] << std::endl;
-      if(_Jet->genJetIdx[i] != -1) std::cout << "Flavor from parton matching = " << _GenJet->genPartonFlavor[_Jet->genJetIdx[i]] << std::endl;
-      // Check that this jet doesn't match a lepton at gen-level. This will make sure that the reco jet is a true jet.
-      if(JetMatchesLepton(*_Muon, origJetReco, stats.dmap.at("MuonMatchingDeltaR"), CUTS::eGMuon) ||
-        JetMatchesLepton(*_Tau, origJetReco, stats.dmap.at("TauMatchingDeltaR"), CUTS::eGHadTau) ||
-        JetMatchesLepton(*_Tau, origJetReco, stats.dmap.at("TauMatchingDeltaR"), CUTS::eGTau) ||
-        JetMatchesLepton(*_Electron, origJetReco,stats.dmap.at("ElectronMatchingDeltaR"), CUTS::eGElec)){
+      // Only check if there are any overlaps with muons. Treat any electrons or hadronic taus which show up in the jet vector as jets.
+      // Jet overlap removal in the config files takes care of them later by removing them of the jet vector.
 
-        std::cout << "Reco jet #" << i << " matched to a gen-level lepton." << std::endl;
-        jetlepmatch = true;
+      // Check that this jet doesn't match a lepton at gen-level. This will make sure that the reco jet is a true jet.
+      if(JetMatchesLepton(*_Muon, origJetReco, stats.dmap.at("MuonMatchingDeltaR"), CUTS::eGMuon)){
+        // Investigate if this is a muon coming from a b-jet by checking the flavor of the gen-level jet:
+        if(_Jet->genJetIdx[i] != -1){
+          // Get the hadron flavor:
+          int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[i]);
+          if( abs(jetHadronFlavor) != 5 || abs(_GenJet->genPartonFlavor[_Jet->genJetIdx[i]]) != 5){ // if not a b-jet, then lepton match is true.
+            jetlepmatch = true;
+          }
+        } else {
+          jetlepmatch = true;
+        }
       }
+
+      // THIS IS WHERE I LEFT TODAY!!!
+
 
       if(stats.bfind("SmearTheJet")){
         jer_sf_nom = jets_jer_sfs.at(i).at(0); // i is the jet index, 0 is the nominal value

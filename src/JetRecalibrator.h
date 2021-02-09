@@ -28,11 +28,11 @@ class JetRecalibrator {
 
 	public:
 		JetRecalibrator();
-		JetRecalibrator(const std::string& path, const std::string& globalTag, const std::string& jetFlavor, const std::string& type, bool doResidualJECs, int upToLevel=3, 
+		JetRecalibrator(const std::string& path, const std::string& globalTag, const std::string& jetFlavor, const std::string& type, bool doResidualJECs, int upToLevel=3,
 			bool calculateSeparateCorrections=false, bool calculateTypeIMETCorr=false);
 
-		float getCorrection(TLorentzVector jet4vec, float jet_area, float jet_rawFactor, float rho, float delta = 0.0);
-		TLorentzVector correctedP4(TLorentzVector jet4vec, float corr_factor, float jet_rawFactor);
+		float getCorrection(TLorentzVector rawjet4vec, float jet_area, float rho, float delta = 0.0);
+		TLorentzVector correctedP4(TLorentzVector rawjet4vec, float corr_factor);
 
 
 	private:
@@ -48,7 +48,7 @@ class JetRecalibrator {
 		bool separateCorr;
 		bool calcT1MetCorr;
 		*/
-		
+
 		FactorizedJetCorrector* JetCorrector;
 		JetCorrectionUncertainty* JetUncertainty;
 

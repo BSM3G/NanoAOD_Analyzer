@@ -94,14 +94,14 @@ JetRecalibrator::JetRecalibrator(const std::string& path, const std::string& glo
 
 };
 
-float JetRecalibrator::getCorrection(TLorentzVector jet4vec, float jet_area, float jet_rawFactor, float rho, float delta){
+float JetRecalibrator::getCorrection(TLorentzVector rawjet4vec, float jet_area, float rho, float delta){
 
 	// Create a corrector object that applies the L1,L2,L3 and possibly the residual corrections to the jets.
 	// If configured to do so, it will also compute the type1 MET corrections
 
-	JetCorrector->setJetPhi(jet4vec.Phi());
-	JetCorrector->setJetEta(jet4vec.Eta());
-	JetCorrector->setJetPt(jet4vec.Pt() * (1 - jet_rawFactor));
+	JetCorrector->setJetPhi(rawjet4vec.Phi());
+	JetCorrector->setJetEta(rawjet4vec.Eta());
+	JetCorrector->setJetPt(rawjet4vec.Pt()));
 	JetCorrector->setJetA(jet_area);
 	JetCorrector->setRho(rho);
 
@@ -113,15 +113,15 @@ float JetRecalibrator::getCorrection(TLorentzVector jet4vec, float jet_area, flo
 			std::cout << "Jet energy scale uncertainty shifts requested, but not available." << std::endl;
 		}
 		else{
-			JetUncertainty->setJetPhi(jet4vec.Phi());
-			JetUncertainty->setJetEta(jet4vec.Eta());
-			JetUncertainty->setJetPt(corr * jet4vec.Pt() * (1.0 - jet_rawFactor));
+			JetUncertainty->setJetPhi(rawjet4vec.Phi());
+			JetUncertainty->setJetEta(rawjet4vec.Eta());
+			JetUncertainty->setJetPt(corr * rawjet4vec.Pt());
 
 			try{
 				jetEnergyCorrUncertainty = JetUncertainty->getUncertainty(true);
 			}
 			catch(std::runtime_error& err){
-				std::cout << "Caught " << err.what() << " when getting uncertainty for jet of pt = %.1f" << corr * jet4vec.Pt() * (1.0 - jet_rawFactor) << ", eta = %.2f" << jet4vec.Eta() << std::endl;
+				std::cout << "Caught " << err.what() << " when getting uncertainty for jet of pt = %.1f" << corr * rawjet4vec.Pt() << ", eta = %.2f" << rawjet4vec.Eta() << std::endl;
 				jetEnergyCorrUncertainty = 0.5;
 			}
 			corr *= std::max(0.0, 1.0+delta+jetEnergyCorrUncertainty);
@@ -131,16 +131,15 @@ float JetRecalibrator::getCorrection(TLorentzVector jet4vec, float jet_area, flo
 	return corr;
 }
 
-TLorentzVector JetRecalibrator::correctedP4(TLorentzVector jet4vec, float corr_factor, float jet_rawFactor){
+TLorentzVector JetRecalibrator::correctedP4(TLorentzVector rawjet4vec, float corr_factor){
 
-	float raw = 1.0 - jet_rawFactor;
-	if(corr_factor <= 0.0) return jet4vec;
+	if(corr_factor <= 0.0) return rawjet4vec;
 
-	float newpt = jet4vec.Pt() * raw * corr_factor;
-	float newmass = jet4vec.M() * raw * corr_factor;
+	float newpt = rawjet4vec.Pt() * corr_factor;
+	float newmass = rawjet4vec.M() * corr_factor;
 
 	TLorentzVector correctedJet4Vec(0,0,0,0);
-	correctedJet4Vec.SetPtEtaPhiM(newpt, jet4vec.Eta(), jet4vec.Phi(), newmass);
+	correctedJet4Vec.SetPtEtaPhiM(newpt, rawjet4vec.Eta(), rawjet4vec.Phi(), newmass);
 
 	return correctedJet4Vec;
 
