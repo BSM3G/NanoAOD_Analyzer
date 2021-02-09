@@ -844,6 +844,10 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     smearLepton(*_Muon, CUTS::eGMuon, _Muon->pstats["Smear"], distats["Muon_systematics"], i);
     // smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
     smearTaus(*_Tau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
+    std::cout << "(Before smearing) systematic = " << systname << std::endl;
+    for(size_t i=0; i < _Jet->size(); i++){
+      std::cout << "Jet #" << i << ": pt = " << _Jet->pt(i) << ", eta = " << _Jet->eta(i) << ", phi = " << _Jet->phi(i) << ", mass = " << _Jet->mass(i) << std::endl;
+    }
 
     applyJetEnergyCorrections(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], year, i);
     applyJetEnergyCorrections(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], year, i);
@@ -855,6 +859,10 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     std::string systname = syst_names.at(i);
     for( auto part: allParticles) part->setCurrentP(i);
     _MET->setCurrentP(i);
+    std::cout << "(After smearing) systematic = " << systname << std::endl;
+    for(size_t i=0; i < _Jet->size(); i++){
+      std::cout << "Jet #" << i << ": pt = " << _Jet->pt(i) << ", eta = " << _Jet->eta(i) << ", phi = " << _Jet->phi(i) << ", mass = " << _Jet->mass(i) << std::endl;
+    }
 
     getGoodParticles(i);
     selectMet(i);
@@ -1326,7 +1334,7 @@ void Analyzer::selectMet(int syst) {
 
   // Before using the TreatMuonsAsNeutrinos option, we store the MET value in a separate vector for reference purposes:
   _MET->JERCorrMet.SetPxPyPzE(_MET->px(), _MET->py(), _MET->p4().Pz(), _MET->energy());
-
+  std::cout << "Met before cuts: px = " << _MET->px() << ", py = " << _MET->py() << std::endl;
   if(distats["Run"].bfind("TreatMuonsAsNeutrinos") || distats["Run"].bfind("TreatOnlyOneMuonAsNeutrino") ) treatMuonsAsMet(syst);
 
   _MET->calculateHtAndMHt(distats["Run"], *_Jet,  syst);
@@ -2017,7 +2025,7 @@ void Analyzer::setupJetCorrections(std::string year, std::string outputfilename)
    }
 
  }
-
+/*
 void Analyzer::getJetEnergyResSFs(Particle& jet, const CUTS eGenPos, bool res_match){
 
 	// Clean up the vector before starting:
@@ -2051,7 +2059,7 @@ void Analyzer::getJetEnergyResSFs(Particle& jet, const CUTS eGenPos, bool res_ma
 	}
 
 }
-
+*/
 // --- Function that applies the latest JECs and propagates them to MET  --- //
 void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, const PartStats& stats, std::string year, int syst){
 
@@ -2065,26 +2073,26 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
   }
 
   std::string systname = syst_names.at(syst);
-
+  std::cout << "Systematic name = " << systname << std::endl;
   // Define the deltas to be applied to MET at the end:
   float delta_x_T1Jet = 0.0, delta_y_T1Jet = 0.0, delta_x_rawJet = 0.0, delta_y_rawJet = 0.0;
   // Define the jet energy threshold below which we consider it to be unclustered energy.
   float jetUnclEnThreshold = 15.0;
 
-  float jet_pt_L1L2L3 = 0.0, jet_pt_L1 = 0.0;
-
   // Get the jet energy resolution scale factors only once and before looping over jets to apply them.
-  if(!isData && systname == "orig"){
-  	getJetEnergyResSFs(jet, eGenPos, true);
-  }
+  //if(!isData && systname == "orig"){
+  //	getJetEnergyResSFs(jet, eGenPos, true);
+  //}
+
   std::cout << "Number of jets in the event = " << jet.size() << std::endl;
-  std::cout << "Number of gen-electrons = " << active_part->at(CUTS::eGElec)->size() << ", gen-muons = " << active_part->at(CUTS::eGMuon)->size() << ", gen had-taus = " << active_part->at(CUTS::eGHadTau)->size() << ", gen taus = " << active_part->at(CUTS::eGTau)->size() << std::endl;
+  std::cout << "Number of gen-muons = " << active_part->at(CUTS::eGMuon)->size() <<  std::endl;
 
   for(size_t i = 0; i < jet.size(); i++){
 
     // Get the reconstruced 4-vector (original vector straight from the corresponding branches), these jets have applied L1L2L3 JECs
     const TLorentzVector origJetReco = jet.RecoP4(i);
-    std::cout << "Original JEC corrected jet #" << i << " pt = " << origJetReco.Pt() << ", eta = " << origJetReco.Eta() << ", phi = " << origJetReco.Phi() << ", mass = "<< origJetReco.M() << std::endl;
+    std::cout << " --- Jet #" << i << " --- " << std::endl;
+    std::cout << "Original JEC L1L2L3 corrected jet pt = " << origJetReco.Pt() << ", eta = " << origJetReco.Eta() << ", phi = " << origJetReco.Phi() << ", mass = "<< origJetReco.M() << std::endl;
 
     // Step 1: get the raw jet 4-momentum from the raw factor
     float jet_RawFactor = _Jet->rawFactor[i];
@@ -2093,24 +2101,23 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     TLorentzVector rawJetP4(0,0,0,0);
     rawJetP4.SetPtEtaPhiM(jet_rawPt, origJetReco.Eta(), origJetReco.Phi(), jet_rawMass); // This is our raw jet 4-momentum
 
+    std::cout << "raw factor = " << jet_RawFactor << ", raw jet pt = " << rawJetP4.Pt() << ", eta = " << rawJetP4.Eta() << ", phi = " << rawJetP4.Phi() << ", mass = " << rawJetP4.M() << std::endl;
     // Step 2: check if there is any muon overlapping with this jet. If so, remove the muon(s) 4-momentum(a) from the raw jet 4-momentum
-    TLorentzVector rawJetP4_noMuon(0,0,0,0);
+    TLorentzVector rawJetP4_noMuon = rawJetP4;
+    TLorentzVector muonsP4(0,0,0,0);
 
-    if(_Jet->matchingMuonIdx1[i] > -1){
-      if(_Muon->isGlobal[_Jet->matchingMuonIdx1[i]] == true){
-        rawJetP4_noMuon = rawJetP4 - _Muon->p4(_Jet->matchingMuonIdx1[i]);
-      }
+    if( (_Jet->matchingMuonIdx1[i] > -1) && (_Muon->isGlobal[_Jet->matchingMuonIdx1[i]] == true) ){
+      rawJetP4_noMuon = rawJetP4_noMuon - _Muon->p4(_Jet->matchingMuonIdx1[i]);
+      muonsP4 += _Muon->p4(_Jet->matchingMuonIdx1[i]);
     }
 
-    if(_Jet->matchingMuonIdx2[i] > -1 && _Jet->matchingMuonIdx1[i] > -1){
-      if(_Muon->isGlobal[_Jet->matchingMuonIdx2[i]] == true){
-        rawJetP4_noMuon = rawJetP4_noMuon - _Muon->p4(_Jet->matchingMuonIdx2[i]);
-      }
-    } else if(_Jet->matchingMuonIdx2[i] > -1 && _Jet->matchingMuonIdx1[i] < 0){
-      if(_Muon->isGlobal[_Jet->matchingMuonIdx2[i]] == true){
-        rawJetP4_noMuon = rawJetP4 - _Muon->p4(_Jet->matchingMuonIdx2[i]);
-      }
+    if( (_Jet->matchingMuonIdx2[i] > -1) && (_Muon->isGlobal[_Jet->matchingMuonIdx2[i]] == true) ){
+      rawJetP4_noMuon = rawJetP4_noMuon - _Muon->p4(_Jet->matchingMuonIdx2[i]);
+      muonsP4 += _Muon->p4(_Jet->matchingMuonIdx2[i]);
     }
+
+    std::cout << "Muon momenta: pt = " << muonsP4.Pt() << ", eta = " << muonsP4.Eta() << ", phi = " << muonsP4.Phi() << ", mass = " << muonsP4.M() << std::endl;
+    std::cout << "Raw jet p4 without muons: pt = " << rawJetP4_noMuon.Pt() << ", eta = " << rawJetP4_noMuon.Eta() << ", phi = " << rawJetP4_noMuon.Phi() << ", mass = " << rawJetP4_noMuon.M() << std::endl;
 
     // Step 3: check if the jet pt of the corrected rawJetP4 with L1L2L3 corrections is above the unclustered energy threshold.
 
@@ -2118,59 +2125,75 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     double jecL1L2L3 = jetRecalib.getCorrection(rawJetP4_noMuon, _Jet->area[i], jec_rho);
     double jecL1 = jetRecalibL1.getCorrection(rawJetP4_noMuon, _Jet->area[i], jec_rho);
 
+    std::cout << "JEC L1L2L3 factor (based on raw jet p4 w/o muons) = " << jecL1L2L3 << ", JEC L1 (same) = " << jecL1 << std::endl;
+
     // Step 3.2: check if is above the unclustered threshold. If it is, then apply the correction factor, otherwise, don't apply it.
-    TLorentzVector jetL1L2L3CorrectedP4(0,0,0,0);
-    TLorentzVector jetL1CorrectedP4(0,0,0,0);
+    TLorentzVector jetL1L2L3_noMuonP4(0,0,0,0);
+    TLorentzVector jetL1_noMuonP4(0,0,0,0);
+
+    std::cout << "Is the jet_pt_nomuon_L1L2L3 > jetUnclEnThreshold? " << std::boolalpha << (jecL1L2L3 * rawJetP4_noMuon.Pt() > jetUnclEnThreshold) << std::endl;
 
     if(year.compare("2017") != 0 ){
       // For 2016 and 2018, apply the corrections as usual.
       if( jecL1L2L3 * rawJetP4_noMuon.Pt() > jetUnclEnThreshold ){
-        jetL1L2L3CorrectedP4 = jetRecalib.correctedP4(rawJetP4_noMuon, jecL1L2L3); // L1L2L3 correction.
-        jetL1CorrecttedP4 = jetRecalibL1.correctedP4(rawJetP4_noMuon, jecL1); // L1 correction.
+        jetL1L2L3_noMuonP4 = jetRecalib.correctedP4(rawJetP4_noMuon, jecL1L2L3); // L1L2L3 correction.
+        jetL1_noMuonP4 = jetRecalibL1.correctedP4(rawJetP4_noMuon, jecL1); // L1 correction.
       } else {
-        jetL1L2L3CorrectedP4 = rawJetP4_noMuon; // No correction.
-        jetL1CorrecttedP4 = rawJetP4_noMuon); // No correction.
+        jetL1L2L3_noMuonP4 = rawJetP4_noMuon; // No correction.
+        jetL1_noMuonP4 = rawJetP4_noMuon; // No correction.
       }
     } else {
       // This step is only needed for v2 MET in 2017, when different JECs are applied compared to the nanoAOD production.
       // only correct the non-mu fraction of the jet. If the corrected pt > 15 GeV (unclEnThreshold), use the corrected jet, otherwise use raw
       if(jecL1L2L3 * rawJetP4_noMuon.Pt() > jetUnclEnThreshold){
-        jetL1L2L3CorrectedP4 = jetRecalib.correctedP4(rawJetP4_noMuon, jecL1L2L3); // L1L2L3 correction.
+        jetL1L2L3_noMuonP4 = jetRecalib.correctedP4(rawJetP4_noMuon, jecL1L2L3); // L1L2L3 correction.
       } else {
-        jetL1L2L3CorrectedP4 = rawJetP4_noMuon; // No correction.
+        jetL1L2L3_noMuonP4 = rawJetP4_noMuon; // No correction.
       }
 
       if(jecL1 * rawJetP4_noMuon.Pt() > jetUnclEnThreshold){
-        jetL1CorrectedP4 = jetRecalib.correctedP4(rawJetP4_noMuon, jecL1L2L3); // L1L2L3 correction.
+        jetL1_noMuonP4 = jetRecalib.correctedP4(rawJetP4_noMuon, jecL1); // L1 correction.
       } else {
-        jetL1CorrectedP4 = rawJetP4_noMuon; // No correction.
+        jetL1_noMuonP4 = rawJetP4_noMuon; // No correction.
       }
     }
+
+    std::cout << "Jet L1L2L3 corrected p4 w/o muons: pt = " << jetL1L2L3_noMuonP4.Pt() << ", eta = " << jetL1L2L3_noMuonP4.Eta() << ", phi = " << jetL1L2L3_noMuonP4.Phi() << ", mass = " << jetL1L2L3_noMuonP4.M() << std::endl;
+    std::cout << "Jet L1 corrected p4 w/o muons: pt = " << jetL1_noMuonP4.Pt() << ", eta = " << jetL1_noMuonP4.Eta() << ", phi = " << jetL1_noMuonP4.Phi() << ", mass = " << jetL1_noMuonP4.M() << std::endl;
 
     // Step 4 (optional): Apply the JER corrections if desired to MC
     // Define the JER scale factors:
     double jer_sf_nom = 1.0, jer_shift = 1.0;
     // The JER corrections should be applied on top of the JECs. Then, we must use the jec corrected pt/mass of the jet without the muon!
-    double jet_pt_nom = jetL1L2L3CorrectedP4.Pt() * jer_sf_nom, jet_mass_nom = jetL1L2L3CorrectedP4.M() * jer_sf_nom;
+    TLorentzVector jetL1L2L3_jerNom_noMuonP4(0,0,0,0), jetL1L2L3_jerShifted_noMuonP4(0,0,0,0);
 
-    std::cout << " (before smearing) jet_pt_nom = " << jet_pt_nom << ", jer_sf_nom = " << jer_sf_nom << ", jet_Pt = " << jet_Pt << std::endl;
+    jetL1L2L3_jerNom_noMuonP4.SetPtEtaPhiM( jetL1L2L3_noMuonP4.Pt()*jer_sf_nom , jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jetL1L2L3_noMuonP4.M()*jer_sf_nom );
+    jetL1L2L3_jerShifted_noMuonP4.SetPtEtaPhiM( jetL1L2L3_noMuonP4.Pt()*jer_shift , jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jetL1L2L3_noMuonP4.M()*jer_shift );
 
-    // Define the new jet pt and mass variables to be updated after applying the JER corrections.
-    double jet_pt_jerShifted = jetL1L2L3CorrectedP4.Pt() * jer_shift, jet_mass_jerShifted = jetL1L2L3CorrectedP4.M() * jer_shift;
+    // Define some helpful variables.
+    float jet_pt_nomu_nom = jetL1L2L3_jerNom_noMuonP4.Pt(), jet_mass_nomu_nom = jetL1L2L3_jerNom_noMuonP4.M();
+    float jet_pt_nomu_jerShifted = jetL1L2L3_jerShifted_noMuonP4.Pt(), jet_mass_nomu_jerShifted = jetL1L2L3_jerShifted_noMuonP4.M();
 
-    if(!isData){
+    std::cout << " *** Before smearing JER *** " << std::endl;
+    std::cout << "jer_sf_nom = " << jer_sf_nom << ", jer_shift = " << jer_shift << std::endl;
+    std::cout << "Jet nominal JER no muon p4: pt = " << jetL1L2L3_jerNom_noMuonP4.Pt() << ", eta = " << jetL1L2L3_jerNom_noMuonP4.Eta() << ", phi = " << jetL1L2L3_jerNom_noMuonP4.Phi() << ", mass = " << jetL1L2L3_jerNom_noMuonP4.M() << std::endl;
+    std::cout << "Jet shifted JER no muon p4: pt = " << jetL1L2L3_jerShifted_noMuonP4.Pt() << ", eta = " << jetL1L2L3_jerShifted_noMuonP4.Eta() << ", phi = " << jetL1L2L3_jerShifted_noMuonP4.Phi() << ", mass = " << jetL1L2L3_jerShifted_noMuonP4.M() << std::endl;
 
-      bool jetlepmatch = false;
-      // Only check if there are any overlaps with muons. Treat any electrons or hadronic taus which show up in the jet vector as jets.
+    // Verify that this is done (1) for MC, (2) if the smearing is turned on, (3) if the corrected jet Pt without the muon is above the unclustered energy threshold.
+    if( (!isData) && (stats.bfind("SmearTheJet")) && (jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold) ){
+
+      // Check if there are any overlaps only with muons. Treat any electrons or hadronic taus which show up in the jet vector as jets.
       // Jet overlap removal in the config files takes care of them later by removing them of the jet vector.
-
+      bool jetlepmatch = false;
       // Check that this jet doesn't match a lepton at gen-level. This will make sure that the reco jet is a true jet.
       if(JetMatchesLepton(*_Muon, origJetReco, stats.dmap.at("MuonMatchingDeltaR"), CUTS::eGMuon)){
         // Investigate if this is a muon coming from a b-jet by checking the flavor of the gen-level jet:
+        std::cout << "Found a match with a genuine muon... " << std::endl;
         if(_Jet->genJetIdx[i] != -1){
           // Get the hadron flavor:
           int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[i]);
           if( abs(jetHadronFlavor) != 5 || abs(_GenJet->genPartonFlavor[_Jet->genJetIdx[i]]) != 5){ // if not a b-jet, then lepton match is true.
+            std::cout << "This is not a b-jet, therefore there is a true match." << std::endl;
             jetlepmatch = true;
           }
         } else {
@@ -2178,105 +2201,155 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
         }
       }
 
-      // THIS IS WHERE I LEFT TODAY!!!
+      std::cout << std::boolalpha << "Is there a jet-lepton match? " << jetlepmatch << std::endl;
 
-
-      if(stats.bfind("SmearTheJet")){
-        jer_sf_nom = jets_jer_sfs.at(i).at(0); // i is the jet index, 0 is the nominal value
-        jet_pt_nom = jet_Pt * jer_sf_nom > 0.0 ? jet_Pt * jer_sf_nom : -1.0 * jet_Pt * jer_sf_nom;
-        jet_mass_nom = jet_Mass * jer_sf_nom > 0.0 ? jet_Mass * jer_sf_nom : -1.0 * jet_Mass * jer_sf_nom;
-
-        if(!jetlepmatch){
-          if(systname == "orig"){ // This corresponds to the nominal values
-
-            // Set the scale factor:
-            jer_shift = jer_sf_nom;
-
-            // if smearing, update jet_pt_nom and jet_mass_nom
-            jet_pt_jerShifted = jet_pt_nom;
-            jet_mass_jerShifted = jet_mass_nom;
-
-          }else if(systname.find("_Res_") != std::string::npos){
-
-            if(systname == "Jet_Res_Up"){
-              jer_shift = jets_jer_sfs.at(i).at(2); // i is the jet index, 2 is the up value
-            }else if(systname == "Jet_Res_Down"){
-              jer_shift = jets_jer_sfs.at(i).at(1); // i is the jet index, 1 is the down value
-            }
-
-            jet_pt_jerShifted = jer_shift * jet_Pt;
-            jet_mass_jerShifted = jer_shift * jet_Mass;
-
-          }
-        }
+      float genJetMatchDR = 0.0;
+      try{
+        genJetMatchDR = jet.pstats["Smear"].dmap.at("GenMatchingDeltaR");
+      }
+      catch(std::out_of_range& err){
+        if(jet.type == PType::Jet) genJetMatchDR = 0.4;
+        else if(jet.type == PType::FatJet) genJetMatchDR = 0.8;
       }
 
+      // Find the gen-level jet that matches this reco jet (the original jet).
+      TLorentzVector genJet = matchJetToGen(origJetReco, genJetMatchDR, eGenPos, stats.bfind("ResolutionMatching"));
+      // Use the jet without the muon momentum to retrieve the appropriate JER scale factors.
+      // Save the three JER scale factors (nominal, down and up) as a vector in a vector: 0 - nominal, 1 - down, 2 - up
+      std::vector<float> jet_jer_sf = jetScaleRes.GetSmearValsPtSF(jetL1L2L3_noMuonP4, genJet, jec_rho);
+
+      // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
+      jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
+      // Correct the nominal mass and pt for this jet.
+      jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
+      jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
+
+      std::cout << "JER (nom): jer_sf_nom = " << jer_sf_nom << ", jet_pt_nomu_nom = " << jet_pt_nomu_nom << ", jet_mass_nomu_nom = " << jet_mass_nomu_nom << std::endl;
+      if(!jetlepmatch){ // Do the smearing only if there is no overlap with muons, this block will only change the sfs and jet pt/mass.
+        if(systname == "orig"){ // This corresponds to the nominal values
+          // Set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
+          jer_shift = jer_sf_nom;
+          jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
+          jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
+
+        }else if(systname.find("_Res_") != std::string::npos){
+          if(systname == "Jet_Res_Up"){
+            jer_shift = jets_jer_sfs.at(i).at(2); // i is the jet index, 2 is the up value
+          }else if(systname == "Jet_Res_Down"){
+            jer_shift = jets_jer_sfs.at(i).at(1); // i is the jet index, 1 is the down value
+          }
+          jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
+          jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
+        }
+        std::cout << "JER (shift): jer_shift = " << jer_shift << ", jet_pt_nomu_jerShifted = " << jet_pt_nomu_jerShifted << ", jet_mass_nomu_jerShifted = " << jet_mass_nomu_jerShifted << std::endl;
+      }
     }
 
-    std::cout << "(after smearing) jet_pt_nom = " << jet_pt_nom << ", jer_sf_nom = " << jer_sf_nom << ", jet_Pt = " << jet_Pt << std::endl;
+    // Update the pt and mass values for the nominal jet P4:
+    jetL1L2L3_jerNom_noMuonP4.SetPtEtaPhiM( jet_pt_nomu_nom , jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jet_mass_nomu_nom );
+    // Update the 4-vector for the jet with shifted resolution.
+    jetL1L2L3_jerShifted_noMuonP4.SetPtEtaPhiM( jet_pt_nomu_jerShifted , jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jet_mass_nomu_jerShifted );
 
-    jet_pt_L1L2L3 = jet_pt_noMuL1L2L3 + muon_pt;
-    jet_pt_L1 = jet_pt_noMuL1 + muon_pt;
+    std::cout << " *** After smearing JER *** " << std::endl;
+    std::cout << "jer_sf_nom = " << jer_sf_nom << ", jer_shift = " << jer_shift << std::endl;
+    std::cout << "Jet nominal JER no muon p4: pt = " << jetL1L2L3_jerNom_noMuonP4.Pt() << ", eta = " << jetL1L2L3_jerNom_noMuonP4.Eta() << ", phi = " << jetL1L2L3_jerNom_noMuonP4.Phi() << ", mass = " << jetL1L2L3_jerNom_noMuonP4.M() << std::endl;
+    std::cout << "Jet shifted JER no muon p4: pt = " << jetL1L2L3_jerShifted_noMuonP4.Pt() << ", eta = " << jetL1L2L3_jerShifted_noMuonP4.Eta() << ", phi = " << jetL1L2L3_jerShifted_noMuonP4.Phi() << ", mass = " << jetL1L2L3_jerShifted_noMuonP4.M() << std::endl;
 
-    std::cout << "jet_pt_L1L2L3 = " << jet_pt_noMuL1L2L3 << " + " << muon_pt << " = " << jet_pt_L1L2L3 << std::endl;
-    std::cout << "jet_pt_L1 = " << jet_pt_noMuL1 << " + " << muon_pt << " = " << jet_pt_L1 << std::endl;
+    // After correcting and smearing the clustered energy, we can now add back in the muon momenta, if any.
+    TLorentzVector jetL1L2L3_jerNomP4 = jetL1L2L3_jerNom_noMuonP4 + muonsP4;
+    TLorentzVector jetL1L2L3_jerShiftedP4 = jetL1L2L3_jerShifted_noMuonP4 + muonsP4;
+    TLorentzVector jetL1_P4 = jetL1_noMuonP4 + muonsP4;
+
+    std::cout << "Jet nominal JER L1L2L3 (total): pt = " << jetL1L2L3_jerNomP4.Pt() << ", eta = " << jetL1L2L3_jerNomP4.Eta() << ", phi = " << jetL1L2L3_jerNomP4.Phi() << ", mass = " << jetL1L2L3_jerNomP4.M() << std::endl;
+    std::cout << "Jet shifted JER L1L2L3 (total): pt = " << jetL1L2L3_jerShiftedP4.Pt() << ", eta = " << jetL1L2L3_jerShiftedP4.Eta() << ", phi = " << jetL1L2L3_jerShiftedP4.Phi() << ", mass = " << jetL1L2L3_jerShiftedP4.M() << std::endl;
+    std::cout << "Jet nominal L1 (total): pt = " << jetL1_P4.Pt() << ", eta = " << jetL1_P4.Eta() << ", phi = " << jetL1_P4.Phi() << ", mass = " << jetL1_P4.M() << std::endl;
 
     if(year.compare("2017") == 0){
 
-      if(jet_pt_L1L2L3 > jetUnclEnThreshold && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_rawPt < 50.0){
+      if(jetL1L2L3_jerNomP4.Pt() > jetUnclEnThreshold && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && rawJetP4.Pt() < 50.0){ // rawJetP4 includes clustered and unclustered energy.
         // Get the delta for removing L1L2L3-L1 corrected jets in the EE region from the default MET branch
         // Take into account if the jets are smeared in resolution, multiplying by jer_sf_nom
-        delta_x_T1Jet += (jet_pt_L1L2L3 * jer_sf_nom - jet_pt_L1) * cos(origJetReco.Phi()) + jet_rawPt * cos(origJetReco.Phi());
-        delta_y_T1Jet += (jet_pt_L1L2L3 * jer_sf_nom - jet_pt_L1) * sin(origJetReco.Phi()) + jet_rawPt * sin(origJetReco.Phi());
+        delta_x_T1Jet += (jetL1L2L3_jerNomP4.Pt() - jetL1_P4.Pt()) * cos(origJetReco.Phi()) + rawJetP4.Pt() * cos(origJetReco.Phi());
+        delta_y_T1Jet += (jetL1L2L3_jerNomP4.Pt() - jetL1_P4.Pt()) * sin(origJetReco.Phi()) + rawJetP4.Pt() * sin(origJetReco.Phi());
 
         // get the delta for removing raw jets in the EE region from the raw MET
-        delta_x_rawJet += jet_rawPt * cos(origJetReco.Phi());
-        delta_y_rawJet += jet_rawPt * sin(origJetReco.Phi());
+        delta_x_rawJet += rawJetP4.Pt() * cos(origJetReco.Phi());
+        delta_y_rawJet += rawJetP4.Pt() * sin(origJetReco.Phi());
       }
     }
 
-    // Evaluate JES uncertainties
-    double jet_pt_jesShifted = 0.0, jet_mass_jesShifted = 0.0, jet_pt_jesShiftedT1 = 0.0;
-    double jes_delta = 1.0;
-    double jes_delta_t1 = 1.0;
+    // Evaluate JES uncertainties. This must be done on top of the nominal JECs and JERs (if any), not considering the muon momenta.
+    TLorentzVector jetL1L2L3_jer_noMuon_jesShiftedP4(0,0,0,0), jetL1L2L3_T1_noMuon_jesShiftedP4(0,0,0,0);
+    double jes_delta = 0.0, jes_delta_t1 = 0.0;
+
+    float jet_pt_jesShifted = jetL1L2L3_jerNom_noMuonP4.Pt() * (1.0 + jes_delta), jet_mass_jesShifted = jetL1L2L3_jerNom_noMuonP4.M() * (1.0 + jes_delta);
+    float jet_pt_jesShiftedT1 = jetL1L2L3_noMuonP4.Pt() * (1.0 + jes_delta_t1), jet_mass_jesShiftedT1 = jetL1L2L3_noMuonP4.M() * (1.0 + jes_delta_t1);
+
+    jetL1L2L3_jer_noMuon_jesShiftedP4.SetPtEtaPhiM( jetL1L2L3_jerNom_noMuonP4.Pt() * (1.0 + jes_delta), jetL1L2L3_jerNom_noMuonP4.Eta(), jetL1L2L3_jerNom_noMuonP4.Phi(), jetL1L2L3_jerNom_noMuonP4.M() * (1.0 + jes_delta) );
+    jetL1L2L3_T1_noMuon_jesShiftedP4.SetPtEtaPhiM( jetL1L2L3_noMuonP4.Pt() * (1.0 + jes_delta_t1), jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jetL1L2L3_noMuonP4.M() * (1.0 + jes_delta_t1) );
+
+    std::cout << " *** Before JES uncertainties *** " << std::endl;
+    std::cout << "jes_delta = " << jes_delta << ", jes_delta_t1 = " << jes_delta_t1 << std::endl;
+    std::cout << "Jet JER+JES shift no muon p4: pt = " << jetL1L2L3_jer_noMuon_jesShiftedP4.Pt() << ", eta = " << jetL1L2L3_jer_noMuon_jesShiftedP4.Eta() << ", phi = " << jetL1L2L3_jer_noMuon_jesShiftedP4.Phi() << ", mass = " << jetL1L2L3_jer_noMuon_jesShiftedP4.M() << std::endl;
+    std::cout << "Jet JES shift no muon p4: pt = " << jetL1L2L3_T1_noMuon_jesShiftedP4.Pt() << ", eta = " << jetL1L2L3_T1_noMuon_jesShiftedP4.Eta() << ", phi = " << jetL1L2L3_T1_noMuon_jesShiftedP4.Phi() << ", mass = " << jetL1L2L3_T1_noMuon_jesShiftedP4.M() << std::endl;
 
     if(systname.find("_Scale_") != std::string::npos){
 
       // Here we will be using the mass and pt that were obtained after applying JER corrections
-      jes_delta = jetScaleRes.GetScaleDelta(jet_pt_nom, origJetReco.Eta());
-      jes_delta_t1 = jetScaleRes.GetScaleDelta(jet_pt_L1L2L3, origJetReco.Eta());
+      jes_delta = jetScaleRes.GetScaleDelta(jetL1L2L3_jerNom_noMuonP4.Pt(), origJetReco.Eta());
+      jes_delta_t1 = jetScaleRes.GetScaleDelta(jetL1L2L3_noMuonP4.Pt(), origJetReco.Eta());
 
       // JES applied for systematics both in data and MC.
       if(systname == "Jet_Scale_Up"){
+        jet_pt_jesShifted = jetL1L2L3_jerNom_noMuonP4.Pt() * (1.0 + jes_delta);
+        jet_mass_jesShifted = jetL1L2L3_jerNom_noMuonP4.M() * (1.0 + jes_delta);
 
-        jet_pt_jesShifted = jet_pt_nom * (1.0 + jes_delta);
-        jet_mass_jesShifted = jet_mass_nom * (1.0 + jes_delta);
-        // Redo JES variations for T1 MET
-        jet_pt_jesShiftedT1 = jet_pt_L1L2L3 * (1.0 + jes_delta_t1);
+        // If no smearing is applied, just re-do JES variations for T1 MET
+        jet_pt_jesShiftedT1 = jetL1L2L3_noMuonP4.Pt() * (1.0 + jes_delta_t1);
+        jet_mass_jesShiftedT1 = jetL1L2L3_noMuonP4.M() * (1.0 + jes_delta_t1);
 
       }
       else if(systname == "Jet_Scale_Down"){
-        jet_pt_jesShifted = jet_pt_nom * (1.0 - jes_delta);
-        jet_mass_jesShifted = jet_mass_nom * (1.0 - jes_delta);
-        // Redo JES variations for T1 MET
-        jet_pt_jesShiftedT1 = jet_pt_L1L2L3 * (1.0 - jes_delta_t1);
+        jet_pt_jesShifted = jetL1L2L3_jerNom_noMuonP4.Pt() * (1.0 - jes_delta);
+        jet_mass_jesShifted = jetL1L2L3_jerNom_noMuonP4.M() * (1.0 - jes_delta);
 
+        // If no smearing is applied, just re-do JES variations for T1 MET
+        jet_pt_jesShiftedT1 = jetL1L2L3_noMuonP4.Pt() * (1.0 - jes_delta_t1);
+        jet_mass_jesShiftedT1 = jetL1L2L3_noMuonP4.M() * (1.0 - jes_delta_t1);
       }
     }
+
+    // Update the shifted JES vectors accordingly
+    jetL1L2L3_jer_noMuon_jesShiftedP4.SetPtEtaPhiM( jet_pt_jesShifted, jetL1L2L3_jerNom_noMuonP4.Eta(), jetL1L2L3_jerNom_noMuonP4.Phi(), jet_mass_jesShifted );
+    jetL1L2L3_T1_noMuon_jesShiftedP4.SetPtEtaPhiM( jet_pt_jesShiftedT1, jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jet_mass_jesShiftedT1 );
+
+    std::cout << " *** After JES uncertainties *** " << std::endl;
+    std::cout << "jes_delta = " << jes_delta << ", jes_delta_t1 = " << jes_delta_t1 << std::endl;
+    std::cout << "Jet JER+JES shift no muon p4: pt = " << jetL1L2L3_jer_noMuon_jesShiftedP4.Pt() << ", eta = " << jetL1L2L3_jer_noMuon_jesShiftedP4.Eta() << ", phi = " << jetL1L2L3_jer_noMuon_jesShiftedP4.Phi() << ", mass = " << jetL1L2L3_jer_noMuon_jesShiftedP4.M() << std::endl;
+    std::cout << "Jet JES shift no muon p4: pt = " << jetL1L2L3_T1_noMuon_jesShiftedP4.Pt() << ", eta = " << jetL1L2L3_T1_noMuon_jesShiftedP4.Eta() << ", phi = " << jetL1L2L3_T1_noMuon_jesShiftedP4.Phi() << ", mass = " << jetL1L2L3_T1_noMuon_jesShiftedP4.M() << std::endl;
+
+    // Add back in the muon momenta, if any.
+    TLorentzVector jetL1L2L3_jer_jesShiftedP4 = jetL1L2L3_jer_noMuon_jesShiftedP4 + muonsP4;
+    TLorentzVector jetL1L2L3_T1_jesShiftedP4 = jetL1L2L3_T1_noMuon_jesShiftedP4 + muonsP4;
+
+    std::cout << "Jet JER+JES shift total p4: pt = " << jetL1L2L3_jer_jesShiftedP4.Pt() << ", eta = " << jetL1L2L3_jer_jesShiftedP4.Eta() << ", phi = " << jetL1L2L3_jer_jesShiftedP4.Phi() << ", mass = " << jetL1L2L3_jer_jesShiftedP4.M() << std::endl;
+    std::cout << "Jet JES shift total p4: pt = " << jetL1L2L3_T1_jesShiftedP4.Pt() << ", eta = " << jetL1L2L3_T1_jesShiftedP4.Eta() << ", phi = " << jetL1L2L3_T1_jesShiftedP4.Phi() << ", mass = " << jetL1L2L3_T1_jesShiftedP4.M() << std::endl;
 
     // Shift the jet 4-momentum accordingly:
     if(isData){
     	// Here, jet_pt_jerShifted and jet_mass_jerShifted are unchanged w.r.t. the original values. We need to do this in order to keep these jets in the _Jet vector.
-    	systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
+    	systematics.shiftParticle(jet, origJetReco, jetL1L2L3_jerShiftedP4.Pt(), jetL1L2L3_jerShiftedP4.M(), systname, syst);
     }
     else if(!isData){
-    	if(systname.find("_Scale_") != std::string::npos){
+    	if(stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos){
     		// Correct the jet 4-momentum according to the systematic applied for JES.
-      		systematics.shiftParticle(jet, origJetReco, jet_pt_jesShifted, jet_mass_jesShifted, systname, syst);
-    	}
-    	else{
+      	systematics.shiftParticle(jet, origJetReco, jetL1L2L3_jer_jesShiftedP4.Pt(), jetL1L2L3_jer_jesShiftedP4.M(), systname, syst);
+    	} else if(!stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos){
+        // Correct the jet 4-momentum according to the systematic applied for JES.
+        systematics.shiftParticle(jet, origJetReco, jetL1L2L3_T1_jesShiftedP4.Pt(), jetL1L2L3_T1_jesShiftedP4.M(), systname, syst);
+      } else {
     		// Correct the jet 4-momentum according to the systematic applied for JER
-        	systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
+        systematics.shiftParticle(jet, origJetReco, jetL1L2L3_jerShiftedP4.Pt(), jetL1L2L3_jerShiftedP4.M(), systname, syst);
     	}
     }
 
@@ -2287,27 +2360,28 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     // Propagate JER and JES corrections and uncertainties to MET.
     // Only propagate JECs to MET if the corrected pt without the muon is above the unclustered energy threshold.
     if(i == 0) std::cout << "Original raw MET vector: pt = " << _MET->pt() << ", eta = " << _MET->eta() << ", phi = " << _MET->phi() << ", energy = " << _MET->energy() << std::endl;
-    if(jet_pt_noMuL1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
 
-      if(!(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_Pt * (1.0 - jet_RawFactor) < 50.0)){
-        // std::cout << " Condition: !(year.compare(2017) == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_Pt * (1.0 - jet_RawFactor) < 50.0) is satisfied." << std::endl;
+    if(jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9){
+
+      if(!(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && rawJetP4.Pt() < 50.0)){
+
         if(isData){
-          _MET->propagateJetEnergyCorr(origJetReco, jet_pt_L1L2L3, jet_pt_L1, systname, syst);
+          _MET->propagateJetEnergyCorr(origJetReco, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst); // here the jer sf is 1, therefore we just keep the original vector.
         }
         else{
           if(systname.find("orig") != std::string::npos){
-            _MET->propagateJetEnergyCorr(origJetReco, jet_pt_L1L2L3 * jer_sf_nom, jet_pt_L1, systname, syst);
+            _MET->propagateJetEnergyCorr(origJetReco, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
           }
           else if(systname.find("_Res_") != std::string::npos){
-            _MET->propagateJetEnergyCorr(origJetReco, jet_pt_L1L2L3 * jer_shift, jet_pt_L1, systname, syst);
+            _MET->propagateJetEnergyCorr(origJetReco, jetL1L2L3_jerShifted_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
           }
           else if(stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos){
             // Propagation of JES including JER (jet_pt_jesShifted)
-            _MET->propagateJetEnergyCorr(origJetReco, jet_pt_jesShifted, jet_pt_L1, systname, syst);
+            _MET->propagateJetEnergyCorr(origJetReco, jetL1L2L3_jer_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
           }
           else if(!stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos){
             // Propagation of JES when no JERS are included (jet_pet_jesShiftedT1)
-            _MET->propagateJetEnergyCorr(origJetReco, jet_pt_jesShiftedT1, jet_pt_L1, systname, syst);
+            _MET->propagateJetEnergyCorr(origJetReco, jetL1L2L3_T1_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
           }
         }
       }
@@ -2407,6 +2481,7 @@ bool Analyzer::JetMatchesLepton(const Lepton& lepton, const TLorentzVector& jetV
 
   for(size_t j = 0; j < lepton.size(); j++) {
     if(jetV.DeltaR(lepton.RecoP4(j)) < partDeltaR && matchLeptonToGen(lepton.RecoP4(j), lepton.pstats.at("Smear"), eGenPos) != TLorentzVector(0,0,0,0)){
+      /*
       if(eGenPos == CUTS::eGElec){
         std::cout << "Found a match with a gen electron" << std::endl;
         std::cout << "Index of gen-electron (status = 1, GenPart, -1 means no match) = " << _Electron->genPartIdx[j] << std::endl;
@@ -2432,6 +2507,7 @@ bool Analyzer::JetMatchesLepton(const Lepton& lepton, const TLorentzVector& jetV
         std::bitset<14> statusflags(_Gen->statusFlags[_Tau->genPartIdx[j]]);
         std::cout << "GenPart id = " <<  _Gen->pdg_id[_Tau->genPartIdx[j]] << ", status = " << _Gen->status[_Tau->genPartIdx[j]] << ", status flags = " << statusflags << std::endl;
       }
+      */
       return true;
     }
   }

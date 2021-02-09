@@ -101,7 +101,7 @@ float JetRecalibrator::getCorrection(TLorentzVector rawjet4vec, float jet_area, 
 
 	JetCorrector->setJetPhi(rawjet4vec.Phi());
 	JetCorrector->setJetEta(rawjet4vec.Eta());
-	JetCorrector->setJetPt(rawjet4vec.Pt()));
+	JetCorrector->setJetPt(rawjet4vec.Pt());
 	JetCorrector->setJetA(jet_area);
 	JetCorrector->setRho(rho);
 

@@ -12,7 +12,7 @@ void Systematics::init(){
 
 }
 
-void Systematics::shiftParticle(Particle& jet, TLorentzVector recoJet, double const& corrJetPt, double& corrJetMass, std::string& syst_name, int syst){
+void Systematics::shiftParticle(Particle& jet, TLorentzVector recoJet, double const& corrJetPt, double const& corrJetMass, std::string& syst_name, int syst){
 
   TLorentzVector shiftedRecoJet;
   // Set the new components of the 4-momentum
@@ -61,7 +61,7 @@ void Systematics::loadScaleRes(const PartStats& smear, const PartStats& syst, st
   if(smear.bfind("SmearTheParticle")) {
     scale = smear.dmap.at("PtScaleOffset");
     resolution = smear.dmap.at("PtResolutionOffset");
-  } 
+  }
   if(syst_name.find("_Res_")) {
     resolution = syst_name.find("_Up") ? 1 + syst.dmap.at("res") : 1 - syst.dmap.at("res");
     scale=1;
@@ -70,4 +70,3 @@ void Systematics::loadScaleRes(const PartStats& smear, const PartStats& syst, st
     resolution=1;
   }
 }
-

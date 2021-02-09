@@ -33,7 +33,7 @@ double JetScaleResolution::GetScaleDelta(const double& recojetPt, const double& 
     jesUncertainty->setJetPt(recojetPt);
     jesUncertainty->setJetEta(recojetEta);
 
-    double delta = jesUncertainty->getUncertainty(true);    
+    double delta = jesUncertainty->getUncertainty(true);
 
     return delta;
 }
@@ -51,12 +51,12 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
     JME::JetParameters params_sf_and_uncertainty;
     JME::JetParameters params_resolution;
 
-    // CV: define enums to access JER scale factors and uncertainties (cf. CondFormats/JetMETObjects/interface/JetResolutionObject.h) 
+    // CV: define enums to access JER scale factors and uncertainties (cf. CondFormats/JetMETObjects/interface/JetResolutionObject.h)
     // int index_nominal = 0, index_shift_down = 1, index_shift_up = 2;
 
-    //float jet_pt_sf_and_uncertainty[3] = { }; 
-    std::vector<float> jet_pt_sf_and_uncertainty; 
-    
+    //float jet_pt_sf_and_uncertainty[3] = { };
+    std::vector<float> jet_pt_sf_and_uncertainty;
+
     for(int index = 0; index < 3; index++){
         Variation var = (Variation) index;
         params_sf_and_uncertainty.setJetEta(recojet.Eta());
@@ -97,7 +97,7 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
                 smearFactor =  1.0 + rand * sqrt( pow(jet_pt_sf_and_uncertainty.at(index), 2) - 1.0);
             }
             else{
-                // Case 3: we cannot smear this jet, as we don't have a generator level jet and the resolution in data is better than the resolution in the simulation, 
+                // Case 3: we cannot smear this jet, as we don't have a generator level jet and the resolution in data is better than the resolution in the simulation,
                 // so we would need to randomly "unsmear" the jet, which is impossible
                 smearFactor = 1.0;
             }
@@ -109,8 +109,8 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
 
     for(size_t i=0; i < smear_values.size(); i++){
     	float smearFactor = smear_values.at(i);
-    	
-    	// Check that the smeared jet energy remains positive, as the direction of the jet 
+
+    	// Check that the smeared jet energy remains positive, as the direction of the jet
     	// would change ("flip") otherwise, and this is not what we want
 
     	if(smearFactor * recojet.E() < 1.0e-2 ){
@@ -124,15 +124,15 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
 // double JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho, double sigmares){
 bool JetScaleResolution::resolution_matching(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho){
 
-	JME::JetParameters params_resolution;
+  JME::JetParameters params_resolution;
 
-	params_resolution.setJetPt(recojet.Pt());
-    params_resolution.setJetEta(recojet.Eta());
-    params_resolution.setRho(rho);
+  params_resolution.setJetPt(recojet.Pt());
+  params_resolution.setJetEta(recojet.Eta());
+  params_resolution.setRho(rho);
 
-    double resolution = jer.getResolution(params_resolution);
+  double resolution = jer.getResolution(params_resolution);
 
-    return abs(recojet.Pt() - genjet.Pt()) < 3.0 * resolution * recojet.Pt();
+  return abs(recojet.Pt() - genjet.Pt()) < 3.0 * resolution * recojet.Pt();
 }
 
 
@@ -362,4 +362,3 @@ double JetScaleResolution::GetScale(const TLorentzVector& jet, bool isBjet, doub
     }
 }
 */
-

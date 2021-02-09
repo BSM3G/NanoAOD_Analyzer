@@ -3,13 +3,9 @@
 #######################################
 
 SmearTheJet 1
-JetEnergyScaleOffset 0.3
-
 GenMatchingDeltaR 0.4
+ResolutionMatching 1
 MuonMatchingDeltaR  0.3
-ElectronMatchingDeltaR  0.3
-TauMatchingDeltaR  0.3
-
 
 
 ########################################
