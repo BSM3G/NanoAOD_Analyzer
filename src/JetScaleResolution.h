@@ -96,7 +96,8 @@ inline bool operator<(const Bin& A, const Bin& B)
 class JetScaleResolution{
     public:
         JetScaleResolution();
-        JetScaleResolution(const std::string& scalefilename, const std::string& parttype, const std::string& resolutionfile, const std::string& sfresolutionfile);
+        JetScaleResolution(const std::string& scalefilename, const std::string& parttype, const std::string& resolutionfile, const std::string& sfresolutionfile);        
+
         // void InitScale(const std::string& filename, const std::string& type);
         // void InitResolution(const std::string& resolutionfile, const std::string& sffile);
         // void InitScale(const std::string& filename, const std::string& type);
@@ -107,6 +108,7 @@ class JetScaleResolution{
 
         // double GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho, double sigmares);
         std::vector<float> GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho);
+		bool resolution_matching(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho);
         double GetScaleDelta(const double& recojetPt, const double& recojetEta);
 
         JME::JetResolution jer;

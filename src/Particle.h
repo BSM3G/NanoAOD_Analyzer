@@ -273,6 +273,7 @@ public:
   float dxy[MAXINDEX];
   float dz[MAXINDEX];
   int associatedJetIndex[MAXINDEX];
+  int genPartIdx[MAXINDEX];
 };
 
 
@@ -300,6 +301,7 @@ public:
   float dz[MAXINDEX];
   bool looseId[MAXINDEX];
   int associatedJetIndex[MAXINDEX];
+  int genPartIdx[MAXINDEX];
 
 };
 

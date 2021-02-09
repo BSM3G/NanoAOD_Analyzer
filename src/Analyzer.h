@@ -137,7 +137,7 @@ public:
   // TLorentzVector matchLeptonToGen(int, const PartStats& stats, CUTS ePos);
   TLorentzVector matchTauToGen(const TLorentzVector&, double);
   TLorentzVector matchHadTauToGen(const TLorentzVector&, double);
-  TLorentzVector matchJetToGen(const TLorentzVector&, const double&, CUTS);
+  TLorentzVector matchJetToGen(const TLorentzVector&, const double&, CUTS, bool);
 
   int matchToGenPdg(const TLorentzVector& lvec, double minDR);
 
@@ -197,7 +197,7 @@ public:
   void create_fillInfo();
 
   void setupJetCorrections(std::string, std::string);
-  void getJetEnergyResSFs(Particle& jet, const CUTS eGenPos);
+  void getJetEnergyResSFs(Particle& jet, const CUTS eGenPos, bool);
   void applyJetEnergyCorrections(Particle&, CUTS, const PartStats&, std::string, int syst=0);
 
   void setupTauIDSFsInfo(std::string, std::string, bool, bool);

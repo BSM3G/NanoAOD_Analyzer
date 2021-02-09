@@ -69,21 +69,13 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
 
     if(genjet != TLorentzVector(0.,0.,0.,0.)){
         for(int index = 0; index < 3; index++){
-            double smearFactor = 0.0;
+            double smearFactor = 1.0;
 
             // Case 1: we have a "good" generator level jet matched to the reconstructed jet
 
             double deltaPt = recojet.Pt() - genjet.Pt();
             smearFactor = 1.0 + (jet_pt_sf_and_uncertainty.at(index) - 1.0) * (deltaPt / recojet.Pt());
 
-            // check that the smeared jet energy remains positive
-            // as the direction of the jet would change ("flip") otherwise - and this is not what we want
-
-            if(smearFactor * recojet.Pt() < 1.0e-2){
-                smearFactor = 1.0e-2;
-            }
-
-            //smear_values[index] = smearFactor;
             smear_values.push_back(smearFactor);
         }
     }
@@ -98,7 +90,7 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
 
         for(int index = 0; index < 3; index++){
 
-            double smearFactor = 0.0;
+            double smearFactor = 1.0;
 
             if(jet_pt_sf_and_uncertainty[index] > 1.0){
                 // Case 2: we don't have a generator level jet. Smear jet pT using a random Gaussian variation
@@ -110,18 +102,39 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
                 smearFactor = 1.0;
             }
 
-            // Check that the smeared jet energy remains positive, as the direction of the jet would change ("flip") otherwise, and this is not what we want
-            if(smearFactor * recojet.Pt() < 1.0e-2){
-                smearFactor = 1.0e-2;
-            }
-
             smear_values.push_back(smearFactor);
 
         }
     }
 
+    for(size_t i=0; i < smear_values.size(); i++){
+    	float smearFactor = smear_values.at(i);
+    	
+    	// Check that the smeared jet energy remains positive, as the direction of the jet 
+    	// would change ("flip") otherwise, and this is not what we want
+
+    	if(smearFactor * recojet.E() < 1.0e-2 ){
+    		smear_values.at(i) = 1.0e-2 / recojet.E();
+    	}
+    }
+
     return smear_values;
 }
+
+// double JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho, double sigmares){
+bool JetScaleResolution::resolution_matching(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho){
+
+	JME::JetParameters params_resolution;
+
+	params_resolution.setJetPt(recojet.Pt());
+    params_resolution.setJetEta(recojet.Eta());
+    params_resolution.setRho(rho);
+
+    double resolution = jer.getResolution(params_resolution);
+
+    return abs(recojet.Pt() - genjet.Pt()) < 3.0 * resolution * recojet.Pt();
+}
+
 
 std::vector<std::string> string_split(const std::string& in, const std::vector<std::string> splits)
 {

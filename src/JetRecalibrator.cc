@@ -99,6 +99,7 @@ float JetRecalibrator::getCorrection(TLorentzVector jet4vec, float jet_area, flo
 	// Create a corrector object that applies the L1,L2,L3 and possibly the residual corrections to the jets.
 	// If configured to do so, it will also compute the type1 MET corrections
 
+	JetCorrector->setJetPhi(jet4vec.Phi());
 	JetCorrector->setJetEta(jet4vec.Eta());
 	JetCorrector->setJetPt(jet4vec.Pt() * (1 - jet_rawFactor));
 	JetCorrector->setJetA(jet_area);
@@ -112,14 +113,15 @@ float JetRecalibrator::getCorrection(TLorentzVector jet4vec, float jet_area, flo
 			std::cout << "Jet energy scale uncertainty shifts requested, but not available." << std::endl;
 		}
 		else{
+			JetUncertainty->setJetPhi(jet4vec.Phi());
 			JetUncertainty->setJetEta(jet4vec.Eta());
-			JetUncertainty->setJetPt(corr * jet4vec.Pt() * jet_rawFactor);
+			JetUncertainty->setJetPt(corr * jet4vec.Pt() * (1.0 - jet_rawFactor));
 
 			try{
 				jetEnergyCorrUncertainty = JetUncertainty->getUncertainty(true);
 			}
 			catch(std::runtime_error& err){
-				std::cout << "Caught " << err.what() << " when getting uncertainty for jet of pt = %.1f" << corr * jet4vec.Pt() * jet_rawFactor << ", eta = %.2f" << jet4vec.Eta() << std::endl;
+				std::cout << "Caught " << err.what() << " when getting uncertainty for jet of pt = %.1f" << corr * jet4vec.Pt() * (1.0 - jet_rawFactor) << ", eta = %.2f" << jet4vec.Eta() << std::endl;
 				jetEnergyCorrUncertainty = 0.5;
 			}
 			corr *= std::max(0.0, 1.0+delta+jetEnergyCorrUncertainty);

@@ -472,6 +472,10 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
     SetBranch("Electron_cutBased_HEEP", isPassHEEPId);
   }
 
+  if(_BOOM->FindBranch("Electron_genPartIdx")!=0){
+    SetBranch("Electron_genPartIdx", genPartIdx); // index of matched gen electron in the GenPart collection.
+  }
+
   if(elec1.bfind("DoDiscrBySUSYSoftID") || elec2.bfind("DoDiscrBySUSYSoftID")){
     SetBranch("Electron_pfRelIso03_all", pfRelIso03_all);
     SetBranch("Electron_mvaFall17V2noIso", mvaFall17V2noIso);
@@ -743,6 +747,11 @@ Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
   SetBranch("Muon_isGlobal", isGlobal);
   SetBranch("Muon_isPFcand", isPFCand);
   SetBranch("Muon_isTracker", isTracker);
+
+  if(_BOOM->FindBranch("Muon_genPartIdx")!=0){
+    SetBranch("Muon_genPartIdx", genPartIdx); // index of matched gen muon in the GenPart collection.
+  }
+
 
   if(mu1.bfind("DoDiscrBySUSYSoftID") || mu2.bfind("DoDiscrBySUSYSoftID")){
     SetBranch("Muon_pfRelIso03_all"  , pfRelIso03_all);

@@ -12,7 +12,7 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
 
   // Then we get the default met
   if(GenName.compare("MET") != 0){
-    samedeft1met = false; 
+    samedeft1met = false;
     SetBranch("MET_pt", def_met_pt);
     SetBranch("MET_phi", def_met_phi);
   }
@@ -20,9 +20,9 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
   SetBranch("RawMET_pt", raw_met_pt);
   SetBranch("RawMET_phi", raw_met_phi);
 
-  // Initialize the systRawMet vector   
+  // Initialize the systRawMet vector
   for(auto name: syst_names){
-    if(name == "orig") 
+    if(name == "orig")
       systRawMetVec.push_back(new TLorentzVector);
     else if(name.find("Met")!=std::string::npos){
       systRawMetVec.push_back(new TLorentzVector);
@@ -34,16 +34,16 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
     }else
       systRawMetVec.push_back(new TLorentzVector);
   }
-  
+
   // For TreatMuonsAsNeutrinos
   systdeltaMEx.resize(syst_names.size());
   systdeltaMEy.resize(syst_names.size());
-  
+
   // For HT, MHT
   syst_HT.resize(syst_names.size());
   syst_MHT.resize(syst_names.size());
   syst_MHTphi.resize(syst_names.size());
- 
+
   if( std::find(syst_names.begin(), syst_names.end(), "MetUncl_Up") != syst_names.end() && _BOOM->GetListOfBranches()->FindObject((GenName+"_MetUnclustEnUpDeltaX").c_str()) !=0){
     SetBranch((GenName+"_MetUnclustEnUpDeltaX").c_str(), MetUnclUp[0]);
     SetBranch((GenName+"_MetUnclustEnUpDeltaY").c_str(), MetUnclUp[1]);
@@ -91,16 +91,17 @@ void Met::init(){
      // initialize the deltaMuMet vectors to zero
      fill(systdeltaMEx.begin(), systdeltaMEx.end(), 0);
      fill(systdeltaMEy.begin(), systdeltaMEy.end(), 0);
-  } 
+  }
 
   cur_P=&Reco;
+  // cur_P=&RawMet;
 
 }
 
 void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jet_pt_up, double const& jet_pt_down, std::string& systname, int syst){
 
   if(systRawMetVec.at(syst) == nullptr) return;
-
+  std::cout << "Initial raw MET vector (before propagation): px = " << systRawMetVec.at(syst)->Px() << ", py = " << systRawMetVec.at(syst)->Py() << ", pz = " << systRawMetVec.at(syst)->Pz() << ", energy = " << systRawMetVec.at(syst)->E() << std::endl;
   float jet_cosPhi = cos(recoJet.Phi());
   float jet_sinPhi = sin(recoJet.Phi());
 
@@ -114,10 +115,11 @@ void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jet_pt_up
 
   // Change the Raw Met vector:
   systRawMetVec.at(syst)->SetPxPyPzE(met_px_shifted, met_py_shifted, systRawMetVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_shifted,2) + pow(met_py_shifted,2)));
+  std::cout << "Raw MET vector (after propagation): px = " << systRawMetVec.at(syst)->Px() << ", py = " << systRawMetVec.at(syst)->Py() << ", pz = " << systRawMetVec.at(syst)->Pz() << ", energy = " << systRawMetVec.at(syst)->E() << std::endl;
 
 }
 
-// This is only used for 2017 data/MC for the EE noise 
+// This is only used for 2017 data/MC for the EE noise
 void Met::propagateUnclEnergyUnctyEE(double const& delta_x_T1Jet, double const& delta_y_T1Jet, double const& delta_x_rawJet, double const& delta_y_rawJet, std::string& systname, int syst){
 
   if(systRawMetVec.at(syst) == nullptr) return;
@@ -153,7 +155,7 @@ void Met::propagateUnclEnergyUncty(std::string& systname, int syst){
   // This will only apply for the MetUncl uncertainty in MC
   float met_px_unclEnshift = systRawMetVec.at(0)->Px(); // 0 refers to the nominal value, which at this point should already have all corrections applied
   float met_py_unclEnshift = systRawMetVec.at(0)->Py();
-  
+
   if(systname.find("_Up") != std::string::npos){
 
     met_px_unclEnshift = met_px_unclEnshift + MetUnclUp[0];
@@ -173,10 +175,10 @@ void Met::update(int syst=0){
 
   if(systRawMetVec.at(syst) == nullptr) return;
 
-  // Treat muons as neutrinos. This is done on the systRawMetVec which is the vector that has all the JERC propagated. 
-  systRawMetVec.at(syst)->SetPxPyPzE(systRawMetVec.at(syst)->Px()+systdeltaMEx[syst], 
-                               systRawMetVec.at(syst)->Py()+systdeltaMEy[syst], 
-                               systRawMetVec.at(syst)->Pz(), 
+  // Treat muons as neutrinos. This is done on the systRawMetVec which is the vector that has all the JERC propagated.
+  systRawMetVec.at(syst)->SetPxPyPzE(systRawMetVec.at(syst)->Px()+systdeltaMEx[syst],
+                               systRawMetVec.at(syst)->Py()+systdeltaMEy[syst],
+                               systRawMetVec.at(syst)->Pz(),
                                TMath::Sqrt(pow(systRawMetVec.at(syst)->Px()+systdeltaMEx[syst],2) + pow(systRawMetVec.at(syst)->Py()+systdeltaMEy[syst],2)));
 
 }
@@ -193,11 +195,11 @@ void Met::calculateHtAndMHt(PartStats& stats, Jet& jet, int syst=0){
   int i=0;
   for(auto jetVec: jet){
     bool add = true;
-    if( (jetVec.Pt() < stats.dmap.at("JetPtForMhtAndHt")) || 
-    	(abs(jetVec.Eta()) > stats.dmap.at("JetEtaForMhtAndHt")) || 
+    if( (jetVec.Pt() < stats.dmap.at("JetPtForMhtAndHt")) ||
+    	(abs(jetVec.Eta()) > stats.dmap.at("JetEtaForMhtAndHt")) ||
     	(stats.bfind("ApplyJetLooseIDforMhtAndHt") && !jet.passedLooseJetID(i)) ||
     	(stats.bfind("ApplyJetTightIDforMhtAndHt") && !jet.passedTightJetID(i)) ) add = false;
-    
+
     if(add) {
       sumpxForMht -= jetVec.Px();
       sumpyForMht -= jetVec.Py();
@@ -238,7 +240,7 @@ void Met::setMT2Mass(double mass){
 }
 
 TLorentzVector Met::getNominalP(){
-	TLorentzVector nominalP4 = *systRawMetVec.at(0); 
+	TLorentzVector nominalP4 = *systRawMetVec.at(0);
 	// nominalP4.SetPxPyPzE(systRawMetVec.at(0)->Px(), systRawMetVec.at(0)->Py(), systRawMetVec.at(0)->Pz(), systRawMetVec.at(0)->E());
 	return nominalP4;
 }
@@ -258,4 +260,3 @@ void Met::setCurrentP(int syst){
 void Met::unBranch() {
   BOOM->SetBranchStatus((GenName+"*").c_str(), 0);
 }
-
