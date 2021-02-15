@@ -2214,7 +2214,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
       }
 
       // Find the gen-level jet that matches this reco jet (the original jet).
-      TLorentzVector genJet = matchJetToGen(origJetReco, genJetMatchDR, eGenPos, stats.bfind("ResolutionMatching"));
+      TLorentzVector genJet = matchJetToGen(jetL1L2L3_noMuonP4, genJetMatchDR, eGenPos, stats.bfind("ResolutionMatching"));
       // Use the jet without the muon momentum to retrieve the appropriate JER scale factors.
       // Save the three JER scale factors (nominal, down and up) as a vector in a vector: 0 - nominal, 1 - down, 2 - up
       std::vector<float> jet_jer_sf = jetScaleRes.GetSmearValsPtSF(jetL1L2L3_noMuonP4, genJet, jec_rho);
@@ -2283,8 +2283,8 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     if(systname.find("_Scale_") != std::string::npos){
 
       // Here we will be using the mass and pt that were obtained after applying JER corrections
-      jes_delta = jetScaleRes.GetScaleDelta(jetL1L2L3_jerNom_noMuonP4.Pt(), origJetReco.Eta());
-      jes_delta_t1 = jetScaleRes.GetScaleDelta(jetL1L2L3_noMuonP4.Pt(), origJetReco.Eta());
+      jes_delta = jetScaleRes.GetScaleDelta(jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1L2L3_jerNom_noMuonP4.Eta());
+      jes_delta_t1 = jetScaleRes.GetScaleDelta(jetL1L2L3_noMuonP4.Pt(), jetL1L2L3_noMuonP4.Eta());
 
       // JES applied for systematics both in data and MC.
       if(systname == "Jet_Scale_Up"){
@@ -2353,18 +2353,18 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
       // std::cout << "I get here." << std::endl;
       if(jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9){
         if(systname.find("orig") != std::string::npos ){
-          _MET->propagateJetEnergyCorr(jetL1L2L3_jerNom_noMuonP4, jetL1L2L3_jerNom_noMuonP4.Pt(), rawJetP4_noMuon.Pt(), systname, syst);
+          _MET->propagateJetEnergyCorr(jetL1L2L3_jerNom_noMuonP4, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
         } else if( !stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
-          _MET->propagateJetEnergyCorr(jetL1L2L3_T1_noMuon_jesShiftedP4, jetL1L2L3_T1_noMuon_jesShiftedP4.Pt(), rawJetP4_noMuon.Pt(), systname, syst);
+          _MET->propagateJetEnergyCorr(jetL1L2L3_T1_noMuon_jesShiftedP4, jetL1L2L3_T1_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
         } else if( stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
-          _MET->propagateJetEnergyCorr(jetL1L2L3_jer_noMuon_jesShiftedP4, jetL1L2L3_jer_noMuon_jesShiftedP4.Pt(), rawJetP4_noMuon.Pt(), systname, syst);
+          _MET->propagateJetEnergyCorr(jetL1L2L3_jer_noMuon_jesShiftedP4, jetL1L2L3_jer_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
         } else if( stats.bfind("SmearTheJet") && systname.find("_Res_") != std::string::npos ){
-          _MET->propagateJetEnergyCorr(jetL1L2L3_jerShifted_noMuonP4, jetL1L2L3_jerShifted_noMuonP4.Pt(), rawJetP4_noMuon.Pt(), systname, syst);
+          _MET->propagateJetEnergyCorr(jetL1L2L3_jerShifted_noMuonP4, jetL1L2L3_jerShifted_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
         }
       }
     }
 
-    if(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && rawJetP4_noMuon.Pt() < 50.0 ){
+    if(year.compare("2017") == 0 && (abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && rawJetP4_noMuon.Pt() < 50.0 ){
       // Calculate deltas for jets in the problematic EE noise regions for 2017
 
       if(jetL1L2L3_jerNom_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9 ){
