@@ -2091,7 +2091,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
     // Get the reconstruced 4-vector (original vector straight from the corresponding branches), these jets have applied L1L2L3 JECs
     const TLorentzVector origJetReco = jet.RecoP4(i);
-    std::cout << " --- Jet #" << i << " --- " << std::endl;
+    // std::cout << " --- Jet #" << i << " --- " << std::endl;
     //std::cout << "Original JEC L1L2L3 corrected jet pt = " << origJetReco.Pt() << ", eta = " << origJetReco.Eta() << ", phi = " << origJetReco.Phi() << ", mass = "<< origJetReco.M() << std::endl;
 
     // Step 1: get the raw jet 4-momentum from the raw factor
