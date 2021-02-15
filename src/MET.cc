@@ -93,15 +93,15 @@ void Met::init(){
      fill(systdeltaMEy.begin(), systdeltaMEy.end(), 0);
   }
 
-  cur_P=&Reco;
-  // cur_P=&RawMet;
+  // cur_P=&Reco;
+  cur_P=&RawMet;
 
 }
 
 void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jet_pt_up, double const& jet_pt_down, std::string& systname, int syst){
 
   if(systRawMetVec.at(syst) == nullptr) return;
-  std::cout << "Initial raw MET vector (before propagation): px = " << systRawMetVec.at(syst)->Px() << ", py = " << systRawMetVec.at(syst)->Py() << ", pz = " << systRawMetVec.at(syst)->Pz() << ", energy = " << systRawMetVec.at(syst)->E() << std::endl;
+  // std::cout << "Initial raw MET vector (before propagation): px = " << systRawMetVec.at(syst)->Px() << ", py = " << systRawMetVec.at(syst)->Py() << ", pz = " << systRawMetVec.at(syst)->Pz() << ", energy = " << systRawMetVec.at(syst)->E() << std::endl;
   float jet_cosPhi = cos(recoJet.Phi());
   float jet_sinPhi = sin(recoJet.Phi());
 
@@ -115,12 +115,12 @@ void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jet_pt_up
 
   // Change the Raw Met vector:
   systRawMetVec.at(syst)->SetPxPyPzE(met_px_shifted, met_py_shifted, systRawMetVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_shifted,2) + pow(met_py_shifted,2)));
-  std::cout << "Raw MET vector (after propagation): px = " << systRawMetVec.at(syst)->Px() << ", py = " << systRawMetVec.at(syst)->Py() << ", pz = " << systRawMetVec.at(syst)->Pz() << ", energy = " << systRawMetVec.at(syst)->E() << std::endl;
+  //std::cout << "Raw MET vector (after propagation): px = " << systRawMetVec.at(syst)->Px() << ", py = " << systRawMetVec.at(syst)->Py() << ", pz = " << systRawMetVec.at(syst)->Pz() << ", energy = " << systRawMetVec.at(syst)->E() << std::endl;
 
 }
 
 // This is only used for 2017 data/MC for the EE noise
-void Met::propagateUnclEnergyUnctyEE(double const& delta_x_T1Jet, double const& delta_y_T1Jet, double const& delta_x_rawJet, double const& delta_y_rawJet, std::string& systname, int syst){
+void Met::removeEEnoiseUnclEnergy(double const& delta_x_T1Jet, double const& delta_y_T1Jet, double const& delta_x_rawJet, double const& delta_y_rawJet, std::string& systname, int syst){
 
   if(systRawMetVec.at(syst) == nullptr) return;
 

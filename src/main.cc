@@ -132,8 +132,8 @@ int main (int argc, char* argv[]) {
 
   size_t Nentries=testing.nentries;
   if(testRun){
-    Nentries=10;
-    testing.nentries=10;
+    Nentries=1000;
+    testing.nentries=1000;
   }
 
   // std::multimap<int,int> json_line_dict = testing.readinJSON(); //05.28.19
@@ -143,7 +143,7 @@ int main (int argc, char* argv[]) {
   for(size_t i=0; i < Nentries; i++) {
     //if(i == 0) spechialAna.begin_run();   // Special analyzer
     testing.clear_values();
-    std::cout << " ----- Event #" << i << " ----- " << std::endl;
+    // std::cout << " ----- Event #" << i << " ----- " << std::endl;
     testing.preprocess(i, year);
 
     testing.fill_efficiency();

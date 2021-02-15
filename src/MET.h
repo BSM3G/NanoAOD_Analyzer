@@ -58,8 +58,8 @@ public:
   std::string getName() {return GenName;};
   void update(int);
 
-  void propagateJetEnergyCorr(TLorentzVector recoJet, double const& jer_sf_nom, double const& jec_param, std::string& systname, int syst);  
-  void propagateUnclEnergyUnctyEE(double const& delta_x_T1Jet, double const& delta_y_T1Jet, double const& delta_x_rawJet, double const& delta_y_rawJet, std::string& systname, int syst);
+  void propagateJetEnergyCorr(TLorentzVector recoJet, double const& jer_sf_nom, double const& jec_param, std::string& systname, int syst);
+  void removeEEnoiseUnclEnergy(double const& delta_x_T1Jet, double const& delta_y_T1Jet, double const& delta_x_rawJet, double const& delta_y_rawJet, std::string& systname, int syst);
   void propagateUnclEnergyUncty(std::string& systname, int syst);
   void calculateHtAndMHt(PartStats& stats, Jet& jet, int syst);
 
@@ -86,7 +86,7 @@ protected:
   std::string GenName;
   std::vector<std::string> syst_names;
   double MT2mass;
-  
+
   bool samedeft1met = true;
   float met_pt;
   float met_phi;
