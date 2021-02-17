@@ -2084,6 +2084,12 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
   //	getJetEnergyResSFs(jet, eGenPos, true);
   //}
 
+  jets_jer_sfs.clear();
+  genMatchedJets.clear();
+  genMatchedJets.shrink_to_fit();
+  genUnmatchedJets.clear();
+  genUnmatchedJets.shrink_to_fit();
+
   //std::cout << "Number of jets in the event = " << jet.size() << std::endl;
   //std::cout << "Number of gen-muons = " << active_part->at(CUTS::eGMuon)->size() <<  std::endl;
 
@@ -2215,9 +2221,16 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
       // Find the gen-level jet that matches this reco jet (the original jet).
       TLorentzVector genJet = matchJetToGen(jetL1L2L3_noMuonP4, genJetMatchDR, eGenPos, stats.bfind("ResolutionMatching"));
+
+      if(genJet != TLorentzVector(0,0,0,0)){
+        genMatchedJets.push_back(i);
+      } else {
+        genUnmatchedJets.push_back(i);
+      }
       // Use the jet without the muon momentum to retrieve the appropriate JER scale factors.
       // Save the three JER scale factors (nominal, down and up) as a vector in a vector: 0 - nominal, 1 - down, 2 - up
       std::vector<float> jet_jer_sf = jetScaleRes.GetSmearValsPtSF(jetL1L2L3_noMuonP4, genJet, jec_rho);
+      jets_jer_sfs[i] = jet_jer_sf;
 
       // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
       jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
@@ -2235,9 +2248,9 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
         }else if(systname.find("_Res_") != std::string::npos){
           if(systname == "Jet_Res_Up"){
-            jer_shift = jets_jer_sfs.at(i).at(2); // i is the jet index, 2 is the up value
+            jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
           }else if(systname == "Jet_Res_Down"){
-            jer_shift = jets_jer_sfs.at(i).at(1); // i is the jet index, 1 is the down value
+            jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
           }
           jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
           jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
@@ -5044,6 +5057,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
     // Added variable to calculate minimum deltaPhi between particle and MET
     float minDeltaPhiMet = 9999.9;
+    int njetmatched = 0, njetunmatched = 0;
 
     for(auto it : *active_part->at(ePos)) {
       histAddVal(part->p4(it).Energy(), "Energy");
@@ -5064,6 +5078,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(_FatJet->tau2[it], "tau2");
         histAddVal(_FatJet->tau2[it]/_FatJet->tau1[it], "tau2Overtau1");
       }
+
       if(part->type == PType::Jet){
         // Find out if this is the closest jet to the MET
         float deltaPhiMet = absnormPhi(part->p4(it).Phi() - _MET->phi());
@@ -5072,6 +5087,25 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
         if(deltaPhiMet < minDeltaPhiMet){
           minDeltaPhiMet = deltaPhiMet;
+        }
+
+        if( _Jet->pstats["Smear"].bfind("SmearTheJet") ){
+          std::vector<int>::iterator gmj = std::find(genMatchedJets.begin(), genMatchedJets.end(), it);
+          std::vector<int>::iterator gumj = std::find(genUnmatchedJets.begin(), genUnmatchedJets.end(), it);
+
+          if(gmj != genMatchedJets.end()){
+            histAddVal(jets_jer_sfs[it].at(0), "GenMatchedJERNomSF");
+            histAddVal(part->p4(it).Pt(), "GenMatchedPt");
+            histAddVal(part->p4(it).Eta(), "GenMatchedEta");
+            histAddVal(part->p4(it).Phi(), "GenMatchedPhi");
+            njetmatched++;
+          } else if(gumj != genUnmatchedJets.end()){
+            histAddVal(jets_jer_sfs[it].at(0), "GenUnmatchedJERNomSF");
+            histAddVal(part->p4(it).Pt(), "GenUnmatchedPt");
+            histAddVal(part->p4(it).Eta(), "GenUnmatchedEta");
+            histAddVal(part->p4(it).Phi(), "GenUnmatchedPhi");
+            njetunmatched++;
+          }
         }
       }
 
@@ -5082,8 +5116,10 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     }
 
     if(part->type == PType::Jet){
-      // std::cout << "the minimum minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
       histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
+      histAddVal(njetmatched, "NGenMatched");
+      histAddVal(njetunmatched, "NGenUnmatched");
+
     }
 
     if((part->type != PType::Jet ) && active_part->at(ePos)->size() > 0) {
