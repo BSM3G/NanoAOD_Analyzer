@@ -96,50 +96,26 @@ inline bool operator<(const Bin& A, const Bin& B)
 class JetScaleResolution{
     public:
         JetScaleResolution();
-        JetScaleResolution(const std::string& scalefilename, const std::string& parttype, const std::string& resolutionfile, const std::string& sfresolutionfile);        
-
-        // void InitScale(const std::string& filename, const std::string& type);
-        // void InitResolution(const std::string& resolutionfile, const std::string& sffile);
-        // void InitScale(const std::string& filename, const std::string& type);
-        // void InitResolution(const std::string& resolutionfile, const std::string& sfuncertaintyfile);
-
-        // double GetRes(const TLorentzVector& jet,const TLorentzVector& genjet, double rho, double sigmares);
-        // double GetScale(const TLorentzVector& jet, bool isBjet, double sigmascale);
+        JetScaleResolution(const std::string& scalefilename, const std::string& parttype, const std::string& resolutionfile, const std::string& sfresolutionfile);
 
         // double GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho, double sigmares);
         std::vector<float> GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho);
-		bool resolution_matching(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho);
+        float getRelativePtResMC(const TLorentzVector& recojet, double rho);
+        float getDataToMCCoreResSF(const TLorentzVector& recojet, int sigmares);
+
+		    bool resolution_matching(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho);
         double GetScaleDelta(const double& recojetPt, const double& recojetEta);
+
 
         JME::JetResolution jer;
         JME::JetResolutionScaleFactor jerSF_and_Uncertainty;
         JetCorrectorParameters jetcorrectorparams;
 
     private:
-        /*
-        std::string resfilename;
-        std::string resfunctyfilename;
-        std::string scaleunctyfilename;
-        std::string type_name;
-        */
+
         TRandom *rnd = new TRandom3(12345);
         JetCorrectionUncertainty *jesUncertainty;
 
-
-        // TH1D* Heta = nullptr;
-        //std::vector<TH1D*> HptsP;
-        //std::vector<TH1D*> HptsM;
-        //std::vector<TH1D*> HptsPqcd;
-        //std::vector<TH1D*> HptsMqcd;
-        //std::vector<TH1D*> HptsPb;
-        //std::vector<TH1D*> HptsMb;
-        //TGraph* hlE =nullptr;
-        //TGraph* hlB =nullptr;
-        //TGraph* hbE =nullptr;
-        //TGraph* hbB =nullptr;
-
-        //std::map< Bin, std::map<Bin, std::vector<double> > > resinfo;
-        //std::map< Bin, std::vector<double> > ressf;
 };
 
 #endif /*JETSCALERESOLUTION*/

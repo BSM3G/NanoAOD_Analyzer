@@ -2085,6 +2085,8 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
   //}
 
   jets_jer_sfs.clear();
+  jets_jetptres.clear();
+  jets_datatoMCSFs_jer.clear();
   genMatchedJets.clear();
   genMatchedJets.shrink_to_fit();
   genUnmatchedJets.clear();
@@ -2221,7 +2223,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
       // Find the gen-level jet that matches this reco jet (the original jet).
       TLorentzVector genJet = matchJetToGen(jetL1L2L3_noMuonP4, genJetMatchDR, eGenPos, stats.bfind("ResolutionMatching"));
-
+      // std::cout << "Jet #" << i << " being smeared." << std::endl;
       if(genJet != TLorentzVector(0,0,0,0)){
         genMatchedJets.push_back(i);
       } else {
@@ -2231,6 +2233,15 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
       // Save the three JER scale factors (nominal, down and up) as a vector in a vector: 0 - nominal, 1 - down, 2 - up
       std::vector<float> jet_jer_sf = jetScaleRes.GetSmearValsPtSF(jetL1L2L3_noMuonP4, genJet, jec_rho);
       jets_jer_sfs[i] = jet_jer_sf;
+
+      jets_jetptres[i] = jetScaleRes.getRelativePtResMC(jetL1L2L3_noMuonP4, jec_rho);
+      if(systname == "orig"){
+        jets_datatoMCSFs_jer[i] = jetScaleRes.getDataToMCCoreResSF(jetL1L2L3_noMuonP4, 0);
+      } else if(systname == "Jet_Res_Up"){
+        jets_datatoMCSFs_jer[i] = jetScaleRes.getDataToMCCoreResSF(jetL1L2L3_noMuonP4, 2);
+      } else if(systname == "Jet_Res_Down"){
+        jets_datatoMCSFs_jer[i] = jetScaleRes.getDataToMCCoreResSF(jetL1L2L3_noMuonP4, 1);
+      }
 
       // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
       jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
@@ -5089,24 +5100,89 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
           minDeltaPhiMet = deltaPhiMet;
         }
 
+        // ---------
         if( _Jet->pstats["Smear"].bfind("SmearTheJet") ){
+          histAddVal2(part->p4(it).Eta(), part->p4(it).Pt(), "PtVsEta");
+          histAddVal2(part->p4(it).Eta(), normPhi(part->p4(it).Phi() - _MET->phi()), "MetDphiVsEta");
+          std::map<int, std::vector<float> >::iterator smdj = jets_jer_sfs.find(it);
+
+          if(smdj != jets_jer_sfs.end()){
+            // Histograms for general purpose:
+            // Nominal JER SF -- c_JER: https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetResolution
+            histAddVal2(part->p4(it).Eta(), jets_jer_sfs[it].at(0), "cJERNomvsEta");
+            histAddVal2(part->p4(it).Pt(), jets_jer_sfs[it].at(0), "cJERNomvsPt");
+            histAddVal2(part->p4(it).Phi(), jets_jer_sfs[it].at(0), "cJERNomvsPhi");
+            // Nominal data to simulation core resolution scale factor, s_JER
+            histAddVal2(part->p4(it).Eta(), jets_datatoMCSFs_jer[it], "sJERNomvsEta");
+            histAddVal2(part->p4(it).Pt(), jets_datatoMCSFs_jer[it], "sJERNomvsPt");
+            histAddVal2(part->p4(it).Phi(), jets_datatoMCSFs_jer[it], "sJERNomvsPhi");
+            // Nominal relative pt resolution, sigma_JER
+            histAddVal2(part->p4(it).Eta(), jets_jetptres[it], "sigmaJERNomvsEta");
+            histAddVal2(part->p4(it).Pt(), jets_jetptres[it], "sigmaJERNomvsPt");
+            histAddVal2(part->p4(it).Phi(), jets_jetptres[it], "sigmaJERNomvsPhi");
+          }
+
           std::vector<int>::iterator gmj = std::find(genMatchedJets.begin(), genMatchedJets.end(), it);
           std::vector<int>::iterator gumj = std::find(genUnmatchedJets.begin(), genUnmatchedJets.end(), it);
 
+
           if(gmj != genMatchedJets.end()){
-            histAddVal(jets_jer_sfs[it].at(0), "GenMatchedJERNomSF");
+
+            histAddVal(jets_jer_sfs[it].at(0), "GenMatchedcJERNom");
+            histAddVal(jets_datatoMCSFs_jer[it], "GenMatchedsJERNom");
+            histAddVal(jets_jetptres[it], "GenMatchedsigmaJERNom");
             histAddVal(part->p4(it).Pt(), "GenMatchedPt");
             histAddVal(part->p4(it).Eta(), "GenMatchedEta");
             histAddVal(part->p4(it).Phi(), "GenMatchedPhi");
+            histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "GenMatchedMetDphi");
+
+            histAddVal2(part->p4(it).Eta(), part->p4(it).Pt(), "GenMatchedPtVsEta");
+            histAddVal2(part->p4(it).Eta(), normPhi(part->p4(it).Phi() - _MET->phi()), "GenMatchedMetDphiVsEta");
+
+            // Nominal JER SF -- c_JER:
+            histAddVal2(part->p4(it).Eta(), jets_jer_sfs[it].at(0), "GenMatchedcJERNomvsEta");
+            histAddVal2(part->p4(it).Pt(), jets_jer_sfs[it].at(0), "GenMatchedcJERNomvsPt");
+            histAddVal2(part->p4(it).Phi(), jets_jer_sfs[it].at(0), "GenMatchedcJERNomvsPhi");
+            // Nominal data to simulation core resolution scale factor, s_JER
+            histAddVal2(part->p4(it).Eta(), jets_datatoMCSFs_jer[it], "GenMatchedsJERNomvsEta");
+            histAddVal2(part->p4(it).Pt(), jets_datatoMCSFs_jer[it], "GenMatchedsJERNomvsPt");
+            histAddVal2(part->p4(it).Phi(), jets_datatoMCSFs_jer[it], "GenMatchedsJERNomvsPhi");
+            // Nominal relative pt resolution, sigma_JER
+            histAddVal2(part->p4(it).Eta(), jets_jetptres[it], "GenMatchedsigmaJERNomvsEta");
+            histAddVal2(part->p4(it).Pt(), jets_jetptres[it], "GenMatchedsigmaJERNomvsPt");
+            histAddVal2(part->p4(it).Phi(), jets_jetptres[it], "GenMatchedsigmaJERNomvsPhi");
+
             njetmatched++;
           } else if(gumj != genUnmatchedJets.end()){
-            histAddVal(jets_jer_sfs[it].at(0), "GenUnmatchedJERNomSF");
+            histAddVal(jets_jer_sfs[it].at(0), "GenUnmatchedcJERNom");
+            histAddVal(jets_datatoMCSFs_jer[it], "GenUnmatchedsJERNom");
+            histAddVal(jets_jetptres[it], "GenUnmatchedsigmaJERNom");
             histAddVal(part->p4(it).Pt(), "GenUnmatchedPt");
             histAddVal(part->p4(it).Eta(), "GenUnmatchedEta");
             histAddVal(part->p4(it).Phi(), "GenUnmatchedPhi");
+            histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "GenUnmatchedMetDphi");
+
+            histAddVal2(part->p4(it).Eta(), part->p4(it).Pt(), "GenUnmatchedPtVsEta");
+            histAddVal2(part->p4(it).Eta(), normPhi(part->p4(it).Phi() - _MET->phi()), "GenUnmatchedMetDphiVsEta");
+            // Nominal JER SF -- c_JER:
+            histAddVal2(part->p4(it).Eta(), jets_jer_sfs[it].at(0), "GenUnmatchedcJERNomvsEta");
+            histAddVal2(part->p4(it).Pt(), jets_jer_sfs[it].at(0), "GenUnmatchedcJERNomvsPt");
+            histAddVal2(part->p4(it).Phi(), jets_jer_sfs[it].at(0), "GenUnmatchedcJERNomvsPhi");
+            // Nominal data to simulation core resolution scale factor, s_JER
+            histAddVal2(part->p4(it).Eta(), jets_datatoMCSFs_jer[it], "GenUnmatchedsJERNomvsEta");
+            histAddVal2(part->p4(it).Pt(), jets_datatoMCSFs_jer[it], "GenUnmatchedsJERNomvsPt");
+            histAddVal2(part->p4(it).Phi(), jets_datatoMCSFs_jer[it], "GenUnmatchedsJERNomvsPhi");
+            // Nominal relative pt resolution, sigma_JER
+            histAddVal2(part->p4(it).Eta(), jets_jetptres[it], "GenUnmatchedsigmaJERNomvsEta");
+            histAddVal2(part->p4(it).Pt(), jets_jetptres[it], "GenUnmatchedsigmaJERNomvsPt");
+            histAddVal2(part->p4(it).Phi(), jets_jetptres[it], "GenUnmatchedsigmaJERNomvsPhi");
+
             njetunmatched++;
           }
+
+
         }
+        // ---------
       }
 
       if(ePos == CUTS::eRBJet){
@@ -5119,7 +5195,12 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
       histAddVal(njetmatched, "NGenMatched");
       histAddVal(njetunmatched, "NGenUnmatched");
-
+      histAddVal2(_MET->pt(), njetmatched, "NGenMatchedVsMetPt");
+      histAddVal2(_MET->pt(), njetunmatched, "NGenUnmatchedVsMetPt");
+      histAddVal2(_MET->phi(), njetmatched, "NGenMatchedVsMetPhi");
+      histAddVal2(_MET->phi(), njetunmatched, "NGenUnmatchedVsMetPhi");
+      histAddVal2(bestVertices, njetmatched, "NGenMatchedVsNPV");
+      histAddVal2(bestVertices, njetunmatched, "NGenUnmatchedVsNPV");
     }
 
     if((part->type != PType::Jet ) && active_part->at(ePos)->size() > 0) {
@@ -5154,6 +5235,9 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(_MET->HT() + _MET->MHT(), "Meff");
     histAddVal(_MET->pt(), "Met");
     histAddVal(_MET->phi(), "MetPhi");
+    // Added by Brenda - 02/22/2021
+    histAddVal2(_MET->pt(), bestVertices, "NPVvsMetPt");
+    histAddVal2(_MET->phi(), bestVertices, "NPVvsMetPhi");
     histAddVal(_MET->DefMet.Pt(), "DefaultMETOriginal");
     histAddVal(_MET->T1Met.Pt(), "T1METOriginal");
     histAddVal(_MET->RawMet.Pt(), "RawMETOriginal");
@@ -5211,6 +5295,36 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(dphi2, "Dphi2");
     histAddVal2(dphi1,dphi2, "Dphi1VsDphi2");
     histAddVal(alpha, "Alpha");
+
+    int idx_flj = active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size() - 1);
+    int idx_slj = active_part->at(CUTS::eR2ndJet)->at(active_part->at(CUTS::eR2ndJet)->size() - 1);
+
+    if( _Jet->pstats["Smear"].bfind("SmearTheJet") ){
+      std::vector<int>::iterator gmj1 = std::find(genMatchedJets.begin(), genMatchedJets.end(), idx_flj);
+      std::vector<int>::iterator gumj1 = std::find(genUnmatchedJets.begin(), genUnmatchedJets.end(), idx_flj);
+
+      if(gmj1 != genMatchedJets.end()){
+        histAddVal(1, "FirstGenMatching");
+        histAddVal(dphi1, "FirstGenMatchedMetDphi");
+
+      } else if(gumj1 != genUnmatchedJets.end()){
+        histAddVal(0, "FirstGenMatching");
+        histAddVal(dphi1, "FirstGenUnmatchedMetDphi");
+      }
+
+      std::vector<int>::iterator gmj2 = std::find(genMatchedJets.begin(), genMatchedJets.end(), idx_slj);
+      std::vector<int>::iterator gumj2 = std::find(genUnmatchedJets.begin(), genUnmatchedJets.end(), idx_slj);
+
+      if(gmj2 != genMatchedJets.end()){
+        histAddVal(1, "SecondGenMatching");
+        histAddVal(dphi2, "SecondGenMatchedMetDphi");
+
+      } else if(gumj2 != genUnmatchedJets.end()){
+        histAddVal(0, "SecondGenMatching");
+        histAddVal(dphi2, "SecondGenUnmatchedMetDphi");
+      }
+
+    }
 
   } else if(group == "FillDiJet"){ // Dijet combinations
     float leaddijetmass = 0;

@@ -5,14 +5,13 @@
 SmearTheJet 1
 GenMatchingDeltaR 0.4
 ResolutionMatching 1
-MuonMatchingDeltaR  0.3
-
+MuonMatchingDeltaR  0.4
 
 ########################################
                Jet1
 #######################################
 
-EtaCut 0. 5.0
+EtaCut 2.5 3.0
 PtCut 30.0
 
 ApplyLooseID 1
@@ -44,19 +43,13 @@ JMatchingDeltaR 0.8
 RemoveOverlapWithBs 0
 BJMatchingDeltaR 0.4
 
-DiscrByDPhiMet 0
-DPhiMetCut 0.0 0.5
-
 Apply2017EEnoiseVeto false
-
-DiscrByDPhiMet 0
-DPhiMetCut 0.5 999.9
 
 ########################################
 	        Jet2
 #######################################
 
-EtaCut 0. 5.0
+EtaCut 2.5 3.0
 PtCut 30.0
 
 ApplyLooseID 1
@@ -88,13 +81,7 @@ JMatchingDeltaR 0.8
 RemoveOverlapWithBs 0
 BJMatchingDeltaR 0.4
 
-DiscrByDPhiMet 0
-DPhiMetCut 0.0 0.5
-
 Apply2017EEnoiseVeto false
-
-DiscrByDPhiMet 1
-DPhiMetCut 0.0 0.5
 
 ####################################
           CentralJet
@@ -104,11 +91,6 @@ PtCut 30.0
 
 ApplyLooseID 1
 ApplyTightID 0
-
-ApplyPileupJetID 0
-# WPs: tight = 0, medium = 1, loose = 2 
-PUJetIDCut 0
-FailPUJetID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 1
@@ -131,18 +113,13 @@ Apply2017EEnoiseVeto false
 	 FirstLeadingJet
 ###################################
 
-DoDiscrByThisJet 1
+DoDiscrByThisJet 0
 
 EtaCut 0.0 5.0
 PtCut 30.0
 
 ApplyLooseID 1
 ApplyTightID 0
-
-ApplyPileupJetID 0
-# WPs: tight = 0, medium = 1, loose = 2 
-PUJetIDCut 0
-FailPUJetID 0
 
 RemoveOverlapWithMuon1s 1 
 RemoveOverlapWithMuon2s 1
@@ -172,11 +149,6 @@ PtCut 30.0
 
 ApplyLooseID 1
 ApplyTightID 0
-
-ApplyPileupJetID 0
-# WPs: tight = 0, medium = 1, loose = 2 
-PUJetIDCut 0
-FailPUJetID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 1
@@ -219,12 +191,12 @@ Tau2MatchingDeltaR 0.4
 
 Apply2017EEnoiseVeto false
 
-ApplyJetBTaggingCSVv2 0 
+ApplyJetBTaggingCSVv2 0
 ApplyJetBTaggingDeepCSV 1
 ApplyJetBTaggingDeepFlav 0
 
 JetBTaggingWP   medium
 JetBTaggingCut  0.6321
 MatchBToGen     0
-UseBtagSF       0
+UseBtagSF       1
 RemoveBJetsFromJets 0

@@ -8,14 +8,7 @@ JetScaleResolution::JetScaleResolution(){
 }
 
 JetScaleResolution::JetScaleResolution(const std::string& scalefilename, const std::string& parttype, const std::string& resolutionfile, const std::string& sfresolutionfile){
-    // InitScale(scalefilename, parttype);
-    // InitResolution(resolutionfile, sfresolutionfile);
-    /*
-    resfilename = resolutionfile;
-    resfunctyfilename = sfresolutionfile;
-    scaleunctyfilename = scalefilename;
-    type_name = parttype;
-    */
+
     jetcorrectorparams = JetCorrectorParameters(scalefilename.c_str(),parttype.c_str());
     jesUncertainty = new JetCorrectionUncertainty(jetcorrectorparams);
 
@@ -29,7 +22,6 @@ double JetScaleResolution::GetScaleDelta(const double& recojetPt, const double& 
     }
 
     //Call jesuncertainty with Pt being that obtained after applying nominal jet energy resolution scale factor
-    // jet_pt_nom = jer_sf_nom * recojet.Pt();
     jesUncertainty->setJetPt(recojetPt);
     jesUncertainty->setJetEta(recojetEta);
 
@@ -43,7 +35,6 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
 
 
     if(!(recojet.Pt() > 0.0)){
-        //return recojet.Pt();
         std::vector<float> nosmearvalues(3, 1.0);
         return nosmearvalues;
     }
@@ -54,7 +45,6 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
     // CV: define enums to access JER scale factors and uncertainties (cf. CondFormats/JetMETObjects/interface/JetResolutionObject.h)
     // int index_nominal = 0, index_shift_down = 1, index_shift_up = 2;
 
-    //float jet_pt_sf_and_uncertainty[3] = { };
     std::vector<float> jet_pt_sf_and_uncertainty;
 
     for(int index = 0; index < 3; index++){
@@ -64,7 +54,6 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
         jet_pt_sf_and_uncertainty.push_back(jerSF_and_Uncertainty.getScaleFactor(params_sf_and_uncertainty, var));
     }
 
-    //float smear_values[3] = { };
     std::vector<float> smear_values;
 
     if(genjet != TLorentzVector(0.,0.,0.,0.)){
@@ -119,6 +108,34 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
     }
 
     return smear_values;
+}
+
+float JetScaleResolution::getRelativePtResMC(const TLorentzVector& recojet, double rho){
+
+  JME::JetParameters params_resolution;
+
+  params_resolution.setJetPt(recojet.Pt());
+  params_resolution.setJetEta(recojet.Eta());
+  params_resolution.setRho(rho);
+
+  float jet_pt_resolution = jer.getResolution(params_resolution);
+
+  return jet_pt_resolution;
+
+}
+
+float JetScaleResolution::getDataToMCCoreResSF(const TLorentzVector& recojet, int sigmares){
+
+  JME::JetParameters params_sf_and_uncertainty;
+  Variation var = (Variation) sigmares;
+  // nominal: sigmares = 0, shift down: sigmares = 1, shift up: sigmares = 2;
+  params_sf_and_uncertainty.setJetEta(recojet.Eta());
+  params_sf_and_uncertainty.setJetPt(recojet.Pt());
+
+  float datatomcresSF = jerSF_and_Uncertainty.getScaleFactor(params_sf_and_uncertainty, var);
+
+  return datatomcresSF;
+
 }
 
 // double JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho, double sigmares){
