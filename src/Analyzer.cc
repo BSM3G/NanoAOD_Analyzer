@@ -2223,6 +2223,13 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
       // Find the gen-level jet that matches this reco jet (the original jet).
       TLorentzVector genJet = matchJetToGen(jetL1L2L3_noMuonP4, genJetMatchDR, eGenPos, stats.bfind("ResolutionMatching"));
+      bool genjetmatch = ( genJet != TLorentzVector(0,0,0,0) ) ? true : false;
+      bool passtightPUjetID = _Jet->getPileupJetID(i, 0); // i - jet index, 0 = bit0 (tight ID). If true, it passes tight PU jet ID, otherwise, it fails PU jet ID.
+
+      bool smearunmatchedjet = true;
+
+      if((_Jet->pt(i) <= 50.0)) smearunmatchedjet = !genjetmatch && passtightPUjetID ? true : false;
+
       // std::cout << "Jet #" << i << " being smeared." << std::endl;
       if(genJet != TLorentzVector(0,0,0,0)){
         genMatchedJets.push_back(i);
@@ -2250,7 +2257,11 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
       jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
 
       //std::cout << "JER (nom): jer_sf_nom = " << jer_sf_nom << ", jet_pt_nomu_nom = " << jet_pt_nomu_nom << ", jet_mass_nomu_nom = " << jet_mass_nomu_nom << std::endl;
-      if(!jetlepmatch){ // Do the smearing only if there is no overlap with muons, this block will only change the sfs and jet pt/mass.
+      //std::cout << "Jet # " << i << ", pt = " << jetL1L2L3_noMuonP4.Pt() << ", eta = " << jetL1L2L3_noMuonP4.Eta() << std::endl;
+      //std::cout << "genjetmatch = " << std::boolalpha << genjetmatch << ", passtightPUjetID = " << std::boolalpha << passtightPUjetID << ", smearunmatchedjet = " << std::boolalpha << smearunmatchedjet << std::endl;
+      //if(genjetmatch) std::cout << "Matched jet pt = " << genJet.Pt() << ", eta = " << genJet.Eta() << ", deltaR = " << jetL1L2L3_noMuonP4.DeltaR(genJet) << ", |pt_reco - pt_gen| = " << (abs(jetL1L2L3_noMuonP4.Pt() - genJet.Pt()) ) << ", 3sigmapt = " << (3.0*jets_jetptres[i]*jetL1L2L3_noMuonP4.Pt()) << std::endl;
+      if( (genjetmatch || smearunmatchedjet) && !jetlepmatch){ // Do the smearing only if there is no overlap with muons, this block will only change the sfs and jet pt/mass.
+        //std::cout << "Smearing this jet!" << std::endl;
         if(systname == "orig"){ // This corresponds to the nominal values
           // Set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
           jer_shift = jer_sf_nom;
@@ -5104,9 +5115,24 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         if( _Jet->pstats["Smear"].bfind("SmearTheJet") ){
           histAddVal2(part->p4(it).Eta(), part->p4(it).Pt(), "PtVsEta");
           histAddVal2(part->p4(it).Eta(), normPhi(part->p4(it).Phi() - _MET->phi()), "MetDphiVsEta");
+
           std::map<int, std::vector<float> >::iterator smdj = jets_jer_sfs.find(it);
 
           if(smdj != jets_jer_sfs.end()){
+            if( _Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 0 && _Jet->getPileupJetID(it,1) == 0 && _Jet->getPileupJetID(it,2) == 1){
+              // Pass Loose PU jet ID
+              histAddVal(3, "PUJetID");
+            } else if( _Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 0 && _Jet->getPileupJetID(it,1) == 1 ){
+              // Pass Medium PU jet ID
+              histAddVal(2, "PUJetID");
+            } else if(_Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 1){
+              // Pass Tight PU jet ID
+              histAddVal(1, "PUJetID");
+            } else if(_Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 0){
+              // Fail PU jet ID
+              histAddVal(0, "PUJetID");
+            }
+
             // Histograms for general purpose:
             // Nominal JER SF -- c_JER: https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetResolution
             histAddVal2(part->p4(it).Eta(), jets_jer_sfs[it].at(0), "cJERNomvsEta");
@@ -5136,6 +5162,20 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
             histAddVal(part->p4(it).Phi(), "GenMatchedPhi");
             histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "GenMatchedMetDphi");
 
+            if( _Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 0 && _Jet->getPileupJetID(it,1) == 0 && _Jet->getPileupJetID(it,2) == 1){
+              // Pass Loose PU jet ID
+              histAddVal(3, "GenMatchedPUJetID");
+            } else if( _Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 0 && _Jet->getPileupJetID(it,1) == 1 ){
+              // Pass Medium PU jet ID
+              histAddVal(2, "GenMatchedPUJetID");
+            } else if(_Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 1){
+              // Pass Tight PU jet ID
+              histAddVal(1, "GenMatchedPUJetID");
+            } else if(_Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 0){
+              // Fail PU jet ID
+              histAddVal(0, "GenMatchedPUJetID");
+            }
+
             histAddVal2(part->p4(it).Eta(), part->p4(it).Pt(), "GenMatchedPtVsEta");
             histAddVal2(part->p4(it).Eta(), normPhi(part->p4(it).Phi() - _MET->phi()), "GenMatchedMetDphiVsEta");
 
@@ -5161,6 +5201,20 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
             histAddVal(part->p4(it).Eta(), "GenUnmatchedEta");
             histAddVal(part->p4(it).Phi(), "GenUnmatchedPhi");
             histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "GenUnmatchedMetDphi");
+
+            if( _Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 0 && _Jet->getPileupJetID(it,1) == 0 && _Jet->getPileupJetID(it,2) == 1){
+              // Pass Loose PU jet ID
+              histAddVal(3, "GenUnmatchedPUJetID");
+            } else if( _Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 0 && _Jet->getPileupJetID(it,1) == 1 ){
+              // Pass Medium PU jet ID
+              histAddVal(2, "GenUnmatchedPUJetID");
+            } else if(_Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 1){
+              // Pass Tight PU jet ID
+              histAddVal(1, "GenUnmatchedPUJetID");
+            } else if(_Jet->pt(it) <= 50.0 && _Jet->getPileupJetID(it,0) == 0){
+              // Fail PU jet ID
+              histAddVal(0, "GenUnmatchedPUJetID");
+            }
 
             histAddVal2(part->p4(it).Eta(), part->p4(it).Pt(), "GenUnmatchedPtVsEta");
             histAddVal2(part->p4(it).Eta(), normPhi(part->p4(it).Phi() - _MET->phi()), "GenUnmatchedMetDphiVsEta");
@@ -5195,6 +5249,8 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
       histAddVal(njetmatched, "NGenMatched");
       histAddVal(njetunmatched, "NGenUnmatched");
+      histAddVal2(active_part->at(ePos)->size(), njetmatched, "NGenMatchedVsN");
+      histAddVal2(active_part->at(ePos)->size(), njetunmatched, "NGenMatchedVsN");
       histAddVal2(_MET->pt(), njetmatched, "NGenMatchedVsMetPt");
       histAddVal2(_MET->pt(), njetunmatched, "NGenUnmatchedVsMetPt");
       histAddVal2(_MET->phi(), njetmatched, "NGenMatchedVsMetPhi");
