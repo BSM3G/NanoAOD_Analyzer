@@ -94,6 +94,7 @@ void Met::init(){
   }
 
   // cur_P=&Reco;
+  //std::cout << "Initial raw MET vector (before propagation): px = " << RawMet.Px() << ", py = " << RawMet.Py() << ", pz = " << RawMet.Pz() << ", energy = " << RawMet.E() << std::endl;
   cur_P=&RawMet;
 
 }
@@ -101,7 +102,7 @@ void Met::init(){
 void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jet_pt_up, double const& jet_pt_down, std::string& systname, int syst){
 
   if(systRawMetVec.at(syst) == nullptr) return;
-  // std::cout << "Initial raw MET vector (before propagation): px = " << systRawMetVec.at(syst)->Px() << ", py = " << systRawMetVec.at(syst)->Py() << ", pz = " << systRawMetVec.at(syst)->Pz() << ", energy = " << systRawMetVec.at(syst)->E() << std::endl;
+  //std::cout << "Raw MET vector (before propagation): px = " << systRawMetVec.at(syst)->Px() << ", py = " << systRawMetVec.at(syst)->Py() << ", pz = " << systRawMetVec.at(syst)->Pz() << ", energy = " << systRawMetVec.at(syst)->E() << std::endl;
   float jet_cosPhi = cos(recoJet.Phi());
   float jet_sinPhi = sin(recoJet.Phi());
 
@@ -143,6 +144,106 @@ void Met::removeEEnoiseUnclEnergy(double const& delta_x_T1Jet, double const& del
 
   // Add this to the systematics vector
   systRawMetVec.at(syst)->SetPxPyPzE(met_px_unclshift, met_py_unclshift, systRawMetVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_unclshift,2) + pow(met_py_unclshift,2)));
+
+}
+
+void Met::applyXYshiftCorr(std::string const& year, std::string const& runera, int npv, bool const& isdata, std::string& systname, int syst){
+  // Reference: https://lathomas.web.cern.ch/lathomas/METStuff/XYCorrections/XYMETCorrection.h
+  if(systRawMetVec.at(syst) == nullptr) return;
+
+  // Get the original x and y components of MET (without the XY corrections):
+  float met_px_xcorr = systRawMetVec.at(syst)->Px();
+  float met_py_ycorr = systRawMetVec.at(syst)->Py();
+
+  //std::cout << "Corrected Type-I MET: px = " << met_px_xcorr << ", py = " << met_py_ycorr << std::endl;
+  //std::cout << "Corrected Type-I MET: pt = " << systRawMetVec.at(syst)->Pt() << ", phi = " << systRawMetVec.at(syst)->Phi() << std::endl;
+
+  float metxcorr = 0.0, metycorr = 0.0;
+
+  // Check what the run era is and calculate the correction based on the NPV of the event.
+  if(year == "2016" && isdata){ // In this case, we use normal MET (not v2 as in 2017)
+    if(runera == "2016B"){
+      metxcorr = -(-0.0478335*npv - 0.108032);
+      metycorr = -(0.125148*npv + 0.355672);
+    } else if(runera == "2016C"){
+      metxcorr = -(-0.0916985*npv + 0.393247);
+      metycorr = -(0.151445*npv + 0.114491);
+    } else if(runera == "2016D"){
+      metxcorr = -(-0.0581169*npv + 0.567316);
+      metycorr = -(0.147549*npv + 0.403088);
+    } else if(runera == "2016E"){
+      metxcorr = -(-0.065622*npv + 0.536856);
+      metycorr = -(0.188532*npv + 0.495346);
+    } else if(runera == "2016F"){
+      metxcorr = -(-0.0313322*npv + 0.39866);
+      metycorr = -(0.16081*npv + 0.960177);
+    } else if(runera == "2016G"){
+      metxcorr = -(0.040803*npv - 0.290384);
+      metycorr = -(0.0961935*npv + 0.666096);
+    } else if(runera == "2016H"){
+      metxcorr = -(0.0330868*npv - 0.209534);
+      metycorr = -(0.141513*npv + 0.816732);
+    }
+  } else if(year == "2016" && !isdata && runera == "2016MC"){ // In this case, we use normal MET (not v2 as in 2017)
+
+      metxcorr = -(-0.195191*npv - 0.170948);
+      metycorr = -(-0.0311891*npv + 0.787627);
+
+  } else if(year == "2017" && isdata){ // In this case, we use MET v2 (subtracting EE noise)
+
+    if(runera == "2017B"){
+      metxcorr = -(-0.19563*npv + 1.51859);
+      metycorr = -(0.306987*npv - 1.84713);
+    } else if(runera == "2017C"){
+      metxcorr = -(-0.161661*npv + 0.589933);
+      metycorr = -(0.233569*npv - 0.995546);
+    } else if(runera == "2017D"){
+      metxcorr = -(-0.180911*npv + 1.23553);
+      metycorr = -(0.240155*npv - 1.27449);
+    } else if(runera == "2017E"){
+      metxcorr = -(-0.149494*npv + 0.901305);
+      metycorr = -(0.178212*npv - 0.535537);
+    } else if(runera == "2017F"){
+      metxcorr = -(-0.165154*npv + 1.02018);
+      metycorr = -(0.253794*npv + 0.75776);
+    }
+
+  } else if(year == "2017" && !isdata && runera == "2017MC"){ // In this case, we use MET v2 (subtracting EE noise)
+
+    metxcorr = -(-0.182569*npv + 0.276542);
+    metycorr = -(0.155652*npv - 0.417633);
+
+  } else if(year == "2018" && isdata){ // In this case, we use normal MET (not v2 as in 2017)
+    if(runera == "2018A"){
+      metxcorr = -(-0.0478335*npv -0.108032);
+      metycorr = -(0.125148*npv + 0.355672);
+    } else if(runera == "2018B"){
+      metxcorr = -(-0.0478335*npv - 0.108032);
+      metycorr = -(0.125148*npv + 0.355672);
+    } else if(runera == "2018C"){
+      metxcorr = -(-0.0916985*npv + 0.393247);
+      metycorr = -(0.151445*npv + 0.114491);
+    } else if(runera == "2018D"){
+      metxcorr = -(-0.0581169*npv + 0.567316);
+      metycorr = -(0.147549*npv + 0.403088);
+    }
+  } else if(year == "2018" && !isdata && runera == "2018MC"){ // In this case, we use normal MET (not v2 as in 2017)
+
+    metxcorr = -(0.296713*npv - 0.141506);
+    metycorr = -(0.115685*npv + 0.0128193);
+
+  }
+  //std::cout << "Year = " << year << ", runera = " << runera << ", NPV = " << npv << ", metxcorr = " << metxcorr << ", metycorr = " << metycorr << std::endl;
+  // Now calculate the new x and y components of the corrected Met
+  met_px_xcorr = met_px_xcorr + metxcorr;
+  met_py_ycorr = met_py_ycorr + metycorr;
+
+  //std::cout << "Corrected Type-I + xy-shifted MET: px = " << met_px_xcorr << ", py = " << met_py_ycorr << std::endl;
+
+  // Update this in the systematics vector
+  systRawMetVec.at(syst)->SetPxPyPzE(met_px_xcorr, met_py_ycorr, systRawMetVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_xcorr,2) + pow(met_py_ycorr,2)));
+
+  //std::cout << "Corrected Type-I + xy-shifted MET: pt = " << systRawMetVec.at(syst)->Pt() << ", phi = " << systRawMetVec.at(syst)->Phi() << std::endl;
 
 }
 

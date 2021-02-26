@@ -60,6 +60,7 @@ public:
 
   void propagateJetEnergyCorr(TLorentzVector recoJet, double const& jer_sf_nom, double const& jec_param, std::string& systname, int syst);
   void removeEEnoiseUnclEnergy(double const& delta_x_T1Jet, double const& delta_y_T1Jet, double const& delta_x_rawJet, double const& delta_y_rawJet, std::string& systname, int syst);
+  void applyXYshiftCorr(std::string const& year, std::string const& runera, int npv, bool const& isdata, std::string& systname, int syst);
   void propagateUnclEnergyUncty(std::string& systname, int syst);
   void calculateHtAndMHt(PartStats& stats, Jet& jet, int syst);
 

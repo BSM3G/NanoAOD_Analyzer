@@ -1978,16 +1978,16 @@ void Analyzer::setupJetCorrections(std::string year, std::string outputfilename)
 
 
    if(isData){
-
      std::string delimiter = ("_Run"+year).c_str();
      unsigned int pos = outputfilename.find(delimiter.c_str()) + delimiter.length();
-     std::string runera = (year+outputfilename.substr(pos,1)).c_str();
+     runera = (year+outputfilename.substr(pos,1)).c_str();
 
      jectag = jecTagsDATA[runera];
      jertag = jerTagsMC[year];
      archivetag = archiveTagsDATA[year];
    }
    else{
+     runera = (year+"MC").c_str();
      jertag = jerTagsMC[year];
      jectag = jecTagsMC[year];
      jectagfastsim = jecTagsFastSim[year];
@@ -2242,6 +2242,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
       jets_jer_sfs[i] = jet_jer_sf;
 
       jets_jetptres[i] = jetScaleRes.getRelativePtResMC(jetL1L2L3_noMuonP4, jec_rho);
+
       if(systname == "orig"){
         jets_datatoMCSFs_jer[i] = jetScaleRes.getDataToMCCoreResSF(jetL1L2L3_noMuonP4, 0);
       } else if(systname == "Jet_Res_Up"){
@@ -2249,6 +2250,12 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
       } else if(systname == "Jet_Res_Down"){
         jets_datatoMCSFs_jer[i] = jetScaleRes.getDataToMCCoreResSF(jetL1L2L3_noMuonP4, 1);
       }
+
+      //std::cout << "Jet # " << i << ", pt = " << jetL1L2L3_noMuonP4.Pt() << ", eta = " << jetL1L2L3_noMuonP4.Eta() << ", rho = " << jec_rho << std::endl;
+      //std::cout << "sigma_jer = " << jets_jetptres[i] << ", s_jer = " << jets_datatoMCSFs_jer[i] << ", c_jer = " << jet_jer_sf.at(0) << std::endl;
+      //std::cout << "genjetmatch = " << std::boolalpha << genjetmatch << ", passtightPUjetID = " << std::boolalpha << passtightPUjetID << ", smearunmatchedjet = " << std::boolalpha << smearunmatchedjet << std::endl;
+      //if(genjetmatch) std::cout << "Matched jet pt = " << genJet.Pt() << ", eta = " << genJet.Eta() << ", deltaR = " << jetL1L2L3_noMuonP4.DeltaR(genJet) << ", |pt_reco - pt_gen| = " << (abs(jetL1L2L3_noMuonP4.Pt() - genJet.Pt()) ) << ", 3sigmapt = " << (3.0*jets_jetptres[i]*jetL1L2L3_noMuonP4.Pt()) << std::endl;
+
 
       // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
       jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
@@ -2385,8 +2392,9 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
     if( year.compare("2017") != 0  || ( year.compare("2017") == 0 && !(abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && !(rawJetP4_noMuon.Pt() < 50.0) ) ){
       // Do the normal propagation of JEC & JER to 2016 and 2018 and those jets outside the problematic EE noise jet eta and pt regions for 2017.
-      // std::cout << "I get here." << std::endl;
+      //std::cout << "I get here; jetTotalEmEF = " << jetTotalEmEF <<  std::endl;
       if(jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9){
+        //std::cout << "I'll propagate the corrections to met..." << std::endl;
         if(systname.find("orig") != std::string::npos ){
           _MET->propagateJetEnergyCorr(jetL1L2L3_jerNom_noMuonP4, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
         } else if( !stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
@@ -2401,7 +2409,7 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
     if(year.compare("2017") == 0 && (abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && rawJetP4_noMuon.Pt() < 50.0 ){
       // Calculate deltas for jets in the problematic EE noise regions for 2017
-
+      //std::cout << "I get here (2017) calculating the deltas; jetTotalEmEF = " << jetTotalEmEF <<  std::endl;
       if(jetL1L2L3_jerNom_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9 ){
 
         // get the delta for removing raw jets in the EE region from the raw MET
@@ -2421,9 +2429,16 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
   // Propagate "unclustered energy" uncertainty to MET to finalize the 2017 MET recipe v2
   if(year.compare("2017") == 0){
     // Remove the L1L2L3-L1 corrected jets in the EE region from the default MET branch
+    //std::cout << "I get here (2017) removing unclenergy" << std::endl;
     _MET->removeEEnoiseUnclEnergy(delta_x_EEnoise_T1Jets, delta_y_EEnoise_T1Jets, delta_x_EEnoise_rawJets, delta_y_EEnoise_rawJets, systname, syst);
   }
 
+  // Once we're done with all the propagation of JEC/JER to the raw MET, we have Type-I. Now include the xy-shift corrections
+  //std::cout << "------" << std::endl;
+  if(distats["Run"].bfind("ApplyMETxyShiftCorrections")){
+    //std::cout << "I'm applying xy-shift corrections" << std::endl;
+    _MET->applyXYshiftCorr(year, runera, bestVertices, isData, systname, syst);
+  }
 }
 
 // --- Old function that smeares the jet energy resolution: this is done only in MC to improve the agreement between data and MC --- //

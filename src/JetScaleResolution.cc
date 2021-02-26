@@ -76,7 +76,7 @@ std::vector<float> JetScaleResolution::GetSmearValsPtSF(const TLorentzVector& re
 
         float jet_pt_resolution = jer.getResolution(params_resolution);
         double rand = rnd->Gaus(0.0, jet_pt_resolution);
-
+        // std::cout << "stochastic smearing, rand = " << rand << std::endl;
         for(int index = 0; index < 3; index++){
 
             double smearFactor = 1.0;

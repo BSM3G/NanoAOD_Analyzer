@@ -340,6 +340,7 @@ public:
   float l1prefiringwgt = 1.0, l1prefiringwgt_up = 1.0, l1prefiringwgt_dn = 1.0;
 
   Float_t jec_rho =20.;
+  std::string runera;
   // std::vector< std::vector<float> > jets_jer_sfs;
   std::map<int, std::vector<float> > jets_jer_sfs;
   std::map<int, float> jets_jetptres;
