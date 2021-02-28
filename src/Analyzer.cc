@@ -130,6 +130,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   // New! Initialize pileup information and take care of exceptions if histograms not found.
   initializePileupInfo(specialPUcalculation, outfile);
 
+  if(distats["Run"].bfind("ApplyNPVWeight")) initializeNPVWeights(year);
 
   syst_names.push_back("orig");
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> tmp;
@@ -522,7 +523,9 @@ void Analyzer::setupEventGeneral(int nevent){
   }
 
   // Calculate the pu_weight for this event.
-  pu_weight = (!isData && CalculatePUSystematics) ? hPU[(int)(nTruePU+1)] : 1.0;
+  // pu_weight = (!isData && CalculatePUSystematics) ? hPU[(int)(nTruePU+1)] : 1.0;
+  pu_weight = (!isData && CalculatePUSystematics) ? hist_pu_wgt->GetBinContent(hist_pu_wgt->FindBin(nTruePU)) : 1.0;
+  // std::cout << "ntruepu = " << nTruePU << ", pu_weight (array) = " << pu_weight << ", bin in hist_ratio = " << (hist_pu_wgt->FindBin(nTruePU)) << ", pu weight (histo) = " << (hist_pu_wgt->GetBinContent(hist_pu_wgt->FindBin(nTruePU))) << std::endl;
 
   // Get the trigger decision vector.
   triggerDecision = false; // Reset the decision flag for each event.
@@ -4718,6 +4721,16 @@ double Analyzer::getZpTWeight_vbfSusy(std::string year) {
     return zPtBoost;
 }
 
+// Brenda FE -- additional PU weights that correct the NPV distribution
+double Analyzer::getNPVWeight(bool applyWeights, float npv){
+
+  double npv_weight = 1.0;
+  if(!applyWeights) return npv_weight;
+
+  npv_weight = histnpvwgt->GetBinContent(histnpvwgt->FindBin(npv));
+  // std::cout << "NPV = " << npv << ", bin in NPV histo = " << (histnpvwgt->FindBin(npv)) << ", NPV weight = " << npv_weight << std::endl;
+  return npv_weight;
+}
 
 ////Grabs a list of the groups of histograms to be filled and asked Fill_folder to fill up the histograms
 void Analyzer::fill_histogram(std::string year) {
@@ -4755,6 +4768,9 @@ void Analyzer::fill_histogram(std::string year) {
     }
     if(distats["Run"].bfind("ApplyWKfactor")){
       wgt *= getWkfactor();
+    }
+    if(distats["Run"].bfind("ApplyNPVWeight")){
+      wgt *= getNPVWeight(true, bestVertices);
     }
 
     // Apply L1 prefiring weights for 2016/2017
@@ -4808,12 +4824,14 @@ void Analyzer::fill_histogram(std::string year) {
         if(syst_names[i]=="Pileup_weight_Up"){
           if(distats["Run"].bfind("UsePileUpWeight")) {
             wgt/=   pu_weight;
-            wgt *=  hPU_up[(int)(nTruePU+1)];
+            // wgt *=  hPU_up[(int)(nTruePU+1)];
+            wgt *= hist_pu_wgt_up->GetBinContent(hist_pu_wgt_up->FindBin(nTruePU));
           }
         }else if(syst_names[i]=="Pileup_weight_Down"){
           if(distats["Run"].bfind("UsePileUpWeight")) {
             wgt/=   pu_weight;
-            wgt *=  hPU_down[(int)(nTruePU+1)];
+            // wgt *=  hPU_down[(int)(nTruePU+1)];
+            wgt *= hist_pu_wgt_do->GetBinContent(hist_pu_wgt_do->FindBin(nTruePU));
           }
         }
         // --------- Prefiring weights ----------- //
@@ -5735,21 +5753,31 @@ void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHist
   TFile *file1 = new TFile((PUSPACE+MCHisto).c_str());
   TH1D* histmc = (TH1D*)file1->FindObjectAny(MCHistoName.c_str());
   if(!histmc) throw std::runtime_error(("Failed to extract histogram "+MCHistoName+" from "+PUSPACE+MCHisto+"!").c_str());
+  histmc->Scale(1./histmc->Integral());
+  histmc->SetDirectory(0);
 
   TFile* file2 = new TFile((PUSPACE+DataHisto).c_str());
-  TH1D* histdata = (TH1D*)file2->FindObjectAny(DataHistoName.c_str());
-  if(!histdata) throw std::runtime_error(("Failed to extract histogram "+DataHistoName+" from "+PUSPACE+DataHisto+"!").c_str());
+  hist_pu_wgt = dynamic_cast<TH1D*> (file2->FindObjectAny(DataHistoName.c_str()) );
+  if(!hist_pu_wgt) throw std::runtime_error(("Failed to extract histogram "+DataHistoName+" from "+PUSPACE+DataHisto+"!").c_str());
 
-  TH1D* histdata_up = (TH1D*)file2->FindObjectAny((DataHistoName+"Up").c_str());
-  TH1D* histdata_down = (TH1D*)file2->FindObjectAny((DataHistoName+"Do").c_str());
+  hist_pu_wgt->Scale(1.0/hist_pu_wgt->Integral());
+  hist_pu_wgt->Divide(histmc);
+  hist_pu_wgt->SetDirectory(0);
 
-  histmc->Scale(1./histmc->Integral());
-  histdata->Scale(1./histdata->Integral());
-  if(histdata_up){
-    histdata_up->Scale(1./histdata_up->Integral());
-    histdata_down->Scale(1./histdata_down->Integral());
+  hist_pu_wgt_up = dynamic_cast<TH1D*> ( file2->FindObjectAny((DataHistoName+"Up").c_str()) );
+  if(hist_pu_wgt_up){
+    hist_pu_wgt_up->Scale(1.0/hist_pu_wgt_up->Integral());
+    hist_pu_wgt_up->Divide(histmc);
+    hist_pu_wgt_up->SetDirectory(0);
   }
 
+  hist_pu_wgt_do = dynamic_cast<TH1D*> ( file2->FindObjectAny((DataHistoName+"Do").c_str()) );
+  if(hist_pu_wgt_do){
+    hist_pu_wgt_do->Scale(1.0/hist_pu_wgt_do->Integral());
+    hist_pu_wgt_do->Divide(histmc);
+    hist_pu_wgt_do->SetDirectory(0);
+  }
+  /*
   //double factor = histmc->Integral() / histdata->Integral();
   float value,valueUp,valueDown;
   // The bin corresponding to nTruePU = 0 will be bin = 1 and, the calculated weight will be stored
@@ -5761,6 +5789,7 @@ void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHist
       valueDown = 1;
     }else{
       value = histdata->GetBinContent(bin) / histmc->GetBinContent(bin);
+      std::cout << "bin = " << bin << ", value pu wgt = " << value << std::endl;
       if(histdata_up){
         valueUp = histdata_up->GetBinContent(bin) / histmc->GetBinContent(bin);
         valueDown = histdata_down->GetBinContent(bin) / histmc->GetBinContent(bin);
@@ -5775,10 +5804,28 @@ void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHist
       hPU_down[bin] = value;
     }
   }
-
+  std::cout << " ---- " << std::endl;
+  */
+  /*
+  for(int bin=0; bin<= hist_pu_wgt->GetNbinsX(); bin++){
+    std::cout << "bin = " << bin << ", pu wgt (hist) = " << ( hist_pu_wgt->GetBinContent(bin) ) << std::endl;
+  }
+  */
   file1->Close();
   file2->Close();
 
+}
+
+void Analyzer::initializeNPVWeights(std::string year){
+
+  TFile *file = new TFile((PUSPACE+"NPVweights.root").c_str());
+  histnpvwgt = dynamic_cast<TH1D*>( file->FindObjectAny( ("NVertices_"+year).c_str() ) );
+  if(!histnpvwgt) throw std::runtime_error(("Failed to extract NPV weight histogram from "+PUSPACE+"NPVweights.root!").c_str());
+  histnpvwgt->SetDirectory(0);
+  // TH1D* histnpvwgt_up = (TH1D*)file1->FindObjectAny((DataHistoName+"Up").c_str());
+  // TH1D* histnpvwgt_down = (TH1D*)file1->FindObjectAny((DataHistoName+"Do").c_str());
+  //std::cout << "Initialized NPV weights successfully." << std::endl;
+  file->Close();
 }
 
 void Analyzer::initializeWkfactor(std::vector<std::string> infiles) {

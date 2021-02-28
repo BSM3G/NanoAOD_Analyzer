@@ -20,6 +20,8 @@ ApplyTauAntiEleSF true
 ApplyTauAntiMuSF true
 
 UsePileUpWeight true
+ApplyNPVWeight true
+
 ApplyISRZBoostSF false # Z-boost weight corrections derived for ISR+stau analysis (SUS-19-002)
 ApplySUSYZBoostSF false # Official Z-boost weight corrections derived by the SUSY PAG.
 ApplyVBFSusyZBoostSF true # Weights derived by the VBF SUSY team - Run II
