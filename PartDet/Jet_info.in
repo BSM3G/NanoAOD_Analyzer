@@ -6,6 +6,7 @@ SmearTheJet 1
 GenMatchingDeltaR 0.4
 ResolutionMatching 1
 MuonMatchingDeltaR  0.4
+ModifiedPUsmearing 1
 
 ########################################
                Jet1
