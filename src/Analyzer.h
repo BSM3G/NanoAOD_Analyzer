@@ -211,7 +211,8 @@ public:
   void selectMet(int syst=0);
   bool passMetFilters(std::string, int);
   void treatMuonsAsMet(int);
-  double getPileupWeight(float);
+  void initializeNPVWeights(std::string);
+  double getNPVWeight(bool, float);
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> getArray();
 
   double getCRVal(std::string);
@@ -224,9 +225,9 @@ public:
   TFile* infoFile;
   TFile* routfile = new TFile;
   std::string filespace = "";
-  float hPU[200] = { };        // initialize this array to zero.
-  float hPU_up[200] = { };     // initialize this array to zero.
-  float hPU_down[200] = { };   // initialize this array to zero.
+  //float hPU[200] = { };        // initialize this array to zero.
+  //float hPU_up[200] = { };     // initialize this array to zero.
+  //float hPU_down[200] = { };   // initialize this array to zero.
   int version=0;
   std::map<std::string,TTree* > originalTrees;
   //std::map<std::string,*TObject> otherObjects;
@@ -266,6 +267,12 @@ public:
   TH1D* k_ele_h;
   TH1D* k_mu_h;
   TH1D* k_tau_h;
+
+  TH1D* histnpvwgt;
+
+  TH1D* hist_pu_wgt;
+  TH1D* hist_pu_wgt_up;
+  TH1D* hist_pu_wgt_do;
 
   bool isVSample;
   bool isZsample;
