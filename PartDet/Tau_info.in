@@ -34,7 +34,7 @@ TauIDAlgorithm Tau_idDeepTau2017v2p1
 //RECO CUTS///
 
 EtaCut 2.1
-PtCut 20.0 40.0
+PtCut 20.0 9999.9
 
 DoDzCut false
 DzCutThreshold 0.2
@@ -46,7 +46,7 @@ DoDiscrByIsolation true
 // MVA: 1 = VVLoose, 2 = VLoose, 4 = Loose, 8 = Medium, 16 = Tight, 32 = VTight, 64 = VVTight
 // DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
 DiscrByMinIsolation 32
-DiscrByMaxIsolation 2
+DiscrByMaxIsolation 0
 FlipIsolationRequirement false
 DiscrByProngType true
 ProngType  1or3hps
@@ -92,7 +92,7 @@ MetMtCut 0.0    50.0
 //----RECO CUTS----////
 
 EtaCut 2.1
-PtCut 20.0 40.0
+PtCut 20.0 9999.9
 
 DoDzCut false
 DzCutThreshold 0.2
@@ -104,7 +104,7 @@ DoDiscrByIsolation true
 // MVA: 1 = VVLoose, 2 = VLoose, 4 = Loose, 8 = Medium, 16 = Tight, 32 = VTight, 64 = VVTight
 // DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
 DiscrByMinIsolation 32
-DiscrByMaxIsolation 2
+DiscrByMaxIsolation 0
 FlipIsolationRequirement false
 DiscrByProngType true
 ProngType  1or3hps
