@@ -109,7 +109,7 @@ int main (int argc, char* argv[]) {
   std::string configFolder="PartDet";
   std::vector<std::string> inputnames;
   std::string year = "2016";
-    
+
 
 
   //get the command line options in a nice loop
@@ -132,16 +132,16 @@ int main (int argc, char* argv[]) {
 
   size_t Nentries=testing.nentries;
   if(testRun){
-    Nentries=1000;
-    testing.nentries=1000;
+    Nentries=10;
+    testing.nentries=10;
   }
-    
+
   // std::multimap<int,int> json_line_dict = testing.readinJSON(); //05.28.19
   //testing.checkParticleDecayList(); 01.16.19
-  
+
   //main event loop
   for(size_t i=0; i < Nentries; i++) {
-    
+
     //if(i == 0) spechialAna.begin_run();   // Special analyzer
     testing.clear_values();
 
@@ -151,9 +151,9 @@ int main (int argc, char* argv[]) {
     //if (i < 25)
     //{testing.writeParticleDecayList(i);}  //01.16.19:  This will write the particle decay list for the first 25 events.
     testing.fill_histogram(year);
-    
+
     //spechialAna.analyze();                // Special analyzer
-    
+
     //this will be set if ctrl+c is pressed
     if(do_break){
       testing.nentries=i+1;
@@ -161,8 +161,8 @@ int main (int argc, char* argv[]) {
     }
   }
   testing.printCuts();
-  
+
   //spechialAna.end_run();                // Special analyzer
-  
+
   return 0;
 }

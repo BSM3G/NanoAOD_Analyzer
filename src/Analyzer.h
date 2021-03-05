@@ -135,7 +135,7 @@ public:
   TLorentzVector matchLeptonToGen(const TLorentzVector&, const PartStats&, CUTS);
   TLorentzVector matchTauToGen(const TLorentzVector&, double);
   TLorentzVector matchHadTauToGen(const TLorentzVector&, double);
-  TLorentzVector matchJetToGen(const TLorentzVector&, const double&, CUTS);
+  TLorentzVector matchJetToGen(const TLorentzVector&, const double&, CUTS, bool);
 
   int matchToGenPdg(const TLorentzVector& lvec, double minDR);
 
@@ -149,7 +149,7 @@ public:
   void getGoodGen(const PartStats&);
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
-  void getGoodRecoLeadJets(CUTS, const PartStats&, const int); 
+  void getGoodRecoLeadJets(CUTS, const PartStats&, const int);
   void getGoodRecoBJets(CUTS, const PartStats&, const int); //01.16.19
   void getGoodRecoFatJets(CUTS, const PartStats&, const int);
 
@@ -207,6 +207,8 @@ public:
   bool passMetFilters(std::string, int);
   void treatMuonsAsMet(int);
   double getPileupWeight(float);
+  void initializeNPVWeights(std::string);
+  double getNPVWeight(bool, float);
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> getArray();
 
   double getCRVal(std::string);
@@ -219,13 +221,13 @@ public:
   TFile* infoFile;
   TFile* routfile = new TFile;
   std::string filespace = "";
-  float hPU[200] = { };        // initialize this array to zero.
-  float hPU_up[200] = { };     // initialize this array to zero.
-  float hPU_down[200] = { };   // initialize this array to zero.
+  //float hPU[200] = { };        // initialize this array to zero.
+  //float hPU_up[200] = { };     // initialize this array to zero.
+  //float hPU_down[200] = { };   // initialize this array to zero.
   int version=0;
   std::map<std::string,TTree* > originalTrees;
   //std::map<std::string,*TObject> otherObjects;
-  
+
 
   Generated* _Gen;
   GenHadronicTaus* _GenHadTau;
@@ -262,6 +264,12 @@ public:
   TH1D* k_mu_h;
   TH1D* k_tau_h;
 
+  TH1D* histnpvwgt;
+
+  TH1D* hist_pu_wgt;
+  TH1D* hist_pu_wgt_up;
+  TH1D* hist_pu_wgt_do;
+
   bool isVSample;
   bool isZsample;
   bool isWSample;
@@ -294,7 +302,7 @@ public:
 
   float nTruePU = 0;
   int bestVertices = 0;
-  float gen_weight = 0; 
+  float gen_weight = 0;
   float generatorht = 0;
   float gendilepmass = 0;
 
@@ -309,14 +317,14 @@ public:
   bool ecalbadcalibrationfilter = false;
   bool allmetfilters = false;
   bool passedmetfilters = false;
-  
+
   // B-tagging scale factors - calibration + readers
   BTagCalibration btagcalib;
   BTagCalibrationReader btagsfreader;
   BTagEntry::JetFlavor bjetflavor;
   BTagEntry::OperatingPoint b_workingpoint;
 
-  // Tau ID SFs 
+  // Tau ID SFs
   TauIDSFTool tau1idSFs, tau2idSFs;
   TauIDSFTool tau1id_antiEleSFs, tau2id_antiEleSFs;
   TauIDSFTool tau1id_antiMuSFs, tau2id_antiMuSFs;
@@ -332,8 +340,9 @@ public:
 
   // Prefiring weights
   float l1prefiringwgt = 1.0, l1prefiringwgt_up = 1.0, l1prefiringwgt_dn = 1.0;
-  
+
   Float_t jec_rho =20.;
+  std::string runera;
   std::vector< std::vector<float> > jets_jer_sfs;
 
   const static std::vector<CUTS> genCuts;

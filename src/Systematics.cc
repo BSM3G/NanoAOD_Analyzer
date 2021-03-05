@@ -12,6 +12,13 @@ void Systematics::init(){
 
 }
 
+void Systematics::shiftJet(Particle& jet, TLorentzVector recoJet, std::string& syst_name, int syst){
+
+  jet.addP4Syst(recoJet, syst);
+  return;
+
+}
+
 void Systematics::shiftParticle(Particle& jet, TLorentzVector recoJet, double const& corrJetPt, double& corrJetMass, std::string& syst_name, int syst){
 
   TLorentzVector shiftedRecoJet;
@@ -24,19 +31,6 @@ void Systematics::shiftParticle(Particle& jet, TLorentzVector recoJet, double co
   return;
 
 }
-
-/*
-void Systematics::shiftParticle(Particle& jet, TLorentzVector recJet, double const& ratio, double& dPx, double& dPy, int syst){
-
-   //add the shifted part up
-   dPx+=recJet.Px()*(ratio-1);
-   dPy+=recJet.Py()*(ratio-1);
-   //WARNING change the particle content for the particle
-   recJet*=ratio;
-   jet.addP4Syst(recJet, syst);
-   return;
-}
-*/
 
 void Systematics::shiftLepton(Lepton& lepton, TLorentzVector recoLep, TLorentzVector genLep, double& dPx, double& dPy, int syst){
   if (genLep == TLorentzVector(0,0,0,0)) {
@@ -61,7 +55,7 @@ void Systematics::loadScaleRes(const PartStats& smear, const PartStats& syst, st
   if(smear.bfind("SmearTheParticle")) {
     scale = smear.dmap.at("PtScaleOffset");
     resolution = smear.dmap.at("PtResolutionOffset");
-  } 
+  }
   if(syst_name.find("_Res_")) {
     resolution = syst_name.find("_Up") ? 1 + syst.dmap.at("res") : 1 - syst.dmap.at("res");
     scale=1;
@@ -70,4 +64,3 @@ void Systematics::loadScaleRes(const PartStats& smear, const PartStats& syst, st
     resolution=1;
   }
 }
-
