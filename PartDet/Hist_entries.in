@@ -63,15 +63,6 @@ GenMuonPt         200   0.      500.
 GenMuonEta         72  -3.6      +3.6
 GenMuonPhi         36  -3.15     +3.15
 GenZDiLepMass	  1000	0.	 5000.
-// GenDiTauMass      100   0.    10000.
-//GenHadTauFrac_scalar	  100	0.    1.
-//GenHadTauFrac_vector	  100	0.    1.
-//GenDeltaR		  100	0.    10.
-//GenHadTauFrac2	  100	0.    1.
-//GenHadTauFrac3	  100	0.    1.
-//////GenZprimeMass    100 0. 10000.      NOT IMPLIMENTED
-//////GenZprimeStatusCode     100 0. 100.
-//////GenTauStatusCode     100 0. 100.
 
 //------------------------------------------------//
 
@@ -162,58 +153,72 @@ Jet1Energy   200   0.   500.
 Jet1Pt       200   0.   500.
 Jet1Eta      100  -5.0   +5.0
 Jet1Phi      144  -6.3   +6.3
+
+Jet1DPhiMet       140  -3.5    +3.5
+Jet1AbsDPhiMet     70   0.0    +3.5
+Jet1MinAbsDPhiMet  70   0.0    +3.5
+Jet1MetVsDPhiMet  140  -3.5    +3.5  100  0.  1000.
+Jet1MetVsMinAbsDPhiMet  70 0.0    +3.5  100  0.  1000.
+
 Jet1PtVsEta		50	   -5.0     +5.0	50	  0.0   500.0
-Jet1MetDphiVsEta		50	   -5.0     +5.0	32	  -3.2   +3.2
+Jet1MetDphiVsEta		50	   -5.0     +5.0	140	  -3.5   +3.5
 Jet1PUJetID	4 0. 4.
 
 cJERNomvsJet1Eta		50    -5.0	 +5.0	100	   0.0	  5.0 
 cJERNomvsJet1Pt			50	   0.0  500.0   100    0.0    5.0
-cJERNomvsJet1Phi		32	  -3.2   +3.2   100    0.0    5.0
+cJERNomvsJet1Phi		70	  -3.5   +3.5   100    0.0    5.0
 
 sJERNomvsJet1Eta		50    -5.0	 +5.0	100	   0.0	  5.0 
 sJERNomvsJet1Pt			50	   0.0  500.0   100    0.0    5.0
-sJERNomvsJet1Phi		32	  -3.2   +3.2   100    0.0    5.0
+sJERNomvsJet1Phi		70	  -3.5   +3.5   100    0.0    5.0
 
 sigmaJERNomvsJet1Eta		50    -5.0	 +5.0	20	   0.0	  1.0 
 sigmaJERNomvsJet1Pt			50	   0.0  500.0   20    0.0    1.0
-sigmaJERNomvsJet1Phi		32	  -3.2   +3.2   20    0.0    1.0
+sigmaJERNomvsJet1Phi		70	  -3.5   +3.5   20    0.0    1.0
 
-NJet1GenMatched 		20 	  0.0	 20.0
-NJet1GenMatchedVsN		20  0.0   20.0  20  0.0  20.0 
+NJet1GenMatched 				20 	0.0	  20.0
+NJet1GenMatchedVsN				20  0.0   20.0  20  0.0  20.0 
 NJet1GenMatchedVsNGenUnmatched  20  0.0   20.0  20  0.0  20.0
 GenMatchedJet1PUJetID	        4   0. 4.
 NJet1GenMatchedVsMetPt 		100   0.0  1000.0	20 	0.0		20.0
-NJet1GenMatchedVsMetPhi 	32   -3.2    +3.2	20 	0.0		20.0
+NJet1GenMatchedVsMetPhi 	70   -3.5    +3.5	20 	0.0		20.0
 NJet1GenMatchedVsNPV 		50    0.0   100.0	20 	0.0		20.0
 
 GenMatchedJet1cJERNom 		250 	0.0 	 5.0
 GenMatchedJet1sJERNom 		250 	0.0 	 5.0
 GenMatchedJet1sigmaJERNom 	500 	0.0 	 5.0
+
 GenMatchedJet1Pt 			200  	0.0    500.0
 GenMatchedJet1Eta 			100    -5.0 	+5.0
 GenMatchedJet1Phi 			144    -6.3     +6.3
-GenMatchedJet1MetDphi 		144    -6.3     +6.3
+
+GenMatchedJet1MetDphi 		140    -3.5     +3.5
 GenMatchedJet1PtVsEta		50	   -5.0     +5.0	50	  0.0   500.0
-GenMatchedJet1MetDphiVsEta	50	   -5.0     +5.0	32	  -3.2   +3.2
+GenMatchedJet1MetDphiVsEta	50	   -5.0     +5.0	140	  -3.5   +3.5
+
+GenMatchedJet1AbsDPhiMet     70   0.0    +3.5
+GenMatchedJet1DPhiMet      	140  -3.5    +3.5
+GenMatchedJet1MetVsDPhiMet  140  -3.5    +3.5  100  0.  1000.
+GenMatchedJet1MetVsMinAbsDPhiMet  70   0.0    +3.5  100  0.  1000.
 
 GenMatchedJet1cJERNomvsEta	50    -5.0	 +5.0	100	   0.0	  5.0 
 GenMatchedJet1cJERNomvsPt	50	   0.0  500.0   100    0.0    5.0
-GenMatchedJet1cJERNomvsPhi	32	  -3.2   +3.2   100    0.0    5.0
+GenMatchedJet1cJERNomvsPhi	140  -3.5    +3.5   100    0.0    5.0
 
 GenMatchedJet1sJERNomvsEta	50    -5.0	 +5.0	100	   0.0	  5.0 
 GenMatchedJet1sJERNomvsPt	50	   0.0  500.0   100    0.0    5.0
-GenMatchedJet1sJERNomvsPhi	32	  -3.2   +3.2   100    0.0    5.0
+GenMatchedJet1sJERNomvsPhi	140  -3.5    +3.5   100    0.0    5.0
 
 GenMatchedJet1sigmaJERNomvsEta	50    -5.0	 +5.0	20	  0.0	 1.0 
 GenMatchedJet1sigmaJERNomvsPt	50	   0.0  500.0   20    0.0    1.0
-GenMatchedJet1sigmaJERNomvsPhi	32	  -3.2   +3.2   20    0.0    1.0
+GenMatchedJet1sigmaJERNomvsPhi	140  -3.5    +3.5   20    0.0    1.0
 
-NJet1GenUnmatched 		  20   0.0   20.0
+NJet1GenUnmatched 		  		  20   0.0   20.0
 NJet1GenUnmatchedVsN              20   0.0   20.0   20  0.0  20.0
 NJet1GenUnmatchedVsNGenMatched    20   0.0   20.0   20  0.0  20.0
 GenUnmatchedJet1PUJetID          4   0.0    4.0 
 NJet1GenUnmatchedVsMetPt 	100   0.0  1000.0	20 	0.0		20.0
-NJet1GenUnmatchedVsMetPhi 	 32  -3.2    +3.2	20 	0.0		20.0
+NJet1GenUnmatchedVsMetPhi 	 140  -3.5    +3.5	20 	0.0		20.0
 NJet1GenUnmatchedVsNPV 		 50   0.0   100.0	20 	0.0		20.0
 
 GenUnmatchedJet1cJERNom 		100 	0.0 	 5.0
@@ -221,22 +226,27 @@ GenUnmatchedJet1sJERNom 		100 	0.0 	 5.0
 GenUnmatchedJet1sigmaJERNom 	20 		0.0 	 1.0
 GenUnmatchedJet1Pt 				200  	0.0    500.0
 GenUnmatchedJet1Eta 			100    -5.0 	+5.0
-GenUnmatchedJet1Phi 			144    -6.3     +6.3
-GenUnmatchedJet1MetDphi 		144    -6.3     +6.3
+GenUnmatchedJet1Phi 			140    -3.5     +3.5
+GenUnmatchedJet1MetDphi 		140    -3.5     +3.5
 GenUnmatchedJet1PtVsEta			50	   -5.0     +5.0	50	  0.0   500.0
-GenUnmatchedJet1MetDphiVsEta	50	   -5.0     +5.0	32	  -3.2   +3.2
+GenUnmatchedJet1MetDphiVsEta	50	   -5.0     +5.0   140  -3.5    +3.5
+
+GenUnmatchedJet1AbsDPhiMet     70   0.0    +3.5
+GenUnmatchedJet1DPhiMet       140  -3.5    +3.5
+GenUnmatchedJet1MetVsDPhiMet  140  -3.5    +3.5  100  0.  1000.
+GenUnmatchedJet1MetVsMinAbsDPhiMet    70   0.0    +3.5  100  0.  1000.
 
 GenUnmatchedJet1cJERNomvsEta	50   -5.0	 +5.0	100	   0.0	  5.0 
 GenUnmatchedJet1cJERNomvsPt		50	   0.0  500.0   100    0.0    5.0
-GenUnmatchedJet1cJERNomvsPhi	32	  -3.2   +3.2   100    0.0    5.0
+GenUnmatchedJet1cJERNomvsPhi	140  -3.5    +3.5   100    0.0    5.0
 
 GenUnmatchedJet1sJERNomvsEta	50   -5.0	 +5.0	100	   0.0	  5.0 
 GenUnmatchedJet1sJERNomvsPt		50	   0.0  500.0   100    0.0    5.0
-GenUnmatchedJet1sJERNomvsPhi	32	  -3.2   +3.2   100    0.0    5.0
+GenUnmatchedJet1sJERNomvsPhi	140  -3.5    +3.5   100    0.0    5.0
 
 GenUnmatchedJet1sigmaJERNomvsEta	50   -5.0	 +5.0	20	   0.0	  1.0 
 GenUnmatchedJet1sigmaJERNomvsPt		50	   0.0  500.0   20    0.0    1.0
-GenUnmatchedJet1sigmaJERNomvsPhi	32	  -3.2   +3.2   20    0.0    1.0
+GenUnmatchedJet1sigmaJERNomvsPhi	140  -3.5    +3.5   20    0.0    1.0
 
 
 FillJet2 1
@@ -246,27 +256,34 @@ Jet2Energy   200   0.   500.
 Jet2Pt       200   0.   500.
 Jet2Eta      100  -5.0   +5.0
 Jet2Phi      144  -6.3   +6.3
+
+Jet2DPhiMet       140  -3.5    +3.5
+Jet2AbsDPhiMet     70   0.0    +3.5
+Jet2MinAbsDPhiMet  70   0.0    +3.5
+Jet2MetVsDPhiMet  140  -3.5    +3.5  100  0.  1000.
+Jet2MetVsMinAbsDPhiMet  63 0.0    +6.3  100  0.  1000.
+
 Jet2PtVsEta	 50	   -5.0     +5.0	50	  0.0   500.0
-Jet2MetDphiVsEta		50	   -5.0     +5.0	32	  -3.2   +3.2
+Jet2MetDphiVsEta		50	   -5.0     +5.0	140  -3.5    +3.5
 Jet2PUJetID     4 0. 4.
 
 cJERNomvsJet2Eta		50    -5.0	 +5.0	100	   0.0	  5.0 
 cJERNomvsJet2Pt			50	   0.0  500.0   100    0.0    5.0
-cJERNomvsJet2Phi		32	  -3.2   +3.2   100    0.0    5.0
+cJERNomvsJet2Phi		140  -3.5    +3.5   100    0.0    5.0
 
 sJERNomvsJet2Eta		50    -5.0	 +5.0	100	   0.0	  5.0 
 sJERNomvsJet2Pt			50	   0.0  500.0   100    0.0    5.0
-sJERNomvsJet2Phi		32	  -3.2   +3.2   100    0.0    5.0
+sJERNomvsJet2Phi		140  -3.5    +3.5   100    0.0    5.0
 
 sigmaJERNomvsJet2Eta		50    -5.0	 +5.0	20	  0.0	  1.0 
 sigmaJERNomvsJet2Pt			50	   0.0  500.0   20    0.0    1.0
-sigmaJERNomvsJet2Phi		32	  -3.2   +3.2   20    0.0    1.0
+sigmaJERNomvsJet2Phi		140  -3.5    +3.5   20    0.0    1.0
 
 NJet2GenMatched 			20 	  0.0	 20.0
 NJet2GenMatchedVsN              20   0.0   20.0   20  0.0  20.0
 NJet2GenMatchedVsNGenUnmatched  20   0.0   20.0   20  0.0  20.0
 NJet2GenMatchedVsMetPt 		100   0.0  1000.0	20 	0.0		20.0
-NJet2GenMatchedVsMetPhi 	32   -3.2    +3.2	20 	0.0		20.0
+NJet2GenMatchedVsMetPhi 	140  -3.5    +3.5	20 	0.0		20.0
 NJet2GenMatchedVsNPV 		50    0.0   100.0	20 	0.0		20.0
 
 GenMatchedJet2cJERNom 		100 	0.0 	 5.0
@@ -274,28 +291,33 @@ GenMatchedJet2sJERNom 		100 	0.0 	 5.0
 GenMatchedJet2sigmaJERNom 	20 		0.0 	 1.0
 GenMatchedJet2Pt 			200  	0.0    500.0
 GenMatchedJet2Eta 			100    -5.0 	+5.0
-GenMatchedJet2Phi 			144    -6.3     +6.3
-GenMatchedJet2MetDphi 		144    -6.3     +6.3
+GenMatchedJet2Phi 			140  -3.5    +3.5
+GenMatchedJet2MetDphi 		140  -3.5    +3.5
 GenMatchedJet2PtVsEta		50	   -5.0     +5.0	50	  0.0   500.0
-GenMatchedJet2MetDphiVsEta	50	   -5.0     +5.0	32	  -3.2   +3.2
+GenMatchedJet2MetDphiVsEta	50	   -5.0     +5.0	140  -3.5    +3.5
+
+GenMatchedJet2AbsDPhiMet     70   0.0    +3.5
+GenMatchedJet2DPhiMet      	140  -3.5    +3.5
+GenMatchedJet2MetVsDPhiMet  140  -3.5    +3.5  100  0.  1000.
+GenMatchedJet2MetVsMinAbsDPhiMet  63   0.0    +6.3  100  0.  1000.
 
 GenMatchedJet2cJERNomvsEta	50    -5.0	 +5.0	100	   0.0	  5.0 
 GenMatchedJet2cJERNomvsPt	50	   0.0  500.0   100    0.0    5.0
-GenMatchedJet2cJERNomvsPhi	32	  -3.2   +3.2   100    0.0    5.0
+GenMatchedJet2cJERNomvsPhi	140  -3.5    +3.5   100    0.0    5.0
 
 GenMatchedJet2sJERNomvsEta	50    -5.0	 +5.0	100	   0.0	  5.0 
 GenMatchedJet2sJERNomvsPt	50	   0.0  500.0   100    0.0    5.0
-GenMatchedJet2sJERNomvsPhi	32	  -3.2   +3.2   100    0.0    5.0
+GenMatchedJet2sJERNomvsPhi	140  -3.5    +3.5   100    0.0    5.0
 
 GenMatchedJet2sigmaJERNomvsEta	50    -5.0	 +5.0	20	  0.0	 1.0 
 GenMatchedJet2sigmaJERNomvsPt	50	   0.0  500.0   20    0.0    1.0
-GenMatchedJet2sigmaJERNomvsPhi	32	  -3.2   +3.2   20    0.0    1.0
+GenMatchedJet2sigmaJERNomvsPhi	140  -3.5    +3.5   20    0.0    1.0
 
 NJet2GenUnmatched 			 20   0.0	 20.0
 NJet2GenUnmatchedVsN              20   0.0   20.0   20  0.0  20.0
 NJet2GenUnmatchedVsNGenMatched    20   0.0   20.0   20  0.0  20.0
-NJet2GenUnmatchedVsMetPt 	100   0.0  1000.0	20 	0.0		20.0
-NJet2GenUnmatchedVsMetPhi 	 32  -3.2    +3.2	20 	0.0		20.0
+NJet2GenUnmatchedVsMetPt 	 100   0.0  1000.0	20 	0.0		20.0
+NJet2GenUnmatchedVsMetPhi 	 140  -3.5    +3.5	20 	0.0		20.0
 NJet2GenUnmatchedVsNPV 		 50   0.0   100.0	20 	0.0		20.0
 
 GenUnmatchedJet2cJERNom 		100 	0.0 	 5.0
@@ -303,22 +325,27 @@ GenUnmatchedJet2sJERNom 		100 	0.0 	 5.0
 GenUnmatchedJet2sigmaJERNom 	20 		0.0 	 1.0
 GenUnmatchedJet2Pt 				200  	0.0    500.0
 GenUnmatchedJet2Eta 			100    -5.0 	+5.0
-GenUnmatchedJet2Phi 			144    -6.3     +6.3
-GenUnmatchedJet21MetDphi 		144    -6.3     +6.3
+GenUnmatchedJet2Phi 			140  -3.5    +3.5
+GenUnmatchedJet21MetDphi 		140  -3.5    +3.5
 GenUnmatchedJet2PtVsEta			50	   -5.0     +5.0	50	  0.0   500.0
-GenUnmatchedJet2MetDphiVsEta	50	   -5.0     +5.0	32	  -3.2   +3.2
+GenUnmatchedJet2MetDphiVsEta	50	   -5.0     +5.0	140  -3.5    +3.5
+
+GenUnmatchedJet2AbsDPhiMet       70   0.0    +3.5
+GenUnmatchedJet2DPhiMet      	140  -3.5    +3.5
+GenUnmatchedJet2MetVsDPhiMet  	140  -3.5    +3.5  100  0.  1000.
+GenMatchedJet2MetVsMinAbsDPhiMet      70   0.0    +3.5  100  0.  1000.
 
 GenUnmatchedJet2cJERNomvsEta	50   -5.0	 +5.0	100	   0.0	  5.0 
 GenUnmatchedJet2cJERNomvsPt		50	   0.0  500.0   100    0.0    5.0
-GenUnmatchedJet2cJERNomvsPhi	32	  -3.2   +3.2   100    0.0    5.0
+GenUnmatchedJet2cJERNomvsPhi	140  -3.5    +3.5   100    0.0    5.0
 
 GenUnmatchedJet2sJERNomvsEta	50   -5.0	 +5.0	100	   0.0	  5.0 
-GenUnmatchedJet2sJERNomvsPt		50	   0.0  500.0   100    0.0    5.0
-GenUnmatchedJet2sJERNomvsPhi	32	  -3.2   +3.2   100    0.0    5.0
+GenUnmatchedJet2sJERNomvsPt		50	  0.0   500.0   100    0.0    5.0
+GenUnmatchedJet2sJERNomvsPhi	140  -3.5    +3.5   100    0.0    5.0
 
-GenUnmatchedJet2sigmaJERNomvsEta	50   -5.0	 +5.0	20	  0.0	  1.0 
-GenUnmatchedJet2sigmaJERNomvsPt		50	   0.0  500.0   20    0.0    1.0
-GenUnmatchedJet2sigmaJERNomvsPhi	32	  -3.2   +3.2   20    0.0    1.0
+GenUnmatchedJet2sigmaJERNomvsEta	50   -5.0	 +5.0	20	  0.0	 1.0 
+GenUnmatchedJet2sigmaJERNomvsPt		50	  0.0   500.0   20    0.0    1.0
+GenUnmatchedJet2sigmaJERNomvsPhi	140  -3.5    +3.5   20    0.0    1.0
 
 FillBJet 1
 

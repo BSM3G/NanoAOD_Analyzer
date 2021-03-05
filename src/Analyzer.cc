@@ -5129,6 +5129,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     // Added variable to calculate minimum deltaPhi between particle and MET
     float minDeltaPhiMet = 9999.9;
     int njetmatched = 0, njetunmatched = 0;
+    int index_minjmetdphi = -1;
 
     for(auto it : *active_part->at(ePos)) {
       histAddVal(part->p4(it).Energy(), "Energy");
@@ -5155,9 +5156,11 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         float deltaPhiMet = absnormPhi(part->p4(it).Phi() - _MET->phi());
         histAddVal(deltaPhiMet, "AbsDPhiMet");
         histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "DPhiMet");
+        histAddVal2(normPhi(part->p4(it).Phi() - _MET->phi()), _MET->pt(), "MetVsDPhiMet");
 
         if(deltaPhiMet < minDeltaPhiMet){
           minDeltaPhiMet = deltaPhiMet;
+          index_minjmetdphi = it;
         }
 
         // ---------
@@ -5241,6 +5244,10 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
             histAddVal2(part->p4(it).Pt(), jets_jetptres[it], "GenMatchedsigmaJERNomvsPt");
             histAddVal2(part->p4(it).Phi(), jets_jetptres[it], "GenMatchedsigmaJERNomvsPhi");
 
+            histAddVal(deltaPhiMet, "GenMatchedAbsDPhiMet");
+            histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "GenMatchedDPhiMet");
+            histAddVal2(normPhi(part->p4(it).Phi() - _MET->phi()), _MET->pt(), "GenMatchedMetVsDPhiMet");
+
             njetmatched++;
           } else if(gumj != genUnmatchedJets.end()){
             histAddVal(jets_jer_sfs[it].at(0), "GenUnmatchedcJERNom");
@@ -5280,6 +5287,10 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
             histAddVal2(part->p4(it).Pt(), jets_jetptres[it], "GenUnmatchedsigmaJERNomvsPt");
             histAddVal2(part->p4(it).Phi(), jets_jetptres[it], "GenUnmatchedsigmaJERNomvsPhi");
 
+            histAddVal(deltaPhiMet, "GenUnmatchedAbsDPhiMet");
+            histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "GenUnmatchedDPhiMet");
+            histAddVal2(normPhi(part->p4(it).Phi() - _MET->phi()), _MET->pt(), "GenUnmatchedMetVsDPhiMet");
+
             njetunmatched++;
           }
 
@@ -5296,6 +5307,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
     if(part->type == PType::Jet){
       histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
+      histAddVal2(minDeltaPhiMet, _MET->pt(), "MetVsMinAbsDPhiMet");
       histAddVal(njetmatched, "NGenMatched");
       histAddVal(njetunmatched, "NGenUnmatched");
       histAddVal2(active_part->at(ePos)->size(), njetmatched, "NGenMatchedVsN");
@@ -5308,6 +5320,19 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal2(_MET->phi(), njetunmatched, "NGenUnmatchedVsMetPhi");
       histAddVal2(bestVertices, njetmatched, "NGenMatchedVsNPV");
       histAddVal2(bestVertices, njetunmatched, "NGenUnmatchedVsNPV");
+
+      std::vector<int>::iterator gmj = std::find(genMatchedJets.begin(), genMatchedJets.end(), index_minjmetdphi);
+      std::vector<int>::iterator gumj = std::find(genUnmatchedJets.begin(), genUnmatchedJets.end(), index_minjmetdphi);
+
+      if(gmj != genMatchedJets.end()){
+        histAddVal(minDeltaPhiMet, "GenMatchedMinAbsDPhiMet");
+        histAddVal2(minDeltaPhiMet, _MET->pt(), "GenMatchedMetVsMinAbsDPhiMet");
+      } else if(gumj != genUnmatchedJets.end()){
+        histAddVal(minDeltaPhiMet, "GenUnmatchedMinAbsDPhiMet");
+        histAddVal2(minDeltaPhiMet, _MET->pt(), "GenUnmatchedMetVsMinAbsDPhiMet");
+
+      }
+
     }
 
     if((part->type != PType::Jet ) && active_part->at(ePos)->size() > 0) {
