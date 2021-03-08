@@ -2409,11 +2409,12 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     // Only propagate JECs to MET if the corrected pt without the muon is above the unclustered energy threshold.
     // if(i == 0) std::cout << "Original raw MET vector: pt = " << _MET->pt() << ", eta = " << _MET->eta() << ", phi = " << _MET->phi() << ", energy = " << _MET->energy() << std::endl;
 
-    if( year.compare("2017") != 0  || ( year.compare("2017") == 0 && !(abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && !(rawJetP4_noMuon.Pt() < 50.0) ) ){
-      // Do the normal propagation of JEC & JER to 2016 and 2018 and those jets outside the problematic EE noise jet eta and pt regions for 2017.
-      //std::cout << "I get here; jetTotalEmEF = " << jetTotalEmEF <<  std::endl;
-      if(jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9){
-        //std::cout << "I'll propagate the corrections to met..." << std::endl;
+    // std::cout << "jetTotalEmEF = " << jetTotalEmEF << ", jetL1L2L3_noMuonP4.Pt() = " << (jetL1L2L3_noMuonP4.Pt()) << " will be propagated? " << std::boolalpha << (jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9) << std::endl;
+    if(jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9){
+
+      if( ( ( year.compare("2016") == 0 ) || (year.compare("2018") == 0) ) ){
+        // Do the normal propagation of JEC & JER to 2016 and 2018 and those jets outside the problematic EE noise jet eta and pt regions for 2017.
+        // std::cout << "I get here for year " << year << ", propagating JEC+JER for a jet which is not in the EE noise region; jetTotalEmEF = " << jetTotalEmEF <<  std::endl;
         if(systname.find("orig") != std::string::npos ){
           _MET->propagateJetEnergyCorr(jetL1L2L3_jerNom_noMuonP4, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
         } else if( !stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
@@ -2423,25 +2424,37 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
         } else if( stats.bfind("SmearTheJet") && systname.find("_Res_") != std::string::npos ){
           _MET->propagateJetEnergyCorr(jetL1L2L3_jerShifted_noMuonP4, jetL1L2L3_jerShifted_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
         }
+
+      } else if( year.compare("2017") == 0 ){
+        // std::cout << "I get here for year " << year << std::endl;
+        if( ! ((abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && (rawJetP4_noMuon.Pt() < 50.0) ) ){
+          // std::cout << "I get here, propagating JEC+JER for a jet which is not in the EE noise region; jetTotalEmEF = " << jetTotalEmEF <<  std::endl;
+
+          // Do the normal propagation of JEC & JER to 2016 and 2018 and those jets outside the problematic EE noise jet eta and pt regions for 2017.
+          if(systname.find("orig") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jerNom_noMuonP4, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+          } else if( !stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_T1_noMuon_jesShiftedP4, jetL1L2L3_T1_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+          } else if( stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jer_noMuon_jesShiftedP4, jetL1L2L3_jer_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+          } else if( stats.bfind("SmearTheJet") && systname.find("_Res_") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jerShifted_noMuonP4, jetL1L2L3_jerShifted_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+          }
+        } else if( (abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && rawJetP4_noMuon.Pt() < 50.0 ){
+          // std::cout << "I get here, calculating the deltas for a jet which is in the EE noise region; jetTotalEmEF = " << jetTotalEmEF <<  std::endl;
+
+          // get the delta for removing raw jets in the EE region from the raw MET
+          delta_x_EEnoise_rawJets += rawJetP4_noMuon.Pt() * cos(rawJetP4_noMuon.Phi());
+          delta_y_EEnoise_rawJets += rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
+
+          // Get the delta for removing L1L2L3-L1 corrected jets in the EE region from the default MET branch
+          // Take into account if the jets are smeared in resolution, multiplying by jer_sf_nom
+          delta_x_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * cos(jetL1L2L3_jerNom_noMuonP4.Phi()) + delta_x_EEnoise_rawJets;
+          delta_y_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * sin(jetL1L2L3_jerNom_noMuonP4.Phi()) + delta_y_EEnoise_rawJets;
+
+        }
       }
     }
-
-    if(year.compare("2017") == 0 && (abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && rawJetP4_noMuon.Pt() < 50.0 ){
-      // Calculate deltas for jets in the problematic EE noise regions for 2017
-      //std::cout << "I get here (2017) calculating the deltas; jetTotalEmEF = " << jetTotalEmEF <<  std::endl;
-      if(jetL1L2L3_jerNom_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9 ){
-
-        // get the delta for removing raw jets in the EE region from the raw MET
-        delta_x_EEnoise_rawJets += rawJetP4_noMuon.Pt() * cos(rawJetP4_noMuon.Phi());
-        delta_y_EEnoise_rawJets += rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
-
-        // Get the delta for removing L1L2L3-L1 corrected jets in the EE region from the default MET branch
-        // Take into account if the jets are smeared in resolution, multiplying by jer_sf_nom
-        delta_x_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * cos(jetL1L2L3_jerNom_noMuonP4.Phi()) + delta_x_EEnoise_rawJets;
-        delta_y_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * sin(jetL1L2L3_jerNom_noMuonP4.Phi()) + delta_y_EEnoise_rawJets;
-      }
-    }
-
 
   }
 
