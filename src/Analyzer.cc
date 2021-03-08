@@ -2152,21 +2152,11 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
       // Correct the nominal p4 for this jet.
       if( !stats.bfind("ModifiedPUsmearing") ){
 
-        std::cout << " -- Performing nominal JER smearing -- " << std::endl;
-        std::cout << "jer_sf_nom = " << jer_sf_nom << ", jer_shift = " << jer_shift << std::endl;
-        std::cout << "jet_pt_nomu_nom (p4) = " << jetL1L2L3_jerNom_noMuonP4.Pt() << ", jet_pt_nomu_nom = " << jet_pt_nomu_nom << std::endl;
-        std::cout << "jet_pt_nomu_jerShifted (p4) = " << jetL1L2L3_jerShifted_noMuonP4.Pt() << ", jet_pt_nomu_jerShifted = " << jet_pt_nomu_jerShifted << std::endl;
-
         // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
         jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
 
         jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
         jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
-
-        std::cout << " **** After updating jer SFs... " << std::endl;
-        std::cout << "jer_sf_nom = " << jer_sf_nom << ", jer_shift = " << jer_shift << std::endl;
-        std::cout << "jet_pt_nomu_nom (p4) = " << jetL1L2L3_jerNom_noMuonP4.Pt() << ", jet_pt_nomu_nom = " << jet_pt_nomu_nom << std::endl;
-        std::cout << "jet_pt_nomu_jerShifted (p4) = " << jetL1L2L3_jerShifted_noMuonP4.Pt() << ", jet_pt_nomu_jerShifted = " << jet_pt_nomu_jerShifted << std::endl;
 
         if(!jetlepmatch){ // Do the smearing only if there is no overlap with muons, this block will only change the sfs and jet pt/mass.
 
@@ -2189,20 +2179,12 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
       } else {
 
-        std::cout << " -- Performing modified JER smearing -- " << std::endl;
-        std::cout << "jer_sf_nom = " << jer_sf_nom << ", jer_shift = " << jer_shift << std::endl;
-        std::cout << "jet_pt_nomu_nom (p4) = " << jetL1L2L3_jerNom_noMuonP4.Pt() << ", jet_pt_nomu_nom = " << jet_pt_nomu_nom << std::endl;
-        std::cout << "jet_pt_nomu_jerShifted (p4) = " << jetL1L2L3_jerShifted_noMuonP4.Pt() << ", jet_pt_nomu_jerShifted = " << jet_pt_nomu_jerShifted << std::endl;
-
         genjetmatch = ( genJet != TLorentzVector(0,0,0,0) ) ? true : false;
         passtightPUjetID = _Jet->getPileupJetID(i, 0); // i - jet index, 0 = bit0 (tight ID). If true, it passes tight PU jet ID, otherwise, it fails PU jet ID.
 
         if((jetL1L2L3_noMuonP4.Pt() <= 50.0)) smearunmatchedjet = !genjetmatch && passtightPUjetID ? true : false;
 
-        std::cout << "genjetmatch = " << std::boolalpha << genjetmatch << ", passtightPUjetID = " << std::boolalpha << passtightPUjetID << ", smear unmatched jet? = " << std::boolalpha << smearunmatchedjet << std::endl;
-
         if( (genjetmatch || smearunmatchedjet) && !jetlepmatch){
-          std::cout << "We're smearing this jet!!" << std::endl;
 
           // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
           jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
@@ -2210,11 +2192,6 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
           // Correct the nominal mass and pt for this jet.
           jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
           jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
-
-          std::cout << " **** After updating jer SFs... " << std::endl;
-          std::cout << "jer_sf_nom = " << jer_sf_nom << ", jer_shift = " << jer_shift << std::endl;
-          std::cout << "jet_pt_nomu_nom (p4) = " << jetL1L2L3_jerNom_noMuonP4.Pt() << ", jet_pt_nomu_nom = " << jet_pt_nomu_nom << std::endl;
-          std::cout << "jet_pt_nomu_jerShifted (p4) = " << jetL1L2L3_jerShifted_noMuonP4.Pt() << ", jet_pt_nomu_jerShifted = " << jet_pt_nomu_jerShifted << std::endl;
 
           if(systname == "orig"){ // This corresponds to the nominal values: set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
             jer_shift = jer_sf_nom;
@@ -2239,11 +2216,6 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     jetL1L2L3_jerNom_noMuonP4.SetPtEtaPhiM( jet_pt_nomu_nom , jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jet_mass_nomu_nom );
     // Update the 4-vector for the jet with shifted resolution.
     jetL1L2L3_jerShifted_noMuonP4.SetPtEtaPhiM( jet_pt_nomu_jerShifted , jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jet_mass_nomu_jerShifted );
-
-    std::cout << " **** FINAL ... " << std::endl;
-    std::cout << "jer_sf_nom = " << jer_sf_nom << ", jer_shift = " << jer_shift << std::endl;
-    std::cout << "jet_pt_nomu_nom (p4) = " << jetL1L2L3_jerNom_noMuonP4.Pt() << ", jet_pt_nomu_nom = " << jet_pt_nomu_nom << std::endl;
-    std::cout << "jet_pt_nomu_jerShifted (p4) = " << jetL1L2L3_jerShifted_noMuonP4.Pt() << ", jet_pt_nomu_jerShifted = " << jet_pt_nomu_jerShifted << std::endl;
 
     // Step 6: After correcting and smearing the clustered energy, we can now add back in the muon momenta, if any.
     TLorentzVector jetL1L2L3_jerNomP4 = jetL1L2L3_jerNom_noMuonP4 + muonsP4;
@@ -2317,11 +2289,10 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
     // Propagate JER and JES corrections and uncertainties to MET.
     // Only propagate JECs to MET if the corrected pt without the muon is above the unclustered energy threshold.
-    if( year.compare("2017") != 0  || ( year.compare("2017") == 0 && !(abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && !(rawJetP4_noMuon.Pt() < 50.0) ) ){
-      // Do the normal propagation of JEC & JER to 2016 and 2018 and those jets outside the problematic EE noise jet eta and pt regions for 2017.
+    if(jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9){
 
-      if(jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9){
-
+      if( ( ( year.compare("2016") == 0 ) || (year.compare("2018") == 0) ) ){
+        // Do the normal propagation of JEC & JER to 2016 and 2018 and those jets outside the problematic EE noise jet eta and pt regions for 2017.
         if(systname.find("orig") != std::string::npos ){
           _MET->propagateJetEnergyCorr(jetL1L2L3_jerNom_noMuonP4, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
         } else if( !stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
@@ -2331,38 +2302,44 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
         } else if( stats.bfind("SmearTheJet") && systname.find("_Res_") != std::string::npos ){
           _MET->propagateJetEnergyCorr(jetL1L2L3_jerShifted_noMuonP4, jetL1L2L3_jerShifted_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
         }
+
+      } else if( year.compare("2017") == 0 ){
+        if( ! ((abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && (rawJetP4_noMuon.Pt() < 50.0) ) ){
+          // Do the normal propagation of JEC & JER to 2016 and 2018 and those jets outside the problematic EE noise jet eta and pt regions for 2017.
+
+          if(systname.find("orig") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jerNom_noMuonP4, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+          } else if( !stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_T1_noMuon_jesShiftedP4, jetL1L2L3_T1_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+          } else if( stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jer_noMuon_jesShiftedP4, jetL1L2L3_jer_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+          } else if( stats.bfind("SmearTheJet") && systname.find("_Res_") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jerShifted_noMuonP4, jetL1L2L3_jerShifted_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+          }
+        } else if( (abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && rawJetP4_noMuon.Pt() < 50.0 ){
+          // get the delta for removing raw jets in the EE region from the raw MET
+          delta_x_EEnoise_rawJets += rawJetP4_noMuon.Pt() * cos(rawJetP4_noMuon.Phi());
+          delta_y_EEnoise_rawJets += rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
+
+          // Get the delta for removing L1L2L3-L1 corrected jets in the EE region from the default MET branch
+          // Take into account if the jets are smeared in resolution, multiplying by jer_sf_nom
+          delta_x_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * cos(jetL1L2L3_jerNom_noMuonP4.Phi()) + delta_x_EEnoise_rawJets;
+          delta_y_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * sin(jetL1L2L3_jerNom_noMuonP4.Phi()) + delta_y_EEnoise_rawJets;
+
+        }
       }
     }
-
-    if(year.compare("2017") == 0 && (abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && rawJetP4_noMuon.Pt() < 50.0 ){
-      // Calculate deltas for jets in the problematic EE noise regions for 2017
-
-      if(jetL1L2L3_jerNom_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9 ){
-        // get the delta for removing raw jets in the EE region from the raw MET
-        delta_x_EEnoise_rawJets += rawJetP4_noMuon.Pt() * cos(rawJetP4_noMuon.Phi());
-        delta_y_EEnoise_rawJets += rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
-
-        // Get the delta for removing L1L2L3-L1 corrected jets in the EE region from the default MET branch
-        // Take into account if the jets are smeared in resolution, multiplying by jer_sf_nom
-        delta_x_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * cos(jetL1L2L3_jerNom_noMuonP4.Phi()) + delta_x_EEnoise_rawJets;
-        delta_y_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * sin(jetL1L2L3_jerNom_noMuonP4.Phi()) + delta_y_EEnoise_rawJets;
-      }
-    }
-
 
   }
 
     // Propagate "unclustered energy" uncertainty to MET to finalize the 2017 MET recipe v2
     if(year.compare("2017") == 0){
       // Remove the L1L2L3-L1 corrected jets in the EE region from the default MET branch
-      //std::cout << "I get here (2017) removing unclenergy" << std::endl;
       _MET->removeEEnoiseUnclEnergy(delta_x_EEnoise_T1Jets, delta_y_EEnoise_T1Jets, delta_x_EEnoise_rawJets, delta_y_EEnoise_rawJets, systname, syst);
     }
 
     // Once we're done with all the propagation of JEC/JER to the raw MET, we have Type-I. Now include the xy-shift corrections
-    //std::cout << "------" << std::endl;
     if(distats["Run"].bfind("ApplyMETxyShiftCorrections")){
-      //std::cout << "I'm applying xy-shift corrections" << std::endl;
       _MET->applyXYshiftCorr(year, runera, bestVertices, isData, systname, syst);
     }
 
