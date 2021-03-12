@@ -2323,8 +2323,8 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
           // Get the delta for removing L1L2L3-L1 corrected jets in the EE region from the default MET branch
           // Take into account if the jets are smeared in resolution, multiplying by jer_sf_nom
-          delta_x_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * cos(jetL1L2L3_jerNom_noMuonP4.Phi()) + delta_x_EEnoise_rawJets;
-          delta_y_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * sin(jetL1L2L3_jerNom_noMuonP4.Phi()) + delta_y_EEnoise_rawJets;
+          delta_x_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * cos(jetL1L2L3_jerNom_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * cos(rawJetP4_noMuon.Phi());
+          delta_y_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * sin(jetL1L2L3_jerNom_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
 
         }
       }
@@ -2865,28 +2865,38 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
       // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
       else if(cut == "ApplyLooseID"){
-         	if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
-              if(!stats.bfind("FailPUJetID")){
-                  passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
-              } else {
-                  passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-              }
-          	}
-          else{
-              passCuts = passCuts && _Jet->passedLooseJetID(i);
-          	}
-      	}
-      	else if(cut == "ApplyTightID"){
-          	if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
-            	if(!stats.bfind("FailPUJetID")){
-                	passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
-              	} else {
-                	passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-              	}
-          	} else {
-              passCuts = passCuts && _Jet->passedTightJetID(i);
-          	}
-      	}
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedLooseJetID(i);
+        }
+      }
+      else if(cut == "ApplyTightID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedTightJetID(i);
+        }
+      }
+      else if(cut == "ApplyTightLepVetoID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
+        }
+      }
       else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(lvec, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
       else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(lvec, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
 
@@ -2955,36 +2965,18 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
   //note the leading jet has to be selected first!
   //Do this only once for the first leading jet:
   if(ePos == CUTS::eR1stJet){
-    // std::cout << "Number of selected good jets: " << active_part->at(CUTS::eRJet1)->size() << std::endl;
     for(auto it : *active_part->at(CUTS::eRJet1)) {
       jetPtIndexVector.push_back(std::make_pair(_Jet->pt(it),it));
-      //std::cout << "Filling jetPtIndexVector with jet #" << it << ", pt = " << _Jet->pt(it) << std::endl;
     }
     sort(jetPtIndexVector.begin(),jetPtIndexVector.end());
-
-    /*
-    std::cout << " ----- Original jet collection size (_Jet) = " << _Jet->size() << std::endl;
-    for(size_t i = 0; i < _Jet->size(); i++){
-      std::cout << "Jet index = " << i << ", jet pt = " << _Jet->p4(i).Pt() << std::endl;
-    }
-
-    std::cout << " ----- Jet collection size  (eRJet1) = " << active_part->at(CUTS::eRJet1)->size() << std::endl;
-    std::cout << " ----- Sorted ptIndexVector: " << std::endl;
-    for(size_t i = 0; i < jetPtIndexVector.size(); i++){
-      std::cout << "Jet #" << jetPtIndexVector.at(i).second << ", pt = " << jetPtIndexVector.at(i).first << std::endl;
-    }
-    */
   }
 
   if(ePos == CUTS::eR1stJet && jetPtIndexVector.size()>0){
 
-    // std::cout << "Leading jet is #" << jetPtIndexVector.back().second << ", with pt = " << jetPtIndexVector.back().first << std::endl;
     bool passCuts = true;
-    // int i = jetPtIndexVector.back().second;
     int i = jetPtIndexVector.at(jetPtIndexVector.size()-1).second;
 
     if(stats.bfind("DoDiscrByThisJet")){
-      //std::cout << "Applying selections to first leading jet... " << std::endl;
 
       TLorentzVector leadjetp4 = _Jet->p4(i);
       double dphi1rjets = normPhi(leadjetp4.Phi() - _MET->phi());
@@ -3024,9 +3016,20 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
               passCuts = passCuts && _Jet->passedTightJetID(i);
           	}
       	}
+        else if(cut == "ApplyTightLepVetoID"){
+          if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
+            if(!stats.bfind("FailPUJetID")){
+              passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+            } else {
+              passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+            }
+          } else {
+            passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
+          }
+        }
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(leadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(leadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
-      // ----anti-overlap requirements
+        // ----anti-overlap requirements
         else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithElectron1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Electron, CUTS::eRElec1, stats.dmap.at("Electron1MatchingDeltaR"));
@@ -3034,15 +3037,10 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
         else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
-        //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
       }
     }
 
     if(passCuts){
-      /*
-      std::cout << "First leading jet passed all selections!" << std::endl;
-      std::cout << "First leading jet index = " << jetPtIndexVector.back().second << std::endl;
-      */
       active_part->at(ePos)->push_back(jetPtIndexVector.back().second);
     }
   }
@@ -3052,10 +3050,8 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
     int idx = jetPtIndexVector.size() - 2;
 
     int j = jetPtIndexVector.at(idx).second;
-    // std::cout << "Second leading jet is (" << idx << ") #" << jetPtIndexVector.at(idx).second << ", with pt = " << jetPtIndexVector.at(idx).first << std::endl;
 
     if(stats.bfind("DoDiscrByThisJet")){
-      // std::cout << "Applying selections to second leading jet... " << std::endl;
 
       TLorentzVector subleadjetp4 = _Jet->p4(j);
       double dphi1rjets = normPhi(subleadjetp4.Phi() - _MET->phi());
@@ -3071,8 +3067,6 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[j] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[j] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[j] > stats.dmap.at("JetBTaggingCut"));
-        // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(j);
-        // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(j);
         else if(cut == "ApplyLooseID"){
          	if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
               if(!stats.bfind("FailPUJetID")){
@@ -3096,6 +3090,17 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
               passCuts = passCuts && _Jet->passedTightJetID(j);
           	}
       	}
+        else if(cut == "ApplyTightLepVetoID"){
+          if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
+            if(!stats.bfind("FailPUJetID")){
+              passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut"));
+            } else {
+              passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
+            }
+          } else {
+            passCuts = passCuts && _Jet->passedTightLepVetoJetID(j);
+          }
+        }
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(subleadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(subleadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
       // ----anti-overlap requirements
@@ -3110,10 +3115,6 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
     }
 
     if(passCuts){
-      /*
-      std::cout << "Second leading jet passed all selections!" << std::endl;
-      std::cout << "Second leading jet index = " << jetPtIndexVector.at(idx).second << std::endl;
-      */
       active_part->at(ePos)->push_back(jetPtIndexVector.at(idx).second);
     }
   }
@@ -3147,14 +3148,43 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
            int matchedGenJetIndex = _Jet->genJetIdx[i];
            int jetPartonFlavor = abs(_GenJet->genPartonFlavor[matchedGenJetIndex]);
            int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[matchedGenJetIndex]);
- 	   // std::cout << "matchedGenJetIndex = " << matchedGenJetIndex << ", jetPartonFlavor = " << jetPartonFlavor << ", jetHadronFlavor = " << jetHadronFlavor << std::endl;
- 	   // std::cout << "Is this a genuine b-jet? " << (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5) << std::endl;
- 	   passCuts = passCuts && (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5);
+ 	         passCuts = passCuts && (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5);
       }
-      else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
-
-    // ----anti-overlap requirements
+      else if(cut == "ApplyLooseID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+            if(!stats.bfind("FailPUJetID")){
+                passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+            } else {
+                passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+            }
+          }
+        else{
+            passCuts = passCuts && _Jet->passedLooseJetID(i);
+          }
+      }
+      else if(cut == "ApplyTightID"){
+          if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+            if(!stats.bfind("FailPUJetID")){
+                passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+              } else {
+                passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              }
+          } else {
+            passCuts = passCuts && _Jet->passedTightJetID(i);
+          }
+      }
+      else if(cut == "ApplyTightLepVetoID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
+        }
+      }
+      // ----anti-overlap requirements
       else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
       else if (cut =="RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
       else if(cut == "RemoveOverlapWithElectron1s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec1, stats.dmap.at("Electron1MatchingDeltaR"));
