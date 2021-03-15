@@ -12,7 +12,7 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
 
   // Then we get the default met
   if(GenName.compare("MET") != 0){
-    samedeft1met = false; 
+    samedeft1met = false;
     SetBranch("MET_pt", def_met_pt);
     SetBranch("MET_phi", def_met_phi);
   }
@@ -20,9 +20,9 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
   SetBranch("RawMET_pt", raw_met_pt);
   SetBranch("RawMET_phi", raw_met_phi);
 
-  // Initialize the systRawMet vector   
+  // Initialize the systRawMet vector
   for(auto name: syst_names){
-    if(name == "orig") 
+    if(name == "orig")
       systRawMetVec.push_back(new TLorentzVector);
     else if(name.find("Met")!=std::string::npos){
       systRawMetVec.push_back(new TLorentzVector);
@@ -34,16 +34,16 @@ Met::Met(TTree* _BOOM, std::string _GenName,  std::vector<std::string> _syst_nam
     }else
       systRawMetVec.push_back(new TLorentzVector);
   }
-  
+
   // For TreatMuonsAsNeutrinos
   systdeltaMEx.resize(syst_names.size());
   systdeltaMEy.resize(syst_names.size());
-  
+
   // For HT, MHT
   syst_HT.resize(syst_names.size());
   syst_MHT.resize(syst_names.size());
   syst_MHTphi.resize(syst_names.size());
- 
+
   if( std::find(syst_names.begin(), syst_names.end(), "MetUncl_Up") != syst_names.end() && _BOOM->GetListOfBranches()->FindObject((GenName+"_MetUnclustEnUpDeltaX").c_str()) !=0){
     SetBranch((GenName+"_MetUnclustEnUpDeltaX").c_str(), MetUnclUp[0]);
     SetBranch((GenName+"_MetUnclustEnUpDeltaY").c_str(), MetUnclUp[1]);
@@ -91,7 +91,7 @@ void Met::init(){
      // initialize the deltaMuMet vectors to zero
      fill(systdeltaMEx.begin(), systdeltaMEx.end(), 0);
      fill(systdeltaMEy.begin(), systdeltaMEy.end(), 0);
-  } 
+  }
 
   cur_P=&Reco;
 
@@ -117,8 +117,8 @@ void Met::propagateJetEnergyCorr(TLorentzVector recoJet, double const& jet_pt_up
 
 }
 
-// This is only used for 2017 data/MC for the EE noise 
-void Met::propagateUnclEnergyUnctyEE(double const& delta_x_T1Jet, double const& delta_y_T1Jet, double const& delta_x_rawJet, double const& delta_y_rawJet, std::string& systname, int syst){
+// This is only used for 2017 data/MC for the EE noise
+void Met::removeEEnoiseUnclEnergy(double const& delta_x_T1Jet, double const& delta_y_T1Jet, double const& delta_x_rawJet, double const& delta_y_rawJet, std::string& systname, int syst){
 
   if(systRawMetVec.at(syst) == nullptr) return;
 
@@ -144,6 +144,99 @@ void Met::propagateUnclEnergyUnctyEE(double const& delta_x_T1Jet, double const& 
 
 }
 
+void Met::applyXYshiftCorr(std::string const& year, std::string const& runera, int npv, bool const& isdata, std::string& systname, int syst){
+   // Reference: https://lathomas.web.cern.ch/lathomas/METStuff/XYCorrections/XYMETCorrection.h
+   if(systRawMetVec.at(syst) == nullptr) return;
+
+   // Get the original x and y components of MET (without the XY corrections):
+   float met_px_xcorr = systRawMetVec.at(syst)->Px();
+   float met_py_ycorr = systRawMetVec.at(syst)->Py();
+
+   float metxcorr = 0.0, metycorr = 0.0;
+
+   // Check what the run era is and calculate the correction based on the NPV of the event.
+   if(year == "2016" && isdata){ // In this case, we use normal MET (not v2 as in 2017)
+     if(runera == "2016B"){
+       metxcorr = -(-0.0478335*npv - 0.108032);
+       metycorr = -(0.125148*npv + 0.355672);
+     } else if(runera == "2016C"){
+       metxcorr = -(-0.0916985*npv + 0.393247);
+       metycorr = -(0.151445*npv + 0.114491);
+     } else if(runera == "2016D"){
+       metxcorr = -(-0.0581169*npv + 0.567316);
+       metycorr = -(0.147549*npv + 0.403088);
+     } else if(runera == "2016E"){
+       metxcorr = -(-0.065622*npv + 0.536856);
+       metycorr = -(0.188532*npv + 0.495346);
+     } else if(runera == "2016F"){
+       metxcorr = -(-0.0313322*npv + 0.39866);
+       metycorr = -(0.16081*npv + 0.960177);
+     } else if(runera == "2016G"){
+       metxcorr = -(0.040803*npv - 0.290384);
+       metycorr = -(0.0961935*npv + 0.666096);
+     } else if(runera == "2016H"){
+       metxcorr = -(0.0330868*npv - 0.209534);
+       metycorr = -(0.141513*npv + 0.816732);
+     }
+   } else if(year == "2016" && !isdata && runera == "2016MC"){ // In this case, we use normal MET (not v2 as in 2017)
+
+       metxcorr = -(-0.195191*npv - 0.170948);
+       metycorr = -(-0.0311891*npv + 0.787627);
+
+   } else if(year == "2017" && isdata){ // In this case, we use MET v2 (subtracting EE noise)
+
+     if(runera == "2017B"){
+       metxcorr = -(-0.19563*npv + 1.51859);
+       metycorr = -(0.306987*npv - 1.84713);
+     } else if(runera == "2017C"){
+       metxcorr = -(-0.161661*npv + 0.589933);
+       metycorr = -(0.233569*npv - 0.995546);
+     } else if(runera == "2017D"){
+       metxcorr = -(-0.180911*npv + 1.23553);
+       metycorr = -(0.240155*npv - 1.27449);
+     } else if(runera == "2017E"){
+       metxcorr = -(-0.149494*npv + 0.901305);
+       metycorr = -(0.178212*npv - 0.535537);
+     } else if(runera == "2017F"){
+       metxcorr = -(-0.165154*npv + 1.02018);
+       metycorr = -(0.253794*npv + 0.75776);
+     }
+
+   } else if(year == "2017" && !isdata && runera == "2017MC"){ // In this case, we use MET v2 (subtracting EE noise)
+
+     metxcorr = -(-0.182569*npv + 0.276542);
+     metycorr = -(0.155652*npv - 0.417633);
+
+   } else if(year == "2018" && isdata){ // In this case, we use normal MET (not v2 as in 2017)
+     if(runera == "2018A"){
+       metxcorr = -(-0.0478335*npv -0.108032);
+       metycorr = -(0.125148*npv + 0.355672);
+     } else if(runera == "2018B"){
+       metxcorr = -(-0.0478335*npv - 0.108032);
+       metycorr = -(0.125148*npv + 0.355672);
+     } else if(runera == "2018C"){
+       metxcorr = -(-0.0916985*npv + 0.393247);
+       metycorr = -(0.151445*npv + 0.114491);
+     } else if(runera == "2018D"){
+       metxcorr = -(-0.0581169*npv + 0.567316);
+       metycorr = -(0.147549*npv + 0.403088);
+     }
+   } else if(year == "2018" && !isdata && runera == "2018MC"){ // In this case, we use normal MET (not v2 as in 2017)
+
+     metxcorr = -(0.296713*npv - 0.141506);
+     metycorr = -(0.115685*npv + 0.0128193);
+
+   }
+
+   // Now calculate the new x and y components of the corrected Met
+   met_px_xcorr = met_px_xcorr + metxcorr;
+   met_py_ycorr = met_py_ycorr + metycorr;
+
+   // Update this in the systematics vector
+   systRawMetVec.at(syst)->SetPxPyPzE(met_px_xcorr, met_py_ycorr, systRawMetVec.at(syst)->Pz(), TMath::Sqrt(pow(met_px_xcorr,2) + pow(met_py_ycorr,2)));
+}
+
+
 void Met::propagateUnclEnergyUncty(std::string& systname, int syst){
 
   if(systRawMetVec.at(syst) == nullptr) return;
@@ -153,7 +246,7 @@ void Met::propagateUnclEnergyUncty(std::string& systname, int syst){
   // This will only apply for the MetUncl uncertainty in MC
   float met_px_unclEnshift = systRawMetVec.at(0)->Px(); // 0 refers to the nominal value, which at this point should already have all corrections applied
   float met_py_unclEnshift = systRawMetVec.at(0)->Py();
-  
+
   if(systname.find("_Up") != std::string::npos){
 
     met_px_unclEnshift = met_px_unclEnshift + MetUnclUp[0];
@@ -173,10 +266,10 @@ void Met::update(int syst=0){
 
   if(systRawMetVec.at(syst) == nullptr) return;
 
-  // Treat muons as neutrinos. This is done on the systRawMetVec which is the vector that has all the JERC propagated. 
-  systRawMetVec.at(syst)->SetPxPyPzE(systRawMetVec.at(syst)->Px()+systdeltaMEx[syst], 
-                               systRawMetVec.at(syst)->Py()+systdeltaMEy[syst], 
-                               systRawMetVec.at(syst)->Pz(), 
+  // Treat muons as neutrinos. This is done on the systRawMetVec which is the vector that has all the JERC propagated.
+  systRawMetVec.at(syst)->SetPxPyPzE(systRawMetVec.at(syst)->Px()+systdeltaMEx[syst],
+                               systRawMetVec.at(syst)->Py()+systdeltaMEy[syst],
+                               systRawMetVec.at(syst)->Pz(),
                                TMath::Sqrt(pow(systRawMetVec.at(syst)->Px()+systdeltaMEx[syst],2) + pow(systRawMetVec.at(syst)->Py()+systdeltaMEy[syst],2)));
 
 }
@@ -193,11 +286,11 @@ void Met::calculateHtAndMHt(PartStats& stats, Jet& jet, int syst=0){
   int i=0;
   for(auto jetVec: jet){
     bool add = true;
-    if( (jetVec.Pt() < stats.dmap.at("JetPtForMhtAndHt")) || 
-    	(abs(jetVec.Eta()) > stats.dmap.at("JetEtaForMhtAndHt")) || 
+    if( (jetVec.Pt() < stats.dmap.at("JetPtForMhtAndHt")) ||
+    	(abs(jetVec.Eta()) > stats.dmap.at("JetEtaForMhtAndHt")) ||
     	(stats.bfind("ApplyJetLooseIDforMhtAndHt") && !jet.passedLooseJetID(i)) ||
     	(stats.bfind("ApplyJetTightIDforMhtAndHt") && !jet.passedTightJetID(i)) ) add = false;
-    
+
     if(add) {
       sumpxForMht -= jetVec.Px();
       sumpyForMht -= jetVec.Py();
@@ -238,7 +331,7 @@ void Met::setMT2Mass(double mass){
 }
 
 TLorentzVector Met::getNominalP(){
-	TLorentzVector nominalP4 = *systRawMetVec.at(0); 
+	TLorentzVector nominalP4 = *systRawMetVec.at(0);
 	// nominalP4.SetPxPyPzE(systRawMetVec.at(0)->Px(), systRawMetVec.at(0)->Py(), systRawMetVec.at(0)->Pz(), systRawMetVec.at(0)->E());
 	return nominalP4;
 }
@@ -258,4 +351,3 @@ void Met::setCurrentP(int syst){
 void Met::unBranch() {
   BOOM->SetBranchStatus((GenName+"*").c_str(), 0);
 }
-

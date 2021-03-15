@@ -107,6 +107,7 @@ class JetScaleResolution{
 
         // double GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho, double sigmares);
         std::vector<float> GetSmearValsPtSF(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho);
+        bool resolution_matching(const TLorentzVector& recojet, const TLorentzVector& genjet, double rho);
         double GetScaleDelta(const double& recojetPt, const double& recojetEta);
 
         JME::JetResolution jer;

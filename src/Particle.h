@@ -33,7 +33,7 @@ struct PartStats {
   bool bfind(std::string cut) const {
     return find(bset.begin(), bset.end(), cut) != bset.end();
   }
-  
+
 };
 
 
@@ -77,7 +77,7 @@ public:
   std::string getName() const {return GenName;};
 
   bool findCut(const std::vector<std::string>&, std::string);
-  
+
   PType type;
   std::unordered_map<std::string, PartStats> pstats;
   const std::map<PType,CUTS> cutMap = {{PType::Electron, CUTS::eGElec}, {PType::Muon, CUTS::eGMuon},
@@ -105,7 +105,7 @@ protected:
   float m_phi[MAXINDEX];
   float m_eta[MAXINDEX];
   float m_mass[MAXINDEX];
-  
+
   std::vector<TLorentzVector> Reco;
   std::vector<TLorentzVector> *cur_P;
   std::vector<std::string> syst_names;
@@ -135,13 +135,13 @@ class Generated : public Particle {
 public:
   Generated();
   Generated(TTree*, std::string, std::vector<std::string>);
-  
+
   int  genPartIdxMother[MAXINDEX];
   int  pdg_id[MAXINDEX];
   int  status[MAXINDEX];
   int  statusFlags[MAXINDEX];
   int  numDaught[MAXINDEX]; //01.15.19
-  
+
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -150,10 +150,10 @@ class GenHadronicTaus : public Particle {
 public:
   GenHadronicTaus();
   GenHadronicTaus(TTree*, std::string, std::vector<std::string>);
-  
+
   int  genPartIdxMother[MAXINDEX];
   int  decayMode[MAXINDEX];
-  
+
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -162,10 +162,10 @@ class GenJets : public Particle {
 public:
   GenJets();
   GenJets(TTree*, std::string, std::vector<std::string>);
-  
+
 UChar_t  genHadronFlavor[MAXINDEX];
 int      genPartonFlavor[MAXINDEX];
-  
+
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -178,14 +178,15 @@ public:
   std::vector<CUTS> overlapCuts(CUTS);
   bool passedLooseJetID(int);
   bool passedTightJetID(int);
+  bool passedTightLepVetoJetID(int);
   bool getPileupJetID(int, int);
-   
+
   float area[MAXINDEX];
   // float bDiscriminator[MAXINDEX];
   float bDiscriminatorCSVv2[MAXINDEX];
   float bDiscriminatorDeepCSV[MAXINDEX];
   float bDiscriminatorDeepFlav[MAXINDEX];
-	
+
   float chargedEmEnergyFraction[MAXINDEX];
   float chargedHadronEnergyFraction[MAXINDEX];
   float neutralEmEnergyFraction[MAXINDEX];
@@ -199,7 +200,7 @@ public:
   int matchingMuonIdx1[MAXINDEX];
   int matchingMuonIdx2[MAXINDEX];
   int genJetIdx[MAXINDEX];
-  
+
  protected:
 
 };
@@ -211,7 +212,7 @@ public:
 
   std::vector<CUTS> findExtraCuts();
   std::vector<CUTS> overlapCuts(CUTS);
-  
+
   float tau1[MAXINDEX];
   float tau2[MAXINDEX];
   float tau3[MAXINDEX];
@@ -240,13 +241,13 @@ public:
   Electron(TTree*, std::string, std::vector<std::string>, std::string);
 
   bool get_Iso(int, double, double) const;
-  
+
   std::bitset<8> cbIDele1;
   std::bitset<8> cbIDele2;
   std::bitset<8> cbHLTIDele1;
   std::bitset<8> cbHLTIDele2;
- 
-  // Electron MVA ID fall 2017 
+
+  // Electron MVA ID fall 2017
   float miniPFRelIso_all[MAXINDEX];
   float miniPFRelIso_chg[MAXINDEX];
   float mvaFall17V2Iso[MAXINDEX];
@@ -295,16 +296,16 @@ public:
   bool get_Iso(int, double, double) const;
   bool pass_against_Elec(CUTS, int);
   bool pass_against_Muon(CUTS, int);
-  
+
   std::bitset<8> tau1minIso;
   std::bitset<8> tau1maxIso;
-  
+
   std::bitset<8> tau2minIso;
   std::bitset<8> tau2maxIso;
-  
+
   std::bitset<8> tau1ele;
   std::bitset<8> tau1mu;
-  
+
   std::bitset<8> tau2ele;
   std::bitset<8> tau2mu;
 
@@ -319,7 +320,7 @@ public:
 
   // -------- Tau isolation ----------- //
   UChar_t TauIdDiscr[MAXINDEX];
-	
+
   // ------- Tau-related quantities ---------- //
   float leadTkDeltaEta[MAXINDEX];
   float leadTkDeltaPhi[MAXINDEX];
@@ -333,7 +334,7 @@ public:
   // ----- Tau gen-matching for ID SFs ----- //
   UChar_t genPartFlav[MAXINDEX];
   Int_t genPartIdx[MAXINDEX];
-  
+
 };
 
 

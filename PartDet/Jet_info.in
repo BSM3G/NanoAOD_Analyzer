@@ -2,25 +2,22 @@
 	        Smear
 #######################################
 
-SmearTheJet 1
-JetEnergyScaleOffset 0.3
-
-GenMatchingDeltaR 0.4
-MuonMatchingDeltaR  0.3
-ElectronMatchingDeltaR  0.3
-TauMatchingDeltaR  0.3
-
-
+SmearTheJet 1		   # The current recommendation is to use this option (1).
+GenMatchingDeltaR 0.2
+ResolutionMatching 1       # When smearing jet energy resolution, this option must be 1.
+MuonMatchingDeltaR  0.2
+ModifiedPUsmearing 0       # This is a modified approach to the JER smearing. Check the Analyzer wiki for more info.
 
 ########################################
                Jet1
 #######################################
 
-EtaCut 0. 5.0
+EtaCut 0. 4.7
 PtCut 30.0
 
 ApplyLooseID 1
 ApplyTightID 0
+ApplyTightLepVetoID 0
 
 ApplyPileupJetID 0
 # WPs: tight = 0, medium = 1, loose = 2 
@@ -57,11 +54,12 @@ DPhiMetCut 0.5 999.9
 	        Jet2
 #######################################
 
-EtaCut 0. 5.0
+EtaCut 0. 4.7
 PtCut 30.0
 
 ApplyLooseID 1
 ApplyTightID 0
+ApplyTightLepVetoID 0
 
 ApplyPileupJetID 0
 # WPs: tight = 0, medium = 1, loose = 2 
@@ -91,7 +89,7 @@ BJMatchingDeltaR 0.4
 
 Apply2017EEnoiseVeto false
 
-DiscrByDPhiMet 1
+DiscrByDPhiMet 0
 DPhiMetCut 0.0 0.5
 
 ####################################
@@ -100,8 +98,14 @@ DPhiMetCut 0.0 0.5
 
 PtCut 30.0
 
+ApplyPileupJetID 0
+# WPs: tight = 0, medium = 1, loose = 2 
+PUJetIDCut 0
+FailPUJetID 0
+
 ApplyLooseID 1
 ApplyTightID 0
+ApplyTightLepVetoID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 1
@@ -126,11 +130,17 @@ Apply2017EEnoiseVeto false
 
 DoDiscrByThisJet 1
 
-EtaCut 0.0 5.0
+EtaCut 0.0 4.7
 PtCut 30.0
+
+ApplyPileupJetID 0
+# WPs: tight = 0, medium = 1, loose = 2 
+PUJetIDCut 0
+FailPUJetID 0
 
 ApplyLooseID 1
 ApplyTightID 0
+ApplyTightLepVetoID 0
 
 RemoveOverlapWithMuon1s 1 
 RemoveOverlapWithMuon2s 1
@@ -155,11 +165,17 @@ Apply2017EEnoiseVeto false
 
 DoDiscrByThisJet 0
 
-EtaCut 0.0 5.0
+EtaCut 0.0 4.7
 PtCut 30.0
+
+ApplyPileupJetID 0
+# WPs: tight = 0, medium = 1, loose = 2 
+PUJetIDCut 0
+FailPUJetID 0
 
 ApplyLooseID 1
 ApplyTightID 0
+ApplyTightLepVetoID 0
 
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 1
@@ -185,6 +201,15 @@ Apply2017EEnoiseVeto false
 EtaCut 0.0 2.4
 PtCut 20.0
 
+ApplyLooseID 1
+ApplyTightID 0
+ApplyTightLepVetoID 0
+
+ApplyPileupJetID 0
+# WPs: tight = 0, medium = 1, loose = 2 
+PUJetIDCut 0
+FailPUJetID 0
+
 RemoveOverlapWithMuon1s 1
 RemoveOverlapWithMuon2s 1
 Muon1MatchingDeltaR 0.4
@@ -206,6 +231,7 @@ ApplyJetBTaggingCSVv2 0
 ApplyJetBTaggingDeepCSV 1
 ApplyJetBTaggingDeepFlav 0
 
+# Check info for different working points: https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation
 JetBTaggingWP   medium
 JetBTaggingCut  0.6321
 MatchBToGen     0

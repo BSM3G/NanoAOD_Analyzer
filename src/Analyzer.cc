@@ -76,8 +76,8 @@ const std::unordered_map<std::string, CUTS> Analyzer::cut_num = {
 };
 
 const std::map<PType, float> leptonmasses = {
-     {PType::Electron, 0.000511}, 
-     {PType::Muon, 0.1056}, 
+     {PType::Electron, 0.000511},
+     {PType::Muon, 0.1056},
      {PType::Tau, 1.777}
 };
 
@@ -88,9 +88,9 @@ const std::map<PType, float> leptonmasses = {
 ///Constructor
 Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool setCR, std::string configFolder, std::string year) : goodParts(getArray()), genName_regex(".*([A-Z][^[:space:]]+)"){
   std::cout << "setup start" << std::endl;
-  
+
   routfile = TFile::Open(outfile.c_str(), "RECREATE", outfile.c_str(), ROOT::CompressionSettings(ROOT::kLZMA, 9));
-  
+
   if(distats["Run"].bfind("AddMetaData")) add_metadata(infiles);
 
   BOOM= new TChain("Events");
@@ -106,18 +106,18 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   std::cout << "TOTAL EVENTS: " << nentries << std::endl;
 
   srand(0);
-  
+
   filespace=configFolder;//"PartDet";
   filespace+="/";
 
   setupGeneral(year);
-  
+
   CalculatePUSystematics = distats["Run"].bfind("CalculatePUSystematics");
   // New variable to do special PU weight calculation (2017)
   specialPUcalculation = distats["Run"].bfind("SpecialMCPUCalculation");
-  
+
   // If data, always set specialcalculation to false
-  if(isData){ 
+  if(isData){
     specialPUcalculation = false;
     std::cout << "This is Data!! Setting SpecialMCPUCalculation to False." << std::endl;
   }
@@ -125,7 +125,8 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   // New! Initialize pileup information and take care of exceptions if histograms not found.
   initializePileupInfo(specialPUcalculation, outfile);
 
-  
+  if(distats["Run"].bfind("ApplyNPVWeight")) initializeNPVWeights(year);
+
   syst_names.push_back("orig");
   std::unordered_map<CUTS, std::vector<int>*, EnumHash> tmp;
   syst_parts.push_back(tmp);
@@ -161,9 +162,9 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     _MET      = new Met(BOOM, "MET" , syst_names, distats["Run"].dmap.at("MT2Mass"));
   }
 
-	
+
   // B-tagging scale factor stuff
-  setupBJetSFInfo(_Jet->pstats["BJet"], year);  
+  setupBJetSFInfo(_Jet->pstats["BJet"], year);
 
   // Tau scale factors stuff
   setupTauIDSFsInfo(_Tau->pstats["TauID"].smap.at("TauIDAlgorithm"), year, distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("TauSFforEmbeddedSamples"));
@@ -225,7 +226,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
   histo = Histogramer(1, filespace+"Hist_entries.in", filespace+"Cuts.in", outfile, isData, cr_variables);
   if(doSystematics)
     syst_histo=Histogramer(1, filespace+"Hist_syst_entries.in", filespace+"Cuts.in", outfile, isData, cr_variables,syst_names);
-  
+
   systematics = Systematics(distats);
 
   setupJetCorrections(year, outfile);
@@ -253,13 +254,13 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 
   if(distats["Run"].bfind("DiscrByGenDileptonMass")){
     // If the gen-dilepton mass filter is on, check that the sample is DY. Otherwise, the filter won't be applied.
-    isZsample = infiles[0].find("DY") != std::string::npos; 
+    isZsample = infiles[0].find("DY") != std::string::npos;
     // if(isZsample){std::cout << "This is a DY sample " << std::endl;}
     // else{std::cout << "Not a DY sample " << std::endl;}
   }
 
   // Check if this is a W/Z+jets sample for the purposes of applying Z-pt corrections.
-  if((infiles[0].find("WJets") != std::string::npos) || (infiles[0].find("DY") != std::string::npos) || (infiles[0].find("EWKWPlus") != std::string::npos) 
+  if((infiles[0].find("WJets") != std::string::npos) || (infiles[0].find("DY") != std::string::npos) || (infiles[0].find("EWKWPlus") != std::string::npos)
     || (infiles[0].find("EWKWMinus") != std::string::npos) || (infiles[0].find("Z2Jets") != std::string::npos)){
     isVSample = true;
   }
@@ -269,7 +270,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 
   initializeWkfactor(infiles);
   setCutNeeds();
-  
+
   std::cout << "setup complete" << std::endl << std::endl;
   start = std::chrono::system_clock::now();
 }
@@ -277,7 +278,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
 void Analyzer::add_metadata(std::vector<std::string> infiles){
   std::cout << "------------------------------------------------------------ " << std::endl;
   std::cout << "Copying minimal original trees from input files:"<<std::endl;
-  
+
   // Define all the variables needed for this function
   TFile* rfile;
   TTree* keytree;
@@ -301,7 +302,7 @@ void Analyzer::add_metadata(std::vector<std::string> infiles){
         keytree->SetBranchStatus("run",1);                   // Enable only the branch named run
         originalTrees[keyname] = keytree->CopyTree("1","",1); // Add this tree to the original trees map. No selection nor option (1st and 2nd arg.) are applied, only 1 event is stored (3rd arg.)
       }else if(keyname == "MetaData" or keyname == "ParameterSets" or keyname == "Runs"){ // All branches from these trees are included but only 1 event is stored.
-        originalTrees[keyname] = ((TTree*) rfile->Get(keyname.c_str()))->CopyTree("1","",1); 
+        originalTrees[keyname] = ((TTree*) rfile->Get(keyname.c_str()))->CopyTree("1","",1);
       }else if(keyname == "LuminosityBlocks"){
         originalTrees[keyname] = ((TTree*) rfile->Get(keyname.c_str()))->CopyTree("1");  // All events for this tree are stored since they are useful when comparing with lumi filtering (JSON)
       }else if( std::string(inkey->ClassName()) == "TTree"){
@@ -315,7 +316,7 @@ void Analyzer::add_metadata(std::vector<std::string> infiles){
     rfile->Close();
     delete rfile;
   }
-  
+
   std::cout << "Finished copying minimal original trees." << std::endl;
   std::cout << "------------------------------------------------------------ " << std::endl;
 }
@@ -482,15 +483,15 @@ void Analyzer::setupEventGeneral(int nevent){
 
   // For MC samples, set number of true pileup interactions, gen-HT and gen-weights.
   if(!isData){
- 
+
     SetBranch("Pileup_nTrueInt",nTruePU);
     SetBranch("genWeight",gen_weight);
 
     if(BOOM->FindBranch("L1PreFiringWeight_Nom") != 0){
       SetBranch("L1PreFiringWeight_Nom", l1prefiringwgt);
- 
+
       if(distats["Systematics"].bfind("useSystematics")){
-        SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);  
+        SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);
         SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
       }
     }
@@ -520,7 +521,7 @@ void Analyzer::setupEventGeneral(int nevent){
   }
 
   // Calculate the pu_weight for this event.
-  pu_weight = (!isData && CalculatePUSystematics) ? hPU[(int)(nTruePU+1)] : 1.0;
+  pu_weight = (!isData && CalculatePUSystematics) ? hist_pu_wgt->GetBinContent(hist_pu_wgt->FindBin(nTruePU)) : 1.0;
 
   // Get the trigger decision vector.
   triggerDecision = false; // Reset the decision flag for each event.
@@ -528,7 +529,7 @@ void Analyzer::setupEventGeneral(int nevent){
   if(trigger1BranchesList.size() > 0){
     for(std::string triggname : trigger1BranchesList){
       // std::cout << "Trigger name: " << triggname << std::endl;
-      
+
       TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
       triggerBranch->SetStatus(1);
       triggerBranch->SetAddress(&triggerDecision);
@@ -545,7 +546,7 @@ void Analyzer::setupEventGeneral(int nevent){
   if(trigger2BranchesList.size() > 0){
     for(std::string triggname : trigger2BranchesList){
       // std::cout << "Trigger name: " << triggname << std::endl;
-      
+
       TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
       triggerBranch->SetStatus(1);
       triggerBranch->SetAddress(&triggerDecision);
@@ -561,7 +562,7 @@ void Analyzer::setupEventGeneral(int nevent){
 
   /*
   for(size_t i=0; i < triggernamedecisions.size(); i++){
-    std::cout << "Trigger decision #" << i << " = " << triggernamedecisions.at(i) << std::endl; 
+    std::cout << "Trigger decision #" << i << " = " << triggernamedecisions.at(i) << std::endl;
   }
   */
 
@@ -654,9 +655,9 @@ bool Analyzer::checkGoodRunsAndLumis(int event){
 
     int key = run_num;
     int element = luminosityBlock_num;
-    
+
     auto search = jsonlinedict.find(key);  //NEW:  see if the run number is in the json dictionary.
-    
+
     if(search != jsonlinedict.end()){  //NEW:  this means that the run is in there.
 
 		std::vector<int> lumivector;  //NEW:  going to make a container to store the lumis for the run.
@@ -666,14 +667,14 @@ bool Analyzer::checkGoodRunsAndLumis(int event){
 			lumivector.push_back(itr->second);  //NEW:  grab all of the lumibounds corresponding to the run number.
 		}
 
-		// NEW:  going to go through pairs.  good lumi sections defined by [lumibound1, lumibound2], [lumibound3, lumibound4], etc.  
+		// NEW:  going to go through pairs.  good lumi sections defined by [lumibound1, lumibound2], [lumibound3, lumibound4], etc.
 		// This is why we have to step through the check in twos.
 		for(size_t lowbound = 0; lowbound < lumivector.size(); lowbound = lowbound+2){
 			int upbound = lowbound+1; //NEW:  checking bounds that are side-by-side in the vector.
 			if(!(element >= lumivector[lowbound] && element <= lumivector[upbound])) continue; //NEW:  if the lumisection is not within the bounds continue, check all lumi pairs.
 			// if the lumisection falls within one of the lumipairs, you will make it here. Then, return true
 			return true;
-		}    
+		}
     }
     else{
 
@@ -713,10 +714,10 @@ bool Analyzer::skimSignalMC(int event){
 
   // Construct the name of the branch:
   std::string signalBranchName = ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str();
-  
+
   // std::cout << "Name of the branch: " << signalBranchName << std::endl;
   bool isInputSignal = false;
-  
+
   TBranch *signalBranch = BOOM->GetBranch(signalBranchName.c_str());
   signalBranch->SetStatus(1);
   signalBranch->SetAddress(&isInputSignal);
@@ -743,7 +744,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   }
   _MET->init();
 
-  
+
   active_part = &goodParts;
 
   // Commented by Brenda FE, Aug 18, 2020 - 12:48 pm
@@ -765,7 +766,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     // prefiringwgtprod.resetWeights();
     // prefiringwgtprod.produceWeights(*_Photon, *_Jet);
   //}
-  
+
   if(!isData){ // Do everything that corresponds only to MC
 
     // Initialize the lists of generator-level particles.
@@ -780,9 +781,9 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     getGoodGenHadronicTauNeutrinos(_Gen->pstats["Gen"]);
     // getGoodGenBJet(); //01.16.19
 
-    //--- filtering inclusive HT-binned samples: must be done after setupEventGeneral --- // 
+    //--- filtering inclusive HT-binned samples: must be done after setupEventGeneral --- //
 
-    if(distats["Run"].bfind("DiscrByGenHT")){ 
+    if(distats["Run"].bfind("DiscrByGenHT")){
       //std::cout << "generatorht = " << generatorht << std::endl;
       if(passGenHTFilter(generatorht) == false){
         clear_values();
@@ -790,7 +791,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
       }
     }
 
-    //--- filtering inclusive HT-binned samples: must be done after  _Gen->setOrigReco() --- // 
+    //--- filtering inclusive HT-binned samples: must be done after  _Gen->setOrigReco() --- //
      if(distats["Run"].bfind("DiscrByGenDileptonMass")){
        if(passGenMassFilterZ(distats["Run"].pmap.at("GenDilepMassRange").first, distats["Run"].pmap.at("GenDilepMassRange").second) == false){
          clear_values();
@@ -818,12 +819,12 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 	    }
   	}
   }
-	
+
   // Call the new function passMetFilters
   // Apply here the MET filters, in case the option is turned on. It applies to both data and MC
   applymetfilters = distats["Run"].bfind("ApplyMetFilters");
   if(applymetfilters){
-  	passedmetfilters = passMetFilters(year, event);	
+  	passedmetfilters = passMetFilters(year, event);
   	if(!passedmetfilters){
   		clear_values();
   		return;
@@ -841,7 +842,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
   // std::cout << "------------" << std::endl;
 
-  // ------- Number of primary vertices requirement -------- // 
+  // ------- Number of primary vertices requirement -------- //
   active_part->at(CUTS::eRVertex)->resize(bestVertices);
 
   // ---------------- Trigger requirement ------------------ //
@@ -862,7 +863,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     updateMet(i);
 
   }
-  
+
   for(size_t i=0; i < syst_names.size(); i++) {
     std::string systname = syst_names.at(i);
     for( auto part: allParticles) part->setCurrentP(i);
@@ -876,7 +877,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
 
   active_part = &goodParts;
-  
+
   if( event < 10 || ( event < 100 && event % 10 == 0 ) ||
   ( event < 1000 && event % 100 == 0 ) ||
   ( event < 10000 && event % 1000 == 0 ) ||
@@ -910,7 +911,7 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoJets(CUTS::eRCenJet, _Jet->pstats["CentralJet"],syst);
   getGoodRecoLeadJets(CUTS::eR1stJet, _Jet->pstats["FirstLeadingJet"],syst);
   getGoodRecoLeadJets(CUTS::eR2ndJet, _Jet->pstats["SecondLeadingJet"],syst);
-  
+
   getGoodRecoFatJets(CUTS::eRWjet, _FatJet->pstats["Wjet"],syst);
 
   ///VBF Susy cut on leadin jets
@@ -1200,37 +1201,37 @@ void Analyzer::setupTauIDSFsInfo(std::string tauidalgoname, std::string year, bo
   antielewp = _Tau->pstats["Tau1"].dmap.at("DiscrAgainstElectron");
   antimuwp = _Tau->pstats["Tau1"].dmap.at("DiscrAgainstMuon");
 
-  //std::cout << "Working points 1: tau id = " << tauidwp << ", antiele = " << antielewp << ", antimu = " << antimuwp << std::endl; 
-  //std::cout << "Working points 1: tau id = " << tauidwpsmap[tauidwp] << ", antiele = " << antielewpsmap[antielewp] << ", antimu = " << antimuwpsmap[antimuwp] << std::endl; 
+  //std::cout << "Working points 1: tau id = " << tauidwp << ", antiele = " << antielewp << ", antimu = " << antimuwp << std::endl;
+  //std::cout << "Working points 1: tau id = " << tauidwpsmap[tauidwp] << ", antiele = " << antielewpsmap[antielewp] << ", antimu = " << antimuwpsmap[antimuwp] << std::endl;
 
   // Load the modules according to the algorithm and working points specified for tau ID SFs
   if(tauidwp != 0){
     tau1idSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, tauid_algo, tauidwpsmap[tauidwp], applyDMsfs, applyEmbedding);
   }
   else{
-    failtau1iso = true; 
+    failtau1iso = true;
   }
   tau1id_antiEleSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antiele_algo, antielewpsmap[antielewp]);
   tau1id_antiMuSFs = TauIDSFTool((PUSPACE+"TauIDSFs/data").c_str(), tauidyear, antimu_algo, antimuwpsmap[antimuwp]);
-  
+
 
   // Reset all wp variables
   tauidwp = 0;
   antielewp = 0;
   antimuwp = 0;
 
-  
+
   // ------  Tau 2 stuff  ------ //
   if(!_Tau->pstats["Tau2"].bfind("FlipIsolationRequirement")){
     tauidwp = _Tau->pstats["Tau2"].dmap.at("DiscrByMinIsolation");
   }
   else{
     tauidwp = _Tau->pstats["Tau2"].dmap.at("DiscrByMaxIsolation");
-  }  
+  }
   antielewp = _Tau->pstats["Tau2"].dmap.at("DiscrAgainstElectron");
   antimuwp = _Tau->pstats["Tau2"].dmap.at("DiscrAgainstMuon");
 
-  //std::cout << "Working points 2: tau id = " << tauidwp << ", antiele = " << antielewp << ", antimu = " << antimuwp << std::endl; 
+  //std::cout << "Working points 2: tau id = " << tauidwp << ", antiele = " << antielewp << ", antimu = " << antimuwp << std::endl;
 
   // Load the modules according to the algorithm and working points specified for tau ID SFs
   if(tauidwp != 0){
@@ -1256,8 +1257,8 @@ void Analyzer::setupTauResSFsInfo(bool taufakeenergyscale){
 }
 
 double Analyzer::getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAntiElesf, bool getAntiMusf, std::string uncertainty){
-  
-  double sf = 1.0, sf_tauid = 1.0, sf_antiele = 1.0, sf_antimu = 1.0; 
+
+  double sf = 1.0, sf_tauid = 1.0, sf_antiele = 1.0, sf_antimu = 1.0;
 
   // std::cout << "Size of Tau1 collection = " << active_part->at(CUTS::eRTau1)->size() << ", Tau2 collection = " << active_part->at(CUTS::eRTau2)->size() << std::endl;
   // Loop over the Tau1 list first.
@@ -1267,7 +1268,7 @@ double Analyzer::getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAnti
 
     // Get the gen-match status of the current tau
     int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
-    
+
     // std::cout << "gen match status = " << gen_match_status << std::endl;
 
     if(getTauIDsf && !failtau1iso){
@@ -1291,7 +1292,7 @@ double Analyzer::getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAnti
     int gen_match_status = static_cast<int>(_Tau->genPartFlav[i]);
     // std::cout << "gen match status = " << gen_match_status << std::endl;
 
-    if(getTauIDsf && !failtau2iso){    
+    if(getTauIDsf && !failtau2iso){
       if(!getTauIDbyDMsfs){ // pT-dependent SFs
         sf_tauid *= tau2idSFs.getSFvsPT(_Tau->pt(i), gen_match_status, uncertainty);
       }
@@ -1324,7 +1325,7 @@ void Analyzer::updateMet(int syst){
     _MET->addP4Syst(met_p4_nom, syst);
 
   }
-  // --- Apply MET unclustered energy uncertainty if needed (syst) ---- // 
+  // --- Apply MET unclustered energy uncertainty if needed (syst) ---- //
   if(!isData){
     _MET->propagateUnclEnergyUncty(systname,syst);
   }
@@ -1334,7 +1335,7 @@ void Analyzer::updateMet(int syst){
 
 ///Calculates met from values from each file plus smearing and treating muons as neutrinos
 void Analyzer::selectMet(int syst) {
-   
+
   // Before using the TreatMuonsAsNeutrinos option, we store the MET value in a separate vector for reference purposes:
   _MET->JERCorrMet.SetPxPyPzE(_MET->px(), _MET->py(), _MET->p4().Pz(), _MET->energy());
 
@@ -1344,12 +1345,12 @@ void Analyzer::selectMet(int syst) {
   /////MET CUTS
 
   if(!passCutRange(_MET->pt(), distats["Run"].pmap.at("MetCut"))) return;
-  
+
   if(distats["Run"].bfind("DiscrByHT") && _MET->HT() < distats["Run"].dmap.at("HtCut")) return;
 
   if(syst==0){
     active_part->at(CUTS::eMET)->push_back(1);
-  } 
+  }
   else{
     syst_parts.at(syst).at(CUTS::eMET)->push_back(1);
   }
@@ -1398,9 +1399,9 @@ void Analyzer::treatMuonsAsMet(int syst) {
   //  Initialize the deltaMus before calculation
   _MET->systdeltaMEx[syst] = 0.0;
   _MET->systdeltaMEy[syst] = 0.0;
-  
+
   if(! distats["Run"].bfind("TreatOnlyOneMuonAsNeutrino")){ // All muons in the event are being treated as neutrinos.
-    
+
     // First, loop over the reco muon1 list
     for(auto it : *active_part->at(CUTS::eRMuon1)) {
       // Look for the current muon in the eRMuon2 list. If found, skip it.
@@ -1532,15 +1533,15 @@ void Analyzer::setupGeneral(std::string year) {
     {5, new GenFill(2, CUTS::eGJet)},     {6,  new GenFill(2, CUTS::eGTop)},
     {11, new GenFill(1, CUTS::eGElec)},   {13, new GenFill(1, CUTS::eGMuon)},
     {15, new GenFill(2, CUTS::eGTau)},    {23, new GenFill(62, CUTS::eGZ)},
-    {24, new GenFill(62, CUTS::eGW)},      {25, new GenFill(2, CUTS::eGHiggs)}, 
+    {24, new GenFill(62, CUTS::eGW)},      {25, new GenFill(2, CUTS::eGHiggs)},
     {5, new GenFill(52, CUTS::eGBJet)}
   };
-  
+
   isData=true;
   if(BOOM->FindBranch("Pileup_nTrueInt")!=0){
     isData=false;
   }
-  
+
   read_info(filespace + "ElectronTau_info.in");
   read_info(filespace + "MuonTau_info.in");
   read_info(filespace + "MuonElectron_info.in");
@@ -1550,7 +1551,7 @@ void Analyzer::setupGeneral(std::string year) {
   read_info(filespace + "Run_info.in");
   read_info(filespace + "Systematics_info.in");
   read_info(filespace + "SignalMC_info.in");
-	
+
   // Call readinJSON and save this in the jsonlinedict we declared in Analyzer.h
   jsonlinedict = readinJSON(year);
 
@@ -1579,7 +1580,7 @@ void Analyzer::setupGeneral(std::string year) {
         std::cout << "ERROR! Trigger " << trigger << ": " << msg << std::endl;
         continue;
       }
-    } 
+    }
 
     // Check that there are no elements on the trigger list that refer to the same trigger to speed up the process.
     removeDuplicates(trigger2BranchesList);
@@ -1603,7 +1604,7 @@ void Analyzer::setupGeneral(std::string year) {
   // Check if it is a signal MC sample:
   // isSignalMC = distats["SignalMC"].bfind("isSignalMC");
 
-  // double check 
+  // double check
   if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) == 0){
    isSignalMC = false;
    std::cout << "This is not a signal MC sample." << std::endl;
@@ -1860,9 +1861,9 @@ void Analyzer::smearTaus(Lepton& lep, const PartStats& stats, const PartStats& s
   }
 
   if(!lep.needSyst(syst)) return;
-  
+
   std::string systname = syst_names.at(syst);
-  
+
   if(!stats.bfind("SmearTheParticle") && systname=="orig"){
     lep.setOrigReco();
     return;
@@ -1881,7 +1882,7 @@ void Analyzer::smearTaus(Lepton& lep, const PartStats& stats, const PartStats& s
       if(systname == "orig"){
         tes_SF = tauesSFs.getTES(tauRecoP4.Pt(), _Tau->decayModeInt[i], taugenmatch, "");
       }
-      else{ 
+      else{
         if(systname == "Tau_Scale_Up"){
           tes_SF = tauesSFs.getTES(tauRecoP4.Pt(), _Tau->decayModeInt[i], taugenmatch, "Up");
         }
@@ -1890,12 +1891,12 @@ void Analyzer::smearTaus(Lepton& lep, const PartStats& stats, const PartStats& s
         }
       }
     }
-    
+
     if(stats.bfind("ApplyETauFakeRateESSF") && tauid_algo.find("DeepTau") != std::string::npos){
       if(systname == "orig"){
         tfes_SF = taufesSFs.getFES(tauRecoP4.Eta(), _Tau->decayModeInt[i], taugenmatch, "");
       }
-      else{ 
+      else{
         if(systname == "ETauFake_Scale_Up"){
           tfes_SF = taufesSFs.getFES(tauRecoP4.Eta(), _Tau->decayModeInt[i], taugenmatch, "Up");
         }
@@ -1904,7 +1905,7 @@ void Analyzer::smearTaus(Lepton& lep, const PartStats& stats, const PartStats& s
         }
       }
     }
-    
+
     tau_pt_tesShift = tauRecoP4.Pt() * tes_SF * tfes_SF;
     tau_mass_tesShift = tauRecoP4.M() * tes_SF * tfes_SF;
 
@@ -1918,8 +1919,8 @@ void Analyzer::setupJetCorrections(std::string year, std::string outputfilename)
 
    // ------------------------ NEW: Jet Energy Scale and Resolution corrections initialization ------------------- //
    static std::map<std::string, std::string> jecTagsMC = {
-     {"2016" , "Summer16_07Aug2017_V11_MC"}, 
-     {"2017" , "Fall17_17Nov2017_V32_MC"}, 
+     {"2016" , "Summer16_07Aug2017_V11_MC"},
+     {"2017" , "Fall17_17Nov2017_V32_MC"},
      {"2018" , "Autumn18_V19_MC"}
    };
 
@@ -1930,24 +1931,24 @@ void Analyzer::setupJetCorrections(std::string year, std::string outputfilename)
    };
 
    static std::map<std::string, std::string> archiveTagsDATA = {
-     {"2016" , "Summer16_07Aug2017_V11_DATA"}, 
-     {"2017" , "Fall17_17Nov2017_V32_DATA"}, 
+     {"2016" , "Summer16_07Aug2017_V11_DATA"},
+     {"2017" , "Fall17_17Nov2017_V32_DATA"},
      {"2018" , "Autumn18_V19_DATA"}
    };
 
-   static std::map<std::string, std::string> jecTagsDATA = { 
-     {"2016B" , "Summer16_07Aug2017BCD_V11_DATA"}, 
-     {"2016C" , "Summer16_07Aug2017BCD_V11_DATA"}, 
-     {"2016D" , "Summer16_07Aug2017BCD_V11_DATA"}, 
-     {"2016E" , "Summer16_07Aug2017EF_V11_DATA"}, 
-     {"2016F" , "Summer16_07Aug2017EF_V11_DATA"}, 
-     {"2016G" , "Summer16_07Aug2017GH_V11_DATA"}, 
-     {"2016H" , "Summer16_07Aug2017GH_V11_DATA"}, 
-     {"2017B" , "Fall17_17Nov2017B_V32_DATA"}, 
-     {"2017C" , "Fall17_17Nov2017C_V32_DATA"}, 
-     {"2017D" , "Fall17_17Nov2017DE_V32_DATA"}, 
-     {"2017E" , "Fall17_17Nov2017DE_V32_DATA"}, 
-     {"2017F" , "Fall17_17Nov2017F_V32_DATA"}, 
+   static std::map<std::string, std::string> jecTagsDATA = {
+     {"2016B" , "Summer16_07Aug2017BCD_V11_DATA"},
+     {"2016C" , "Summer16_07Aug2017BCD_V11_DATA"},
+     {"2016D" , "Summer16_07Aug2017BCD_V11_DATA"},
+     {"2016E" , "Summer16_07Aug2017EF_V11_DATA"},
+     {"2016F" , "Summer16_07Aug2017EF_V11_DATA"},
+     {"2016G" , "Summer16_07Aug2017GH_V11_DATA"},
+     {"2016H" , "Summer16_07Aug2017GH_V11_DATA"},
+     {"2017B" , "Fall17_17Nov2017B_V32_DATA"},
+     {"2017C" , "Fall17_17Nov2017C_V32_DATA"},
+     {"2017D" , "Fall17_17Nov2017DE_V32_DATA"},
+     {"2017E" , "Fall17_17Nov2017DE_V32_DATA"},
+     {"2017F" , "Fall17_17Nov2017F_V32_DATA"},
      {"2018A" , "Autumn18_RunA_V19_DATA"},
      {"2018B" , "Autumn18_RunB_V19_DATA"},
      {"2018C" , "Autumn18_RunC_V19_DATA"},
@@ -1970,13 +1971,14 @@ void Analyzer::setupJetCorrections(std::string year, std::string outputfilename)
 
      std::string delimiter = ("_Run"+year).c_str();
      unsigned int pos = outputfilename.find(delimiter.c_str()) + delimiter.length();
-     std::string runera = (year+outputfilename.substr(pos,1)).c_str(); 
+     runera = (year+outputfilename.substr(pos,1)).c_str();
 
      jectag = jecTagsDATA[runera];
      jertag = jerTagsMC[year];
      archivetag = archiveTagsDATA[year];
    }
    else{
+     runera = (year+"MC").c_str();
      jertag = jerTagsMC[year];
      jectag = jecTagsMC[year];
      jectagfastsim = jecTagsFastSim[year];
@@ -1998,8 +2000,8 @@ void Analyzer::setupJetCorrections(std::string year, std::string outputfilename)
 
    try{
      // Arguments: JetRecalibrator(const std::string path, const std::string globalTag, const std::string jetFlavor, const std::string type, bool doResidualJECs, int upToLevel=3, bool calculateSeparateCorrections=false, bool calculateTypeIMETCorr=false);
-     jetRecalib = JetRecalibrator((PUSPACE+"JetResDatabase/textFiles/").c_str(), jectag, "AK4PFchs", "Total", true); 
-     jetRecalibL1 = JetRecalibrator((PUSPACE+"JetResDatabase/textFiles/").c_str(), jectag, "AK4PFchs", "Total", false, 1, true); 
+     jetRecalib = JetRecalibrator((PUSPACE+"JetResDatabase/textFiles/").c_str(), jectag, "AK4PFchs", "Total", true);
+     jetRecalibL1 = JetRecalibrator((PUSPACE+"JetResDatabase/textFiles/").c_str(), jectag, "AK4PFchs", "Total", false, 1, true);
    }
    catch(std::runtime_error& err){
      std::cerr << "Error in setupJetCorrections (JetRecalibrator): " << err.what() << std::endl;
@@ -2015,42 +2017,9 @@ void Analyzer::setupJetCorrections(std::string year, std::string outputfilename)
 
  }
 
-void Analyzer::getJetEnergyResSFs(Particle& jet, const CUTS eGenPos){
-
-	// Clean up the vector before starting:
-	jets_jer_sfs.clear();
-
-	// Loop over all jets
-	for(size_t i = 0; i < jet.size(); i++){
-
-		const TLorentzVector origJetReco = jet.RecoP4(i);
-
-		double genJetMatchDR = 0.0;
-
-	    try{
-	      genJetMatchDR = jet.pstats["Smear"].dmap.at("GenMatchingDeltaR");
-	    }
-	    catch(std::out_of_range& err){
-
-	        if(jet.type == PType::Jet) genJetMatchDR = 0.4;
-	        else if(jet.type == PType::FatJet) genJetMatchDR = 0.8;
-	    }
-
-	    // Find the gen-level jet that matches this reco jet.
-      	TLorentzVector genJet = matchJetToGen(origJetReco, genJetMatchDR, eGenPos);
-
-      	// Save the three scale factors (nominal, down and up) as a vector in a vector:
-        //0 - nominal, 1 - down, 2 - up
-      	std::vector<float> jet_jer_sf = jetScaleRes.GetSmearValsPtSF(origJetReco, genJet, jec_rho);
-
-      	jets_jer_sfs.push_back(jet_jer_sf);
-	}
-
-}
-
 // --- Function that applies the latest JECs and propagates them to MET  --- //
 void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, const PartStats& stats, std::string year, int syst){
-  
+
   if(!jet.needSyst(syst)){
     return;
   }
@@ -2062,237 +2031,317 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
   std::string systname = syst_names.at(syst);
 
-  // Define the deltas to be applied to MET at the end:
-  float delta_x_T1Jet = 0.0, delta_y_T1Jet = 0.0, delta_x_rawJet = 0.0, delta_y_rawJet = 0.0;
+  // Define the deltas to be applied to MET at the end (2017). These deltas account for the unclustered and clustered energy
+  float delta_x_EEnoise_rawJets = 0.0, delta_y_EEnoise_rawJets = 0.0, delta_x_EEnoise_T1Jets = 0.0, delta_y_EEnoise_T1Jets = 0.0;
   // Define the jet energy threshold below which we consider it to be unclustered energy.
   float jetUnclEnThreshold = 15.0;
 
-  float jet_pt_L1L2L3 = 0.0, jet_pt_L1 = 0.0;
-
-  // Get the jet energy resolution scale factors only once and before looping over jets to apply them.
-  if(!isData && systname == "orig"){
-  	getJetEnergyResSFs(jet, eGenPos);
-  }
-
   for(size_t i = 0; i < jet.size(); i++){
 
-    // Get the reconstruced 4-vector (original vector straight from the corresponding branches)
+    // Step 1: Get the reconstruced 4-vector (original vector straight from the corresponding branches), this jet includes L123 corrections.
     const TLorentzVector origJetReco = jet.RecoP4(i);
 
-    // Initialize these values to zero for each jet.
-    jet_pt_L1L2L3 = 0.0, jet_pt_L1 = 0.0;
-
-    // Revert the calibrations applied to this jet by getting the rawFactor.
-    float jet_Pt = origJetReco.Pt(); // , jet_Mass = origJetReco.M();
-
+    // Step 2: get the raw jet 4-momentum from the raw factor.
     float jet_RawFactor = _Jet->rawFactor[i];
+    float jet_Pt = origJetReco.Pt(), jet_Mass = origJetReco.M();  // L123 corrected
+    float jet_rawPt = jet_Pt * (1.0 - jet_RawFactor), jet_rawMass = jet_Mass * (1.0 - jet_RawFactor); // raw jet pt and mass (no corrections)
 
-    float jet_rawPt = jet_Pt * (1.0 - jet_RawFactor);
+    TLorentzVector rawJetP4(0,0,0,0);
+    rawJetP4.SetPtEtaPhiM(jet_rawPt, origJetReco.Eta(), origJetReco.Phi(), jet_rawMass);
 
-    // Re-do the JECs to make everything consistent:
-    double jec = jetRecalib.getCorrection(origJetReco, _Jet->area[i], jet_RawFactor, jec_rho);
-    double jecL1 = jetRecalibL1.getCorrection(origJetReco, _Jet->area[i], jet_RawFactor, jec_rho);
+    // Step 3: check if there is any muon overlapping with this jet. If so, remove the muon(s) 4-momentum(a) from the raw jet 4-momentum.
+    TLorentzVector rawJetP4_noMuon = rawJetP4;
+    TLorentzVector muonsP4(0,0,0,0);
 
-    // Update the values of pt and mass with these factors
-    jet_Pt = jetRecalib.correctedP4(origJetReco, jec, jet_RawFactor).Pt();
-    // jet_Mass = jetRecalib.correctedP4(origJetReco, jec, jet_RawFactor).M();
-    
-    // Calculate the pt only for the L1 corrections since it will be used later.
-    // jet_pt_L1L2L3 = jetRecalibL1.correctedP4(origJetReco, jec, jet_RawFactor).Pt();
-    jet_pt_L1 = jetRecalibL1.correctedP4(origJetReco, jecL1, jet_RawFactor).Pt();
+    if( (_Jet->matchingMuonIdx1[i] > -1) && (_Muon->isGlobal[_Jet->matchingMuonIdx1[i]] == true) ){
+        rawJetP4_noMuon = rawJetP4_noMuon - _Muon->p4(_Jet->matchingMuonIdx1[i]);
+        muonsP4 += _Muon->p4(_Jet->matchingMuonIdx1[i]);
+    }
 
-    // Check if this jet is used for type-I MET
-    TLorentzVector newjetP4(0,0,0,0);
-    newjetP4.SetPtEtaPhiM(origJetReco.Pt() * (1.0 - jet_RawFactor), origJetReco.Eta(), origJetReco.Phi(), origJetReco.M() * (1.0 - jet_RawFactor));
-    double muon_pt = 0.0;
+    if( (_Jet->matchingMuonIdx2[i] > -1) && (_Muon->isGlobal[_Jet->matchingMuonIdx2[i]] == true) ){
+        rawJetP4_noMuon = rawJetP4_noMuon - _Muon->p4(_Jet->matchingMuonIdx2[i]);
+        muonsP4 += _Muon->p4(_Jet->matchingMuonIdx2[i]);
+    }
 
-    if(_Jet->matchingMuonIdx1[i] > -1){
-      if(_Muon->isGlobal[_Jet->matchingMuonIdx1[i]] == true){
-        newjetP4 = newjetP4 - _Muon->p4(_Jet->matchingMuonIdx1[i]);
-        muon_pt += _Muon->pt(_Jet->matchingMuonIdx1[i]);
+    // Step 4: Retrieve the L123 and L1 jet energy correction factors.
+    double jecL1L2L3 = jetRecalib.getCorrection(rawJetP4_noMuon, _Jet->area[i], jec_rho);
+    double jecL1 = jetRecalibL1.getCorrection(rawJetP4_noMuon, _Jet->area[i], jec_rho);
+
+    // Step 4: check if the jet pt of the corrected raw jet pt with L123 corrections is above the unclustered energy threshold.
+    TLorentzVector jetL1L2L3_noMuonP4(0,0,0,0);
+    TLorentzVector jetL1_noMuonP4(0,0,0,0);
+
+    if(year.compare("2017") != 0){
+      // For 2016 and 2018, apply the corrections as usual
+      if( jecL1L2L3 * rawJetP4_noMuon.Pt() > jetUnclEnThreshold){
+        jetL1L2L3_noMuonP4 = jetRecalib.correctedP4(rawJetP4_noMuon, jecL1L2L3); // L1L2L3 correction.
+        jetL1_noMuonP4 = jetRecalibL1.correctedP4(rawJetP4_noMuon, jecL1); // L1 correction
+      } else {
+        jetL1L2L3_noMuonP4 = rawJetP4_noMuon; // no correction.
+        jetL1_noMuonP4 = rawJetP4_noMuon; // no correction
+      }
+    } else {
+      // This step is only need for v2 MET in 2017, when different JECs are applied compared to the nanoAOD production.
+      // only correct the non-mu momentum of the jet. If the corrected pt > 15 GeV (unclEnThreshold), use the corrected jet, otherwise use raw.
+      if( jecL1L2L3 * rawJetP4_noMuon.Pt() > jetUnclEnThreshold){
+        jetL1L2L3_noMuonP4 = jetRecalib.correctedP4(rawJetP4_noMuon, jecL1L2L3); // L1L2L3 correction.
+      } else {
+        jetL1L2L3_noMuonP4 = rawJetP4_noMuon; // no correction.
+      }
+
+      if( jecL1 * rawJetP4_noMuon.Pt() > jetUnclEnThreshold){
+        jetL1_noMuonP4 = jetRecalibL1.correctedP4(rawJetP4_noMuon, jecL1); // L1 correction
+      } else {
+        jetL1_noMuonP4 = rawJetP4_noMuon; // no correction
       }
     }
 
-    if(_Jet->matchingMuonIdx2[i] > -1){
-      if(_Muon->isGlobal[_Jet->matchingMuonIdx2[i]] == true){
-        newjetP4 = newjetP4 - _Muon->p4(_Jet->matchingMuonIdx2[i]);
-        muon_pt += _Muon->pt(_Jet->matchingMuonIdx2[i]);
-      }
-    }
-
-    // Set the jet pt to the muon substracted raw pt
-    jet_Pt = newjetP4.Pt();
-    jet_RawFactor = 0.0;
-
-    // get the proper jet pts for type-I MET, only correct the non-mu fraction of the jet
-
-    // if the corrected pt > 15 GeV (unclEnThreshold), use the corrected jet, otherwise use raw
-    // condition ? result_if_true : result_if_false
-    double jet_pt_noMuL1L2L3 = 0.0, jet_pt_noMuL1 = 0.0;
-
-    if(year.compare("2017") == 0){
-      // This step is only needed for v2 MET in 2017. Only correct the non-mu fraction of the jet.
-      jet_pt_noMuL1L2L3 = jet_Pt * jec > jetUnclEnThreshold ? jet_Pt * jec : jet_Pt;
-      jet_pt_noMuL1 = jet_Pt * jecL1 > jetUnclEnThreshold ? jet_Pt * jecL1 : jet_Pt;
-    }
-    else{
-      // For 2016 and 2018, simply apply the corrections as usual.
-      jet_pt_noMuL1L2L3 = jet_Pt * jec;
-      jet_pt_noMuL1 = jet_Pt * jecL1;      
-    }
-
-    // Apply the JER corrections if desired to MC    
+    // Step 5 (optional): apply the JER corrections if desired to MC.
     // Define the JER scale factors:
     double jer_sf_nom = 1.0, jer_shift = 1.0;
 
-    double jet_pt_nom = origJetReco.Pt() * jer_sf_nom, jet_mass_nom = origJetReco.M() * jer_sf_nom;
+    // The JER corrections should be applied on top of the JECs. Then, we must use the jec corrected pt/mass of the jet without the muon.
+    TLorentzVector jetL1L2L3_jerNom_noMuonP4(0,0,0,0), jetL1L2L3_jerShifted_noMuonP4(0,0,0,0);
 
-    // Define the new jet pt and mass variables to be updated after applying the JER corrections.
-    double jet_pt_jerShifted = origJetReco.Pt() * jer_shift, jet_mass_jerShifted = origJetReco.M() * jer_shift;
+    jetL1L2L3_jerNom_noMuonP4.SetPtEtaPhiM( jetL1L2L3_noMuonP4.Pt()*jer_sf_nom , jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jetL1L2L3_noMuonP4.M()*jer_sf_nom );
+    jetL1L2L3_jerShifted_noMuonP4.SetPtEtaPhiM( jetL1L2L3_noMuonP4.Pt()*jer_shift , jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jetL1L2L3_noMuonP4.M()*jer_shift );
 
-    if(!isData){
+    // Define some helpful variables.
+    float jet_pt_nomu_nom = jetL1L2L3_jerNom_noMuonP4.Pt(), jet_mass_nomu_nom = jetL1L2L3_jerNom_noMuonP4.M();
+    float jet_pt_nomu_jerShifted = jetL1L2L3_jerShifted_noMuonP4.Pt(), jet_mass_nomu_jerShifted = jetL1L2L3_jerShifted_noMuonP4.M();
+
+    // Verify that this is only done in simulation, if smearing option is turned on and the jet is above the unclustered energy threshold.
+    if( (!isData) && (stats.bfind("SmearTheJet")) && (jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold) ){
+
+      // Check if there are any ovelaps with genuine muons. Treat any electrons or hadronic taus which show up in the jet vector as jets.
+      // Jet overlap removal in the config files will take care of them later by removing them from the jet vector.
 
       bool jetlepmatch = false;
-      // Check that this jet doesn't match a lepton at gen-level. This will make sure that the reco jet is a truth jet.
-      if(JetMatchesLepton(*_Muon, origJetReco, stats.dmap.at("MuonMatchingDeltaR"), CUTS::eGMuon) ||
-         JetMatchesLepton(*_Tau, origJetReco, stats.dmap.at("TauMatchingDeltaR"), CUTS::eGHadTau) ||
-         JetMatchesLepton(*_Electron, origJetReco,stats.dmap.at("ElectronMatchingDeltaR"), CUTS::eGElec)){
-        
-        jetlepmatch = true;
+
+      if( JetMatchesLepton(*_Muon, origJetReco, stats.dmap.at("MuonMatchingDeltaR"), CUTS::eGMuon) ){
+        // Investigate if this is a muon coming from a b-jet by checking the flavor of the gen-level jet:
+        if(_Jet->genJetIdx[i] != -1){
+          // Get the hadron flavor:
+          int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[i]);
+          if( abs(jetHadronFlavor) != 5 || abs(_GenJet->genPartonFlavor[_Jet->genJetIdx[i]]) != 5){ // if not a b-jet, then lepton match is true.
+            jetlepmatch = true;
+          }
+        } else {
+          jetlepmatch = true;
+        }
       }
 
-      // Always calculate this, so that the scale uncertainties have access to it.
-      if(stats.bfind("SmearTheJet")){
-        jer_sf_nom = jets_jer_sfs.at(i).at(0); // i is the jet index, 0 is the nominal value
-        jet_pt_nom = origJetReco.Pt() * jer_sf_nom > 0.0 ? origJetReco.Pt() * jer_sf_nom : -1.0 * origJetReco.Pt() * jer_sf_nom; 
-        jet_mass_nom = origJetReco.M() * jer_sf_nom > 0.0 ? origJetReco.M() * jer_sf_nom : -1.0 * origJetReco.M() * jer_sf_nom;
+      float genJetMatchDR = 0.0;
+      try{
+        genJetMatchDR = jet.pstats["Smear"].dmap.at("GenMatchingDeltaR");
       }
-      
+      catch(std::out_of_range& err){
+        if(jet.type == PType::Jet) genJetMatchDR = 0.2; // R_cone/2
+        else if(jet.type == PType::FatJet) genJetMatchDR = 0.4; // R_cone/2
+      }
 
-      if(!jetlepmatch){
-        if(systname == "orig"){ // This corresponds to the nominal values
+      // Find the gen-level jet that matches this reco jet (the original jet).
+      TLorentzVector genJet = matchJetToGen(jetL1L2L3_noMuonP4, genJetMatchDR, eGenPos, stats.bfind("ResolutionMatching"));
 
-          // Set the scale factor:
-          jer_shift = jer_sf_nom;
+      // Use the jet without the muon momentum to retrieve the appropriate JER scale factors.
+      // Save the three JER scale factors (nominal, down and up) as a vector in a vector: 0 - nominal, 1 - down, 2 - up
+      std::vector<float> jet_jer_sf = jetScaleRes.GetSmearValsPtSF(jetL1L2L3_noMuonP4, genJet, jec_rho);
 
-          // if smearing, update jet_pt_nom and jet_mass_nom
-          jet_pt_jerShifted = jet_pt_nom;
-          jet_mass_jerShifted = jet_mass_nom;
+      bool genjetmatch = false, passtightPUjetID = false, smearunmatchedjet = true;
 
-        }else if(systname.find("_Res_") != std::string::npos){
+      // Correct the nominal p4 for this jet.
+      if( !stats.bfind("ModifiedPUsmearing") ){
 
-          if(systname == "Jet_Res_Up"){
-            jer_shift = jets_jer_sfs.at(i).at(2); // i is the jet index, 2 is the up value
-          }else if(systname == "Jet_Res_Down"){
-            jer_shift = jets_jer_sfs.at(i).at(1); // i is the jet index, 2 is the down value
+        // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
+        jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
+
+        jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
+        jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
+
+        if(!jetlepmatch){ // Do the smearing only if there is no overlap with muons, this block will only change the sfs and jet pt/mass.
+
+          if(systname == "orig"){ // This corresponds to the nominal values; set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
+            jer_shift = jer_sf_nom;
+            jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
+            jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
+
+          } else if(systname.find("_Res_") != std::string::npos){
+            if(systname == "Jet_Res_Up"){
+              jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
+            }else if(systname == "Jet_Res_Down"){
+              jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
+            }
+            jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
+            jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
           }
 
-          jet_pt_jerShifted = jer_shift * origJetReco.Pt();
-          jet_mass_jerShifted = jer_shift * origJetReco.M();
+        }
 
-        } 
+      } else {
+
+        genjetmatch = ( genJet != TLorentzVector(0,0,0,0) ) ? true : false;
+        passtightPUjetID = _Jet->getPileupJetID(i, 0); // i - jet index, 0 = bit0 (tight ID). If true, it passes tight PU jet ID, otherwise, it fails PU jet ID.
+
+        if((jetL1L2L3_noMuonP4.Pt() <= 50.0)) smearunmatchedjet = !genjetmatch && passtightPUjetID ? true : false;
+
+        if( (genjetmatch || smearunmatchedjet) && !jetlepmatch){
+
+          // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
+          jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
+
+          // Correct the nominal mass and pt for this jet.
+          jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
+          jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
+
+          if(systname == "orig"){ // This corresponds to the nominal values: set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
+            jer_shift = jer_sf_nom;
+            jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
+            jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
+
+          }else if(systname.find("_Res_") != std::string::npos){
+            if(systname == "Jet_Res_Up"){
+              jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
+            }else if(systname == "Jet_Res_Down"){
+              jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
+            }
+            jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
+            jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
+          }
+        }
+
       }
-    } 
-
-    jet_pt_L1L2L3 = jet_pt_noMuL1L2L3 + muon_pt;
-    jet_pt_L1 = jet_pt_noMuL1 + muon_pt;
-
-    if(year.compare("2017") == 0){
-
-      if(jet_pt_L1L2L3 > jetUnclEnThreshold && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_rawPt < 50.0){
-        // Get the delta for removing L1L2L3-L1 corrected jets in the EE region from the default MET branch
-        // Take into account if the jets are smeared in resolution, multiplying by jer_sf_nom
-        delta_x_T1Jet += (jet_pt_L1L2L3 * jer_sf_nom - jet_pt_L1) * cos(origJetReco.Phi()) + jet_rawPt * cos(origJetReco.Phi());
-        delta_y_T1Jet += (jet_pt_L1L2L3 * jer_sf_nom - jet_pt_L1) * sin(origJetReco.Phi()) + jet_rawPt * sin(origJetReco.Phi());
-        
-        // get the delta for removing raw jets in the EE region from the raw MET
-        delta_x_rawJet += jet_rawPt * cos(origJetReco.Phi());
-        delta_y_rawJet += jet_rawPt * sin(origJetReco.Phi());
-      } 
     }
 
-    // Apply jet energy scale corrections only to MC 
-    double jet_pt_jesShifted = 0.0, jet_mass_jesShifted = 0.0, jet_pt_jesShiftedT1 = 0.0;
-    double jes_delta = 1.0;
-    double jes_delta_t1 = 1.0;
+    // Update the pt and mass values for the nominal jet P4:
+    jetL1L2L3_jerNom_noMuonP4.SetPtEtaPhiM( jet_pt_nomu_nom , jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jet_mass_nomu_nom );
+    // Update the 4-vector for the jet with shifted resolution.
+    jetL1L2L3_jerShifted_noMuonP4.SetPtEtaPhiM( jet_pt_nomu_jerShifted , jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jet_mass_nomu_jerShifted );
 
-    if(!isData && systname.find("_Scale_") != std::string::npos){
+    // Step 6: After correcting and smearing the clustered energy, we can now add back in the muon momenta, if any.
+    TLorentzVector jetL1L2L3_jerNomP4 = jetL1L2L3_jerNom_noMuonP4 + muonsP4;
+    TLorentzVector jetL1L2L3_jerShiftedP4 = jetL1L2L3_jerShifted_noMuonP4 + muonsP4;
+    TLorentzVector jetL1_P4 = jetL1_noMuonP4 + muonsP4;
 
-      // Here we will be using the mass and pt that were obtained after applying JER corrections 
-      jes_delta = jetScaleRes.GetScaleDelta(jet_pt_nom, origJetReco.Eta());
-      jes_delta_t1 = jetScaleRes.GetScaleDelta(jet_pt_L1L2L3, origJetReco.Eta());
+    // Step 7: Evaluate JES uncertainties. This must be done on top of the nominal JECs and JERs (if any), not considering the muon momenta.
+    TLorentzVector jetL1L2L3_jer_noMuon_jesShiftedP4(0,0,0,0), jetL1L2L3_T1_noMuon_jesShiftedP4(0,0,0,0);
+    double jes_delta = 0.0, jes_delta_t1 = 0.0;
+
+    float jet_pt_jesShifted = jetL1L2L3_jerNom_noMuonP4.Pt() * (1.0 + jes_delta), jet_mass_jesShifted = jetL1L2L3_jerNom_noMuonP4.M() * (1.0 + jes_delta);
+    float jet_pt_jesShiftedT1 = jetL1L2L3_noMuonP4.Pt() * (1.0 + jes_delta_t1), jet_mass_jesShiftedT1 = jetL1L2L3_noMuonP4.M() * (1.0 + jes_delta_t1);
+
+    jetL1L2L3_jer_noMuon_jesShiftedP4.SetPtEtaPhiM( jetL1L2L3_jerNom_noMuonP4.Pt() * (1.0 + jes_delta), jetL1L2L3_jerNom_noMuonP4.Eta(), jetL1L2L3_jerNom_noMuonP4.Phi(), jetL1L2L3_jerNom_noMuonP4.M() * (1.0 + jes_delta) );
+    jetL1L2L3_T1_noMuon_jesShiftedP4.SetPtEtaPhiM( jetL1L2L3_noMuonP4.Pt() * (1.0 + jes_delta_t1), jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jetL1L2L3_noMuonP4.M() * (1.0 + jes_delta_t1) );
+
+    if(systname.find("_Scale_") != std::string::npos){
+
+      // Here we will be using the mass and pt that were obtained after applying JER corrections
+      jes_delta = jetScaleRes.GetScaleDelta(jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1L2L3_jerNom_noMuonP4.Eta());
+      jes_delta_t1 = jetScaleRes.GetScaleDelta(jetL1L2L3_noMuonP4.Pt(), jetL1L2L3_noMuonP4.Eta());
 
       // JES applied for systematics both in data and MC.
       if(systname == "Jet_Scale_Up"){
+        jet_pt_jesShifted = jetL1L2L3_jerNom_noMuonP4.Pt() * (1.0 + jes_delta);
+        jet_mass_jesShifted = jetL1L2L3_jerNom_noMuonP4.M() * (1.0 + jes_delta);
 
-        jet_pt_jesShifted = jet_pt_nom * (1.0 + jes_delta);
-        jet_mass_jesShifted = jet_mass_nom * (1.0 + jes_delta);
-        // Redo JES variations for T1 MET
-        jet_pt_jesShiftedT1 = jet_pt_L1L2L3 * (1.0 + jes_delta_t1);
+        // If no smearing is applied, just re-do JES variations for T1 MET
+        jet_pt_jesShiftedT1 = jetL1L2L3_noMuonP4.Pt() * (1.0 + jes_delta_t1);
+        jet_mass_jesShiftedT1 = jetL1L2L3_noMuonP4.M() * (1.0 + jes_delta_t1);
 
-      }
-      else if(systname == "Jet_Scale_Down"){
-        jet_pt_jesShifted = jet_pt_nom * (1.0 - jes_delta);
-        jet_mass_jesShifted = jet_mass_nom * (1.0 - jes_delta);
-        // Redo JES variations for T1 MET
-        jet_pt_jesShiftedT1 = jet_pt_L1L2L3 * (1.0 - jes_delta_t1);
+      } else if(systname == "Jet_Scale_Down"){
+        jet_pt_jesShifted = jetL1L2L3_jerNom_noMuonP4.Pt() * (1.0 - jes_delta);
+        jet_mass_jesShifted = jetL1L2L3_jerNom_noMuonP4.M() * (1.0 - jes_delta);
 
+        // If no smearing is applied, just re-do JES variations for T1 MET
+        jet_pt_jesShiftedT1 = jetL1L2L3_noMuonP4.Pt() * (1.0 - jes_delta_t1);
+        jet_mass_jesShiftedT1 = jetL1L2L3_noMuonP4.M() * (1.0 - jes_delta_t1);
       }
     }
 
-    // Shift the jet 4-momentum accordingly:
+    // Update the shifted JES vectors accordingly
+    jetL1L2L3_jer_noMuon_jesShiftedP4.SetPtEtaPhiM( jet_pt_jesShifted, jetL1L2L3_jerNom_noMuonP4.Eta(), jetL1L2L3_jerNom_noMuonP4.Phi(), jet_mass_jesShifted );
+    jetL1L2L3_T1_noMuon_jesShiftedP4.SetPtEtaPhiM( jet_pt_jesShiftedT1, jetL1L2L3_noMuonP4.Eta(), jetL1L2L3_noMuonP4.Phi(), jet_mass_jesShiftedT1 );
 
+    // Add back in the muon momenta, if any.
+    TLorentzVector jetL1L2L3_jer_jesShiftedP4 = jetL1L2L3_jer_noMuon_jesShiftedP4 + muonsP4;
+    TLorentzVector jetL1L2L3_T1_jesShiftedP4 = jetL1L2L3_T1_noMuon_jesShiftedP4 + muonsP4;
+
+    // Step 8: Shift the jet 4-momentum accordingly:
     if(isData){
     	// Here, jet_pt_jerShifted and jet_mass_jerShifted are unchanged w.r.t. the original values. We need to do this in order to keep these jets in the _Jet vector.
-    	systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
+    	systematics.shiftJet(jet, jetL1L2L3_jerShiftedP4, systname, syst);
     }
     else if(!isData){
-    	if(systname.find("_Scale_") != std::string::npos){
+    	if(stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos){
     		// Correct the jet 4-momentum according to the systematic applied for JES.
-      		systematics.shiftParticle(jet, origJetReco, jet_pt_jesShifted, jet_mass_jesShifted, systname, syst);
-    	}
-    	else{
+      	systematics.shiftJet(jet, jetL1L2L3_jer_jesShiftedP4, systname, syst);
+    	} else if(!stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos){
+        // Correct the jet 4-momentum according to the systematic applied for JES.
+        systematics.shiftJet(jet, jetL1L2L3_T1_jesShiftedP4, systname, syst);
+      } else {
     		// Correct the jet 4-momentum according to the systematic applied for JER
-        	systematics.shiftParticle(jet, origJetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
+        systematics.shiftJet(jet, jetL1L2L3_jerShiftedP4, systname, syst);
     	}
     }
-    
+
     // --------------------- Propagation of JER/JES to MET --------------------- //
 
     double jetTotalEmEF = _Jet->neutralEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
-    
+
     // Propagate JER and JES corrections and uncertainties to MET.
     // Only propagate JECs to MET if the corrected pt without the muon is above the unclustered energy threshold.
+    if(jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold && jetTotalEmEF < 0.9){
 
-    if(jet_pt_noMuL1L2L3 > jetUnclEnThreshold && jetTotalEmEF < 0.9){
-
-      if(!(year.compare("2017") == 0 && (abs(origJetReco.Eta()) > 2.65 && abs(origJetReco.Eta()) < 3.14 ) && jet_rawPt < 50.0)){
-        
-        if(isData){ 
-          _MET->propagateJetEnergyCorr(origJetReco, jet_pt_L1L2L3, jet_pt_L1, systname, syst);
+      if( ( ( year.compare("2016") == 0 ) || (year.compare("2018") == 0) ) ){
+        // Do the normal propagation of JEC & JER to 2016 and 2018 and those jets outside the problematic EE noise jet eta and pt regions for 2017.
+        if(systname.find("orig") != std::string::npos ){
+          _MET->propagateJetEnergyCorr(jetL1L2L3_jerNom_noMuonP4, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+        } else if( !stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
+          _MET->propagateJetEnergyCorr(jetL1L2L3_T1_noMuon_jesShiftedP4, jetL1L2L3_T1_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+        } else if( stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
+          _MET->propagateJetEnergyCorr(jetL1L2L3_jer_noMuon_jesShiftedP4, jetL1L2L3_jer_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+        } else if( stats.bfind("SmearTheJet") && systname.find("_Res_") != std::string::npos ){
+          _MET->propagateJetEnergyCorr(jetL1L2L3_jerShifted_noMuonP4, jetL1L2L3_jerShifted_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
         }
-        else{
-          if(systname.find("orig") != std::string::npos){ 
-            _MET->propagateJetEnergyCorr(origJetReco, jet_pt_L1L2L3 * jer_sf_nom, jet_pt_L1, systname, syst);
+
+      } else if( year.compare("2017") == 0 ){
+        if( ! ((abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && (rawJetP4_noMuon.Pt() < 50.0) ) ){
+          // Do the normal propagation of JEC & JER to 2016 and 2018 and those jets outside the problematic EE noise jet eta and pt regions for 2017.
+
+          if(systname.find("orig") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jerNom_noMuonP4, jetL1L2L3_jerNom_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+          } else if( !stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_T1_noMuon_jesShiftedP4, jetL1L2L3_T1_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+          } else if( stats.bfind("SmearTheJet") && systname.find("_Scale_") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jer_noMuon_jesShiftedP4, jetL1L2L3_jer_noMuon_jesShiftedP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
+          } else if( stats.bfind("SmearTheJet") && systname.find("_Res_") != std::string::npos ){
+            _MET->propagateJetEnergyCorr(jetL1L2L3_jerShifted_noMuonP4, jetL1L2L3_jerShifted_noMuonP4.Pt(), jetL1_noMuonP4.Pt(), systname, syst);
           }
-          else if(systname.find("_Res_") != std::string::npos){
-            _MET->propagateJetEnergyCorr(origJetReco, jet_pt_L1L2L3 * jer_shift, jet_pt_L1, systname, syst);
-          }
-          else if(systname.find("_Scale_") != std::string::npos){
-            // Check this propagation of JES, should it be jet_pet_jesShiftedT1 or jet_pt_jesShifted?
-            _MET->propagateJetEnergyCorr(origJetReco, jet_pt_jesShiftedT1, jet_pt_L1, systname, syst); 
-          }
+        } else if( (abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && rawJetP4_noMuon.Pt() < 50.0 ){
+          // get the delta for removing raw jets in the EE region from the raw MET
+          delta_x_EEnoise_rawJets += rawJetP4_noMuon.Pt() * cos(rawJetP4_noMuon.Phi());
+          delta_y_EEnoise_rawJets += rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
+
+          // Get the delta for removing L1L2L3-L1 corrected jets in the EE region from the default MET branch
+          // Take into account if the jets are smeared in resolution, multiplying by jer_sf_nom
+          delta_x_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * cos(jetL1L2L3_jerNom_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * cos(rawJetP4_noMuon.Phi());
+          delta_y_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * sin(jetL1L2L3_jerNom_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
+
         }
       }
     }
-  
+
   }
-  
-  // Propagate "unclustered energy" uncertainty to MET to finalize the 2017 MET recipe v2
-  if(year.compare("2017") == 0){
-    // Remove the L1L2L3-L1 corrected jets in the EE region from the default MET branch
-    _MET->propagateUnclEnergyUnctyEE(delta_x_T1Jet, delta_y_T1Jet, delta_x_rawJet, delta_y_rawJet, systname, syst);
-  }
+
+    // Propagate "unclustered energy" uncertainty to MET to finalize the 2017 MET recipe v2
+    if(year.compare("2017") == 0){
+      // Remove the L1L2L3-L1 corrected jets in the EE region from the default MET branch
+      _MET->removeEEnoiseUnclEnergy(delta_x_EEnoise_T1Jets, delta_y_EEnoise_T1Jets, delta_x_EEnoise_rawJets, delta_y_EEnoise_rawJets, systname, syst);
+    }
+
+    // Once we're done with all the propagation of JEC/JER to the raw MET, we have Type-I. Now include the xy-shift corrections
+    if(distats["Run"].bfind("ApplyMETxyShiftCorrections")){
+      _MET->applyXYshiftCorr(year, runera, bestVertices, isData, systname, syst);
+    }
 
 }
 
@@ -2343,30 +2392,29 @@ void Analyzer::smearJetRes(Particle& jet, const CUTS eGenPos, const PartStats& s
      double jet_pt_jerShifted = jetReco.Pt() * jer_shift, jet_mass_jerShifted = jetReco.M() * jer_shift;
 
      // Find the gen-level jet that matches this reco jet.
-    TLorentzVector genJet = matchJetToGen(jetReco, genJetMatchDR, eGenPos);
+    TLorentzVector genJet = matchJetToGen(jetReco, genJetMatchDR, eGenPos, stats.bfind("ResolutionMatching"));
 
-     if(systname == "orig" && stats.bfind("SmearTheJet")){ // This corresponds to the nominal values
-
-       // Get the scale factors: 
+    if(systname == "orig" && stats.bfind("SmearTheJet")){ // This corresponds to the nominal values
+      // Get the scale factors:
     	jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho).at(0); // In this case, the jer_shift is the nominal jer sf.
 
-       // If smearing, update the jet_pt_nom and jet_mass_nom:
-       jet_pt_jerShifted = jetReco.Pt() * jer_shift > 0.0 ? jetReco.Pt() * jer_shift : -1.0 * jetReco.Pt() * jer_shift; 
-       jet_mass_jerShifted = jetReco.M() * jer_shift > 0.0 ? jetReco.M() * jer_shift : -1.0 * jetReco.M() * jer_shift;
+      // If smearing, update the jet_pt_nom and jet_mass_nom:
+      jet_pt_jerShifted = jetReco.Pt() * jer_shift > 0.0 ? jetReco.Pt() * jer_shift : -1.0 * jetReco.Pt() * jer_shift;
+      jet_mass_jerShifted = jetReco.M() * jer_shift > 0.0 ? jetReco.M() * jer_shift : -1.0 * jetReco.M() * jer_shift;
 
-     }else if(systname.find("_Res_") != std::string::npos){
+     } else if(systname.find("_Res_") != std::string::npos){
 
-       if(systname == "Jet_Res_Up"){
-       	jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho).at(2);
-       }else if(systname == "Jet_Res_Down"){
+      if(systname == "Jet_Res_Up"){
+        jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho).at(2);
+      } else if(systname == "Jet_Res_Down"){
         jer_shift = jetScaleRes.GetSmearValsPtSF(jetReco, genJet, jec_rho).at(1);
-       }
+      }
 
-       jet_pt_jerShifted = jer_shift * jetReco.Pt();
-       jet_mass_jerShifted = jer_shift * jetReco.M();
-     } 
+      jet_pt_jerShifted = jer_shift * jetReco.Pt();
+      jet_mass_jerShifted = jer_shift * jetReco.M();
+    }
 
-     // Correct the jet 4-momentum according to the systematic applied for JER
+    // Correct the jet 4-momentum according to the systematic applied for JER
      systematics.shiftParticle(jet, jetReco, jet_pt_jerShifted, jet_mass_jerShifted, systname, syst);
 
    }
@@ -2406,17 +2454,17 @@ TLorentzVector Analyzer::matchLeptonToGen(const TLorentzVector& recoLepton4Vecto
 TLorentzVector Analyzer::matchHadTauToGen(const TLorentzVector& recoTau4Vector, double recogenDeltaR) {
 
   for(vec_iter genhadtau_it = active_part->at(CUTS::eGHadTau)->begin(); genhadtau_it != active_part->at(CUTS::eGHadTau)->end(); genhadtau_it++){ // (genhadtau_it) is the index of the gen-level hadronic tau in the gen-hadtau vector.
-    
+
     // Compare the separation between the reco and gen hadronic tau candidates. If it's greather than the requirement, continue with the next gen-tau_h candidate.
     if(recoTau4Vector.DeltaR(_GenHadTau->p4(*genhadtau_it)) > recogenDeltaR) continue;
     // If the requirement DeltaR <= recogenDeltaR, the code will get to this point. Then we want to fill a vector that only stores the matched gen taus
-    
+
     if(std::find(active_part->at(CUTS::eGMatchedHadTau)->begin(), active_part->at(CUTS::eGMatchedHadTau)->end(), *genhadtau_it) == active_part->at(CUTS::eGMatchedHadTau)->end()){
     	// The if condition above will make sure to not double count the gen-taus that have already been matched. It will only fill the CUTS::eGMatchedHadTau if it's not already in there.
          active_part->at(CUTS::eGMatchedHadTau)->push_back(*genhadtau_it);
-    }    
+    }
 
-    active_part->at(CUTS::eGMatchedHadTau)->push_back(*genhadtau_it); 
+    active_part->at(CUTS::eGMatchedHadTau)->push_back(*genhadtau_it);
 
     // And we also return the gen-tau p4 vector, which we are interested in.
     return _GenHadTau->p4(*genhadtau_it);
@@ -2445,13 +2493,36 @@ TLorentzVector Analyzer::matchTauToGen(const TLorentzVector& lvec, double lDelta
 
 
 ////checks if reco object matchs a gen object.  If so, then reco object is for sure a correctly identified particle
-TLorentzVector Analyzer::matchJetToGen(const TLorentzVector& recoJet4Vector, const double& matchDeltaR, CUTS ePos) {
-   for(auto it : *active_part->at(ePos)) {
-    if(recoJet4Vector.DeltaR(_GenJet->p4(it)) > matchDeltaR) continue;
-     return _GenJet->p4(it);
-   }
-   return TLorentzVector(0,0,0,0);
- }
+TLorentzVector Analyzer::matchJetToGen(const TLorentzVector& recoJet4Vector, const double& matchDeltaR, CUTS ePos, bool resmatching){
+
+  int genjetidx = -1;
+  float drMin = 999.;
+
+  for(auto it : *active_part->at(ePos)) {
+    if(resmatching){
+      // Check first that the current gen jet is a candidate for matching based on resolution:
+      bool is_candidate_res_matching = jetScaleRes.resolution_matching(recoJet4Vector, _GenJet->p4(it), jec_rho);
+      if(!is_candidate_res_matching) continue;
+    }
+
+    // Check separation in deltaR
+    float dr = recoJet4Vector.DeltaR(_GenJet->p4(it));
+    if(dr < drMin){
+      genjetidx = it;
+      drMin = dr;
+    }
+  }
+
+  if(drMin < matchDeltaR){
+    return _GenJet->p4(genjetidx);
+  }
+  else{
+    return TLorentzVector(0,0,0,0);
+  }
+
+  return TLorentzVector(0,0,0,0);
+
+}
 
 
 
@@ -2501,7 +2572,7 @@ void Analyzer::getGoodGen(const PartStats& stats) {
        if( (particle_id == 11 || particle_id == 13) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("LightLepMotherIDs").first || abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("LightLepMotherIDs").second)) continue;
       }
 
-      active_part->at(genMaper.at(particle_id)->ePos)->push_back(j);    
+      active_part->at(genMaper.at(particle_id)->ePos)->push_back(j);
     }
 
   }
@@ -2517,7 +2588,7 @@ void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
     else if( stats.bfind("DiscrByTauDecayMode") && (_GenHadTau->decayMode[i] < stats.pmap.at("TauDecayModes").first || _GenHadTau->decayMode[i] > stats.pmap.at("TauDecayModes").second)) continue;
 
     active_part->at(CUTS::eGHadTau)->push_back(i);
-  } 
+  }
 }
 
 // --- Function that applies selections to jets at gen-level (stored in the GenJets list) --- //
@@ -2526,7 +2597,7 @@ void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
 
  void Analyzer::getGoodGenJets(const PartStats& stats){
 
-   // Loop over all gen-level jets from the GenJet collection to apply certain selections 
+   // Loop over all gen-level jets from the GenJet collection to apply certain selections
    for(size_t i=0; i < _GenJet->size(); i++){
      if(stats.bfind("DiscrJetByPtandEta")){
        if(_GenJet->pt(i) < stats.pmap.at("JetPtCut").first || _GenJet->pt(i) > stats.pmap.at("JetPtCut").second || abs(_GenJet->eta(i)) > stats.dmap.at("JetEtaCut")) continue;
@@ -2536,14 +2607,14 @@ void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
 
        if(abs(jetPartonFlavor) < stats.pmap.at("PartonFlavorRange").first || abs(jetPartonFlavor) > stats.pmap.at("PartonFlavorRange").second) continue;
      }
-     active_part->at(CUTS::eGJet)->push_back(i); 
+     active_part->at(CUTS::eGJet)->push_back(i);
    }
  }
 
  // --- Function that applies selections to b-jets at gen-level (stored in the GenVisTau list) --- //
  void Analyzer::getGoodGenBJets(const PartStats& stats){
 
-   // Loop over all gen-level jets from the GenJet collection to apply certain selections 
+   // Loop over all gen-level jets from the GenJet collection to apply certain selections
    for(size_t i=0; i < _GenJet->size(); i++){
      int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[i]); // b-jet: jetFlavor = 5, c-jet: jetFlavor = 4, light-jet: jetFlavor = 0
 
@@ -2552,7 +2623,7 @@ void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
      else if(stats.bfind("DiscrBJetByPtandEta")){
        if(_GenJet->pt(i) < stats.pmap.at("BJetPtCut").first || _GenJet->pt(i) > stats.pmap.at("BJetPtCut").second || abs(_GenJet->eta(i)) > stats.dmap.at("BJetEtaCut")) continue;
      }
-     active_part->at(CUTS::eGBJet)->push_back(i); 
+     active_part->at(CUTS::eGBJet)->push_back(i);
    }
  }
 
@@ -2562,7 +2633,7 @@ TLorentzVector Analyzer::getGenVisibleTau4Vector(int gentau_idx, int gentaunu_id
 
   if(gentaunu_idx != -1 && gentau_idx != -1){
     visTau4Vector = _Gen->p4(gentau_idx) - _Gen->p4(gentaunu_idx);
-  } 
+  }
   return visTau4Vector;
 }
 
@@ -2634,18 +2705,18 @@ double Analyzer::getTopBoostWeight(){ //01.15.19
   double SFtop = 1; //initialize a value to hold the top SF
   double SFtopBar = 1; //initialize a value to hold the tbar SF
   double SFttbar = 1; //holds SF for both
-  
+
   for(size_t j = 0; j < _Gen->size(); j++) {
     int id = _Gen->pdg_id[j]; //grab the particle ID
     int daught = _Gen->numDaught[j]; //grab the number of daughter particles
-    if(id == 6 && daught == 2){ //check that a top has two daughters 
+    if(id == 6 && daught == 2){ //check that a top has two daughters
       topPt = _Gen->pt(j); //grab its p_T
       SFtop = exp(0.0615 - (0.0005 * topPt));} //calculate the top SF
     if(id == -6 && daught == 2){ //check that a tbar has two daughters
       topBarPt = _Gen->pt(j); //grab its p_T
       SFtopBar = exp(0.0615 - (0.0005 * topBarPt));} //calculate the tbar SF
     SFttbar = sqrt(SFtop * SFtopBar);} //calculate the total SF
-  
+
   return SFttbar;
 }
 
@@ -2697,9 +2768,9 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
         }
         else if(cut == "DoDiscrBymvaID"){
           if(stats.bfind("DiscrBymvaWP80")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WP80[i];
-          
+
           else if(stats.bfind("DiscrBymvaWP90")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WP90[i];
-          
+
           else if(stats.bfind("DiscrBymvaWPL")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WPL[i];
         }
         else if(cut == "DoDiscrByHEEPID")
@@ -2788,34 +2859,44 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       if(!passCuts) break;
       else if(cut == "Apply2017EEnoiseVeto") passCuts = passCuts && passJetVetoEEnoise2017(i);
     	/// BJet specific
-      else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
+      else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
       // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
       // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
       else if(cut == "ApplyLooseID"){
-         	if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
-              if(!stats.bfind("FailPUJetID")){
-                  passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
-              } else {
-                  passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-              }
-          	}
-          else{
-              passCuts = passCuts && _Jet->passedLooseJetID(i); 
-          	}
-      	}
-      	else if(cut == "ApplyTightID"){ 
-          	if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
-            	if(!stats.bfind("FailPUJetID")){
-                	passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); 
-              	} else {
-                	passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-              	}
-          	} else {
-              passCuts = passCuts && _Jet->passedTightJetID(i);
-          	} 
-      	} 
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedLooseJetID(i);
+        }
+      }
+      else if(cut == "ApplyTightID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedTightJetID(i);
+        }
+      }
+      else if(cut == "ApplyTightLepVetoID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
+        }
+      }
       else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(lvec, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
       else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(lvec, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
 
@@ -2827,7 +2908,7 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
       else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
       else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
-      
+
     }
     if(_Jet->pstats["BJet"].bfind("RemoveBJetsFromJets") and ePos!=CUTS::eRBJet){
       passCuts = passCuts && find(active_part->at(CUTS::eRBJet)->begin(), active_part->at(CUTS::eRBJet)->end(), i) == active_part->at(CUTS::eRBJet)->end();
@@ -2877,43 +2958,25 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
     active_part->at(ePos)=goodParts[ePos];
     return;
   }
- 
-  // Clean jetPtIndexVector after looping over first and second leading jets for each iteration. 
+
+  // Clean jetPtIndexVector after looping over first and second leading jets for each iteration.
   if(ePos == CUTS::eR1stJet && jetPtIndexVector.size() != 0) jetPtIndexVector.clear();
 
-  //note the leading jet has to be selected first!  
+  //note the leading jet has to be selected first!
   //Do this only once for the first leading jet:
   if(ePos == CUTS::eR1stJet){
-    // std::cout << "Number of selected good jets: " << active_part->at(CUTS::eRJet1)->size() << std::endl;
     for(auto it : *active_part->at(CUTS::eRJet1)) {
       jetPtIndexVector.push_back(std::make_pair(_Jet->pt(it),it));
-      //std::cout << "Filling jetPtIndexVector with jet #" << it << ", pt = " << _Jet->pt(it) << std::endl;
     }
     sort(jetPtIndexVector.begin(),jetPtIndexVector.end());
-
-    /*
-    std::cout << " ----- Original jet collection size (_Jet) = " << _Jet->size() << std::endl;
-    for(size_t i = 0; i < _Jet->size(); i++){
-      std::cout << "Jet index = " << i << ", jet pt = " << _Jet->p4(i).Pt() << std::endl;
-    }
-
-    std::cout << " ----- Jet collection size  (eRJet1) = " << active_part->at(CUTS::eRJet1)->size() << std::endl;
-    std::cout << " ----- Sorted ptIndexVector: " << std::endl;
-    for(size_t i = 0; i < jetPtIndexVector.size(); i++){
-      std::cout << "Jet #" << jetPtIndexVector.at(i).second << ", pt = " << jetPtIndexVector.at(i).first << std::endl;
-    }
-    */
   }
 
   if(ePos == CUTS::eR1stJet && jetPtIndexVector.size()>0){
 
-    // std::cout << "Leading jet is #" << jetPtIndexVector.back().second << ", with pt = " << jetPtIndexVector.back().first << std::endl;
     bool passCuts = true;
-    // int i = jetPtIndexVector.back().second;
     int i = jetPtIndexVector.at(jetPtIndexVector.size()-1).second;
 
     if(stats.bfind("DoDiscrByThisJet")){
-      //std::cout << "Applying selections to first leading jet... " << std::endl;
 
       TLorentzVector leadjetp4 = _Jet->p4(i);
       double dphi1rjets = normPhi(leadjetp4.Phi() - _MET->phi());
@@ -2925,7 +2988,7 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         if(!passCuts) break;
         else if(cut == "Apply2017EEnoiseVeto") passCuts = passCuts && passJetVetoEEnoise2017(i);
         /// BJet specific
-        else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
+        else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
         // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
@@ -2939,23 +3002,34 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
               }
           	}
           else{
-              passCuts = passCuts && _Jet->passedLooseJetID(i); 
+              passCuts = passCuts && _Jet->passedLooseJetID(i);
           	}
       	}
-      	else if(cut == "ApplyTightID"){ 
+      	else if(cut == "ApplyTightID"){
           	if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
             	if(!stats.bfind("FailPUJetID")){
-                	passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); 
+                	passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
               	} else {
                 	passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
               	}
           	} else {
               passCuts = passCuts && _Jet->passedTightJetID(i);
-          	} 
-      	}        
+          	}
+      	}
+        else if(cut == "ApplyTightLepVetoID"){
+          if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
+            if(!stats.bfind("FailPUJetID")){
+              passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+            } else {
+              passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+            }
+          } else {
+            passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
+          }
+        }
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(leadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(leadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
-      // ----anti-overlap requirements
+        // ----anti-overlap requirements
         else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithElectron1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Electron, CUTS::eRElec1, stats.dmap.at("Electron1MatchingDeltaR"));
@@ -2963,32 +3037,25 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
         else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(leadjetp4, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
         else if(cut == "DiscrByDPhiMet") passCuts = passCuts && passCutRange(fabs(dphi1rjets), stats.pmap.at("DPhiMetCut")); //01.17.19
-        //if(!passCuts) std::cout << "failed cut = " << cut << std::endl;
       }
     }
 
     if(passCuts){
-      /*
-      std::cout << "First leading jet passed all selections!" << std::endl;
-      std::cout << "First leading jet index = " << jetPtIndexVector.back().second << std::endl;
-      */
       active_part->at(ePos)->push_back(jetPtIndexVector.back().second);
     }
   }
   else if(ePos == CUTS::eR2ndJet && jetPtIndexVector.size()>1){
-    
+
     bool passCuts = true;
     int idx = jetPtIndexVector.size() - 2;
-    
+
     int j = jetPtIndexVector.at(idx).second;
-    // std::cout << "Second leading jet is (" << idx << ") #" << jetPtIndexVector.at(idx).second << ", with pt = " << jetPtIndexVector.at(idx).first << std::endl;
-    
+
     if(stats.bfind("DoDiscrByThisJet")){
-      // std::cout << "Applying selections to second leading jet... " << std::endl;
-      
+
       TLorentzVector subleadjetp4 = _Jet->p4(j);
       double dphi1rjets = normPhi(subleadjetp4.Phi() - _MET->phi());
-      
+
       // Applying cuts for SecondLeadingJet block
       passCuts = passCuts && passCutRange(fabs(subleadjetp4.Eta()), stats.pmap.at("EtaCut"));
       passCuts = passCuts && (subleadjetp4.Pt() > stats.dmap.at("PtCut"));
@@ -2997,11 +3064,9 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         if(!passCuts) break;
         else if(cut == "Apply2017EEnoiseVeto") passCuts = passCuts && passJetVetoEEnoise2017(j);
         /// BJet specific
-        else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[j] > stats.dmap.at("JetBTaggingCut")); 
+        else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[j] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[j] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[j] > stats.dmap.at("JetBTaggingCut"));
-        // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(j);
-        // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(j);
         else if(cut == "ApplyLooseID"){
          	if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
               if(!stats.bfind("FailPUJetID")){
@@ -3011,10 +3076,10 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
               }
           	}
           else{
-              passCuts = passCuts && _Jet->passedLooseJetID(j); 
+              passCuts = passCuts && _Jet->passedLooseJetID(j);
           	}
       	}
-      	else if(cut == "ApplyTightID"){ 
+      	else if(cut == "ApplyTightID"){
           	if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
             	if(!stats.bfind("FailPUJetID")){
                 	passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
@@ -3023,8 +3088,19 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
               	}
           	} else {
               passCuts = passCuts && _Jet->passedTightJetID(j);
-          	} 
+          	}
       	}
+        else if(cut == "ApplyTightLepVetoID"){
+          if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
+            if(!stats.bfind("FailPUJetID")){
+              passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut"));
+            } else {
+              passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
+            }
+          } else {
+            passCuts = passCuts && _Jet->passedTightLepVetoJetID(j);
+          }
+        }
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(subleadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(subleadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
       // ----anti-overlap requirements
@@ -3039,17 +3115,13 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
     }
 
     if(passCuts){
-      /*
-      std::cout << "Second leading jet passed all selections!" << std::endl;
-      std::cout << "Second leading jet index = " << jetPtIndexVector.at(idx).second << std::endl;
-      */
       active_part->at(ePos)->push_back(jetPtIndexVector.at(idx).second);
     }
   }
 }
 
 
-void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int syst) { //01.16.19   
+void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int syst) { //01.16.19
   if(! neededCuts.isPresent(ePos)) return;
 
   std::string systname = syst_names.at(syst);
@@ -3069,21 +3141,50 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
       if(!passCuts) break;
       else if(cut == "Apply2017EEnoiseVeto") passCuts = passCuts && passJetVetoEEnoise2017(i);
       /// BJet specific
-      else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut")); 
+      else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "MatchBToGen" && !isData ){
            int matchedGenJetIndex = _Jet->genJetIdx[i];
            int jetPartonFlavor = abs(_GenJet->genPartonFlavor[matchedGenJetIndex]);
-           int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[matchedGenJetIndex]); 
- 	   // std::cout << "matchedGenJetIndex = " << matchedGenJetIndex << ", jetPartonFlavor = " << jetPartonFlavor << ", jetHadronFlavor = " << jetHadronFlavor << std::endl;
- 	   // std::cout << "Is this a genuine b-jet? " << (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5) << std::endl;
- 	   passCuts = passCuts && (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5);  
+           int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[matchedGenJetIndex]);
+ 	         passCuts = passCuts && (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5);
       }
-      else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
-
-    // ----anti-overlap requirements
+      else if(cut == "ApplyLooseID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+            if(!stats.bfind("FailPUJetID")){
+                passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+            } else {
+                passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+            }
+          }
+        else{
+            passCuts = passCuts && _Jet->passedLooseJetID(i);
+          }
+      }
+      else if(cut == "ApplyTightID"){
+          if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+            if(!stats.bfind("FailPUJetID")){
+                passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+              } else {
+                passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+              }
+          } else {
+            passCuts = passCuts && _Jet->passedTightJetID(i);
+          }
+      }
+      else if(cut == "ApplyTightLepVetoID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
+        }
+      }
+      // ----anti-overlap requirements
       else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
       else if (cut =="RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
       else if(cut == "RemoveOverlapWithElectron1s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec1, stats.dmap.at("Electron1MatchingDeltaR"));
@@ -3106,7 +3207,7 @@ void Analyzer::setupBJetSFInfo(const PartStats& stats, std::string year){
     {"2016", "CSVv2_Moriond17_B_H.csv"},
     {"2017", "CSVv2_94XSF_WP_V2_B_F.csv"},
     {"2018", "none.csv"} // No CSVv2 available for 2018
-   }; 
+   };
 
    static std::map<std::string, std::string> deepcsvbtagsfcsvfiles = {
     {"2016", "DeepCSV_2016LegacySF_WP_V1.csv"},
@@ -3123,13 +3224,13 @@ void Analyzer::setupBJetSFInfo(const PartStats& stats, std::string year){
    // This will be the default.
   std::string btagalgoname = "DeepCSV";
   std::string btagsffilename = deepcsvbtagsfcsvfiles.begin()->second;
-  
+
   // std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
   // std::cout << "Setting up the b-jet scale factors... " << std::endl;
   // Get the b-tagging algorithm to use to initialize the appropriate csv file:
   if(stats.bfind("ApplyJetBTaggingCSVv2")){
-    btagalgoname = "CSVv2"; 
-    btagsffilename = csvv2btagsfcsvfiles[year]; 
+    btagalgoname = "CSVv2";
+    btagsffilename = csvv2btagsfcsvfiles[year];
   }
   else if(stats.bfind("ApplyJetBTaggingDeepCSV")){
     btagalgoname = "DeepCSV";
@@ -3144,7 +3245,7 @@ void Analyzer::setupBJetSFInfo(const PartStats& stats, std::string year){
   try{
     btagcalib = BTagCalibration(btagalgoname, (PUSPACE+"BJetDatabase/"+btagsffilename).c_str());
 
-    if(stats.bfind("UseBtagSF")){  
+    if(stats.bfind("UseBtagSF")){
       std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
       std::cout << "Setting up the b-jet scale factors... " << std::endl;
       std::cout << "B-jet ID algorithm selected: " << btagalgoname << std::endl;
@@ -3156,7 +3257,7 @@ void Analyzer::setupBJetSFInfo(const PartStats& stats, std::string year){
   catch(std::exception& e){
     std::cerr << "ERROR in setupBJetSFInfo: " << e.what() << std::endl;
     std::cout << "\t Setting dummy b-tagging from " << (PUSPACE+"btagging.csv").c_str() << std::endl;
-    btagcalib = BTagCalibration("DeepCSV", (PUSPACE+"btagging.csv").c_str());   
+    btagcalib = BTagCalibration("DeepCSV", (PUSPACE+"btagging.csv").c_str());
   }
 
  // Check BTagCalibrationStandalone.h for more information
@@ -3176,7 +3277,7 @@ void Analyzer::setupBJetSFInfo(const PartStats& stats, std::string year){
 }
 
 double Analyzer::getBJetSF(CUTS ePos, const PartStats& stats) {
-  double bjetSFall = 1.0, bjetSFtemp = 1.0; 
+  double bjetSFall = 1.0, bjetSFtemp = 1.0;
 
   if(!neededCuts.isPresent(ePos)) return bjetSFall;
 
@@ -3184,7 +3285,7 @@ double Analyzer::getBJetSF(CUTS ePos, const PartStats& stats) {
   btagsfreader = BTagCalibrationReader(b_workingpoint, "central");
   btagsfreader.load(btagcalib, bjetflavor, "comb");
 
-  int matchedGenJetIndex = -1; 
+  int matchedGenJetIndex = -1;
   int jetPartonFlavor = 0;
   int jetHadronFlavor = 0;
 
@@ -3244,7 +3345,7 @@ double Analyzer::getBJetSF(CUTS ePos, const PartStats& stats) {
 }
 
 double Analyzer::getBJetSFResUp(CUTS ePos, const PartStats& stats) {
-  double bjetSFall = 1.0, bjetSFtemp = 1.0; 
+  double bjetSFall = 1.0, bjetSFtemp = 1.0;
 
   if(!neededCuts.isPresent(ePos)) return bjetSFall;
 
@@ -3252,7 +3353,7 @@ double Analyzer::getBJetSFResUp(CUTS ePos, const PartStats& stats) {
   btagsfreader = BTagCalibrationReader(b_workingpoint, "up");
   btagsfreader.load(btagcalib, bjetflavor, "comb");
 
-  int matchedGenJetIndex = -1; 
+  int matchedGenJetIndex = -1;
   int jetPartonFlavor = 0;
   int jetHadronFlavor = 0;
 
@@ -3310,15 +3411,15 @@ double Analyzer::getBJetSFResUp(CUTS ePos, const PartStats& stats) {
   return bjetSFall;
 }
 
-double Analyzer::getBJetSFResDown(CUTS ePos, const PartStats& stats) { 
-  double bjetSFall = 1.0, bjetSFtemp = 1.0; 
+double Analyzer::getBJetSFResDown(CUTS ePos, const PartStats& stats) {
+  double bjetSFall = 1.0, bjetSFtemp = 1.0;
 
   if(!neededCuts.isPresent(ePos)) return bjetSFall;
 
   btagsfreader = BTagCalibrationReader(b_workingpoint, "down");
   btagsfreader.load(btagcalib, bjetflavor, "comb");
 
-  int matchedGenJetIndex = -1; 
+  int matchedGenJetIndex = -1;
   int jetPartonFlavor = 0;
   int jetHadronFlavor = 0;
 
@@ -3631,7 +3732,7 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
     part1 = lep1.p4(i1);
     // New: Get the rest mass in GeV according to the lepton type, Jun 26, 2020
     float mass1 = leptonmasses.at(lep1.type);
-   
+
     for(auto i2 : *active_part->at(ePos2)) {
       if(sameParticle && i2 <= i1) continue;
       part2 = lep2.p4(i2);
@@ -3719,12 +3820,12 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
   }
 }
 
-// ---------- New function: DY Z' team ---------- //	     
+// ---------- New function: DY Z' team ---------- //
 double Analyzer::CalculateDiLepMassDeltaPt(const TLorentzVector& part1, const TLorentzVector& part2, const float mass1, const float mass2){
 
       double pt1  = part1.Pt();
       double eta1 = part1.Eta();
-      double phi1 = part1.Phi();                                                          
+      double phi1 = part1.Phi();
       double pt2  = part2.Pt();
       double eta2 = part2.Eta();
       double phi2 = part2.Phi();
@@ -3746,9 +3847,9 @@ double Analyzer::CalculateDiLepMassDeltaPt(const TLorentzVector& part1, const TL
       double diMass= sqrt(pow(E1+E2+E3,2)-pow(px1+px2+px3,2)-pow(py1+py2+py3,2)-pow(pz1+pz2+pz3,2));
 
       return diMass;
-}	     
+}
 // ---------------------------------------- //
-	     
+
 /////abs for values
 ///Find the number of lepton combos that pass the dilepton cuts
 void Analyzer::getGoodLeptonJetCombos(Lepton& lep1, Jet& jet1, CUTS ePos1, CUTS ePos2, CUTS ePosFin, const PartStats& stats, const int syst) {
@@ -3898,7 +3999,7 @@ void Analyzer::writeParticleDecayList(int event){  //01.16.19
   BOOM->GetEntry(event);
   std::fstream file("particle_decay_list.txt", std::fstream::in | std::fstream::out | std::fstream::app);
   if (file.is_open()){
-  for (unsigned p=0; p < _Gen->size(); p++){  
+  for (unsigned p=0; p < _Gen->size(); p++){
     file << std::setw(2) << p << std::setw(2) << " " << std::setw(8) << "pdg_id: " << std::setw(4) << abs(_Gen->pdg_id[p]) << std::setw(2) << "  " << std::setw(5) << "p_T: " << std::setw(10) << _Gen->pt(p) << std::setw(2) << "  " << std::setw(5) << "phi: " << std::setw(10) << _Gen->phi(p) << std::setw(10) << "status: " << std::setw(3) << _Gen->status[p] << std::setw(2) << "  " << std::setw(7) << "mind:" << std::setw(1) << " " << std::setw(2) << _Gen->genPartIdxMother[p] << "\n";
   }
   file << "----------" << "\n";
@@ -3910,10 +4011,10 @@ void Analyzer::writeParticleDecayList(int event){  //01.16.19
 std::multimap<int,int> Analyzer::readinJSON(std::string year){ //NEW:  function for reading in the JSON file in the format that I established.  This happens once before events start entering preprocess.
   // Newer: this function will take the year as an input to set the JSON file to be read.
   // The naming convention is json201X.txt, make sure your JSON files match this convention.
-  std::fstream fs((PUSPACE+"json"+year+".txt").c_str(), std::fstream::in); // Take the info of the JSON file as input.	
+  std::fstream fs((PUSPACE+"json"+year+".txt").c_str(), std::fstream::in); // Take the info of the JSON file as input.
   std::string line; //NEW:  need this since we'll be analyzing line by line.
   std::multimap<int,int> json_line_dict; //NEW:  we'll work with the information as a multimap (C++ equivalent of a python dictionary).
-  
+
   while(!fs.eof()){ //NEW:  while the file is open...
       getline(fs, line); //NEW:  grab each line.
       if(line.size() == 0) continue;  //NEW:  if there's nothing in the line, skip it.
@@ -3964,36 +4065,36 @@ ize() ==1)){
       boostz = _Gen->pt(active_part->at(CUTS::eGW)->at(0));
     }
     if (ud == 0){
-      if(boostz > 0 && boostz <= 50) {boostweigth = 1.1192;}// 1.0942, 1.1192, 1.1442 5.26                                                                                                                  
-      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.1034;}// 1.0901, 1.1034, 1.1167                                                                                                               
-      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0675;}// 1.0559, 1.0675, 1.0791                                                                                                              
-      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0637;}// 1.0511, 1.0637, 1.0763                                                                                                              
-      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.0242;}// 1.011, 1.0242, 1.0374                                                                                                               
-      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9453;}// 0.9269, 0.9453, 0.9637                                                                                                              
-      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8579;}// 0.8302, 0.8579, 0.8856                                                                                                              
-      else if (boostz >= 600) {boostweigth = 0.7822;}// 0.6692, 0.7822, 0.8952                                                                                                                              
+      if(boostz > 0 && boostz <= 50) {boostweigth = 1.1192;}// 1.0942, 1.1192, 1.1442 5.26
+      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.1034;}// 1.0901, 1.1034, 1.1167
+      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0675;}// 1.0559, 1.0675, 1.0791
+      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0637;}// 1.0511, 1.0637, 1.0763
+      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.0242;}// 1.011, 1.0242, 1.0374
+      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9453;}// 0.9269, 0.9453, 0.9637
+      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8579;}// 0.8302, 0.8579, 0.8856
+      else if (boostz >= 600) {boostweigth = 0.7822;}// 0.6692, 0.7822, 0.8952
       else {boostweigth = 1;}}
 
     else if (ud == -1){
-      if(boostz > 0 && boostz <= 50) {boostweigth = 1.0942;}// 1.0942, 1.1192, 1.1442 5.26                                                                                                                  
-      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.0901;}// 1.0901, 1.1034, 1.1167                                                                                                               
-      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0559;}// 1.0559, 1.0675, 1.0791                                                                                                              
-      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0511;}// 1.0511, 1.0637, 1.0763                                                                                                              
-      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.011;}// 1.011, 1.0242, 1.0374                                                                                                                
-      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9269;}// 0.9269, 0.9453, 0.9637                                                                                                              
-      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8302;}// 0.8302, 0.8579, 0.8856                                                                                                              
-      else if (boostz >= 600) {boostweigth = 0.6692;}// 0.6692, 0.7822, 0.8952                                                                                                                              
+      if(boostz > 0 && boostz <= 50) {boostweigth = 1.0942;}// 1.0942, 1.1192, 1.1442 5.26
+      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.0901;}// 1.0901, 1.1034, 1.1167
+      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0559;}// 1.0559, 1.0675, 1.0791
+      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0511;}// 1.0511, 1.0637, 1.0763
+      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.011;}// 1.011, 1.0242, 1.0374
+      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9269;}// 0.9269, 0.9453, 0.9637
+      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8302;}// 0.8302, 0.8579, 0.8856
+      else if (boostz >= 600) {boostweigth = 0.6692;}// 0.6692, 0.7822, 0.8952
       else {boostweigth = 1;}}
 
     else if (ud == 1){
-      if(boostz > 0 && boostz <= 50) {boostweigth = 1.1442;}// 1.0942, 1.1192, 1.1442 5.26                                                                                                                  
-      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.1167;}// 1.0901, 1.1034, 1.1167                                                                                                               
-      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0791;}// 1.0559, 1.0675, 1.0791                                                                                                              
-      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0763;}// 1.0511, 1.0637, 1.0763                                                                                                              
-      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.0374;}// 1.011, 1.0242, 1.0374                                                                                                               
-      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9637;}// 0.9269, 0.9453, 0.9637                                                                                                              
-      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8856;}// 0.8302, 0.8579, 0.8856                                                                                                              
-      else if (boostz >= 600) {boostweigth = 0.8952;}// 0.6692, 0.7822, 0.8952                                                                                                                              
+      if(boostz > 0 && boostz <= 50) {boostweigth = 1.1442;}// 1.0942, 1.1192, 1.1442 5.26
+      else if (boostz > 50 && boostz <= 100) {boostweigth = 1.1167;}// 1.0901, 1.1034, 1.1167
+      else if (boostz > 100 && boostz <= 150) {boostweigth = 1.0791;}// 1.0559, 1.0675, 1.0791
+      else if (boostz > 150 && boostz <= 200) {boostweigth = 1.0763;}// 1.0511, 1.0637, 1.0763
+      else if (boostz > 200 && boostz <= 300) {boostweigth = 1.0374;}// 1.011, 1.0242, 1.0374
+      else if (boostz > 300 && boostz <= 400) {boostweigth = 0.9637;}// 0.9269, 0.9453, 0.9637
+      else if (boostz > 400 && boostz <= 600) {boostweigth = 0.8856;}// 0.8302, 0.8579, 0.8856
+      else if (boostz >= 600) {boostweigth = 0.8952;}// 0.6692, 0.7822, 0.8952
       else {boostweigth = 1;}}
 
   }
@@ -4023,15 +4124,15 @@ double Analyzer::getWkfactor(){
   return kfactor;
 }
 
-// The function below applies the Z-pT corrections derived by the SUSY PAG - Ref. AN2015_267_v10.pdf 
+// The function below applies the Z-pT corrections derived by the SUSY PAG - Ref. AN2015_267_v10.pdf
 double Analyzer::getZpTWeight() {
-  
+
   double zPtBoost = 1.;
 
-  if(!((active_part->at(CUTS::eGElec)->size() + active_part->at(CUTS::eGTau)->size() + active_part->at(CUTS::eGMuon)->size()) >=1 
+  if(!((active_part->at(CUTS::eGElec)->size() + active_part->at(CUTS::eGTau)->size() + active_part->at(CUTS::eGMuon)->size()) >=1
     && (active_part->at(CUTS::eGZ)->size() ==1 || active_part->at(CUTS::eGW)->size() ==1))) return zPtBoost;
 
-    
+
   double zMass = 0, zPT = 0;
 
   if(active_part->at(CUTS::eGZ)->size() == 1) {
@@ -4161,7 +4262,7 @@ double Analyzer::getZpTWeight_vbfSusy(std::string year) {
       else if(280 <= zPT && zPT < 300) zPtBoost = 0.86;
       else if(300 <= zPT && zPT < 5000) zPtBoost = 0.88;
     }
-    
+
     // Correction factors derived from 0-lepton channel Zjets CR (2017+2018)
     if(year.compare("2017") == 0 || year.compare("2018") == 0){
       // std::cout << "This is 2017 or 2018" << std::endl;
@@ -4181,16 +4282,26 @@ double Analyzer::getZpTWeight_vbfSusy(std::string year) {
       else if(260 <= zPT && zPT < 280) zPtBoost = 0.86;
       else if(280 <= zPT && zPT < 300) zPtBoost = 0.84;
       else if(300 <= zPT && zPT < 5000) zPtBoost = 0.83;
-    } 
+    }
   }
 
     return zPtBoost;
 }
 
+// Brenda FE -- additional PU weights that correct the NPV distribution
+double Analyzer::getNPVWeight(bool applyWeights, float npv){
+
+  double npv_weight = 1.0;
+  if(!applyWeights) return npv_weight;
+
+  npv_weight = histnpvwgt->GetBinContent(histnpvwgt->FindBin(npv));
+  // std::cout << "NPV = " << npv << ", bin in NPV histo = " << (histnpvwgt->FindBin(npv)) << ", NPV weight = " << npv_weight << std::endl;
+  return npv_weight;
+}
 
 ////Grabs a list of the groups of histograms to be filled and asked Fill_folder to fill up the histograms
 void Analyzer::fill_histogram(std::string year) {
-  
+
   if(!isData && distats["Run"].bfind("ApplyGenWeight") && gen_weight == 0.0) return;
 
   if(isData && blinded && maxCut == SignalRegion) return;
@@ -4203,7 +4314,7 @@ void Analyzer::fill_histogram(std::string year) {
     if(distats["Run"].bfind("UsePileUpWeight")) wgt*= pu_weight;
     if(distats["Run"].bfind("ApplyGenWeight")) wgt *= (gen_weight > 0) ? 1.0 : -1.0;
     //add weight here
-    //if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdDataMCScaleFactor(0); 
+    //if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdDataMCScaleFactor(0);
     // Arguments: getTauIdSFs(bool getTauIDsf, bool getTauIDbyDMsfs, bool getAntiElesf, bool getAntiMusf, std::string uncertainty)
     // std::cout << "ApplyTauIDSF = " << distats["Run"].bfind("ApplyTauIDSF") << ", TauIdSFsByDM = " << distats["Run"].bfind("TauIdSFsByDM") << ", ApplyTauAntiEleSF = " << distats["Run"].bfind("ApplyTauAntiEleSF") << ", ApplyTauAntiMuSF = " << distats["Run"].bfind("ApplyTauAntiMuSF") << std::endl;
     if(distats["Run"].bfind("ApplyTauIDSF")) wgt *= getTauIdSFs(true, distats["Run"].bfind("TauIdSFsByDM"), distats["Run"].bfind("ApplyTauAntiEleSF"), distats["Run"].bfind("ApplyTauAntiMuSF"), "");
@@ -4212,8 +4323,8 @@ void Analyzer::fill_histogram(std::string year) {
     if(distats["Run"].bfind("ApplyISRZBoostSF") && isVSample){
       //wgt *= getZBoostWeight();
       wgt *= getZBoostWeightSyst(0);
-      boosters[0] = getZBoostWeightSyst(0); //06.02.20                                                                                                                                                      
-      boosters[1] = getZBoostWeightSyst(-1);  //06.02.20                                                                                                                                                    
+      boosters[0] = getZBoostWeightSyst(0); //06.02.20
+      boosters[1] = getZBoostWeightSyst(-1);  //06.02.20
       boosters[2] = getZBoostWeightSyst(1);  //06.02.20
     }
     else if(distats["Run"].bfind("ApplySUSYZBoostSF") && isVSample){
@@ -4242,7 +4353,7 @@ void Analyzer::fill_histogram(std::string year) {
     for(Particle* ipart: allParticles) ipart->setCurrentP(i);
     _MET->setCurrentP(i);
 
-    active_part = &syst_parts.at(i); 
+    active_part = &syst_parts.at(i);
 
     if(i == 0) {
       active_part = &goodParts;
@@ -4275,12 +4386,12 @@ void Analyzer::fill_histogram(std::string year) {
         if(syst_names[i]=="Pileup_weight_Up"){
           if(distats["Run"].bfind("UsePileUpWeight")) {
             wgt/=   pu_weight;
-            wgt *=  hPU_up[(int)(nTruePU+1)];
+            wgt *= hist_pu_wgt_up->GetBinContent(hist_pu_wgt_up->FindBin(nTruePU));
           }
         }else if(syst_names[i]=="Pileup_weight_Down"){
           if(distats["Run"].bfind("UsePileUpWeight")) {
             wgt/=   pu_weight;
-            wgt *=  hPU_down[(int)(nTruePU+1)];
+            wgt *= hist_pu_wgt_do->GetBinContent(hist_pu_wgt_do->FindBin(nTruePU));
           }
         }
         // --------- Prefiring weights ----------- //
@@ -4311,8 +4422,8 @@ void Analyzer::fill_histogram(std::string year) {
         }
       }
 
-      ///---06.06.20---                                                                                                                                                                                     
-      if(syst_names[i].find("ISR_weight")!=std::string::npos){ //07.09.18                                                                                                                                   
+      ///---06.06.20---
+      if(syst_names[i].find("ISR_weight")!=std::string::npos){ //07.09.18
         if(syst_names[i]=="ISR_weight_up"){
           if(distats["Run"].bfind("ApplyISRZBoostSF") && isVSample) {
             wgt/=boosters[0];
@@ -4325,7 +4436,7 @@ void Analyzer::fill_histogram(std::string year) {
           }
         }
       }
-      ///---06.02.20 
+      ///---06.02.20
     }
 
     //get the non particle conditions:
@@ -4368,25 +4479,25 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       }
     }
     else{
-	    
+
       if(isSignalMC){ // For signal samples (unskimmed)
         if(finalInputSignal){
-          
+
 	    	  // Bin 1 will contain only the events that correspond to a certain signal mass point
-          ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1); 
-          
+          ihisto.addVal(false, group,ihisto.get_maxfolder(), "Events", 1);
+
           if(distats["Run"].bfind("ApplyGenWeight")) {
-            
+
             if(finalInputSignal){
               // Bin 3 contains the number of raw signal MC events passing a particular cut, same as bin1 but without any weights.
-              ihisto.addVal(2, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+              ihisto.addVal(2, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0);
             }
             // Bin 4 contains number of raw MC events for a given signal point for which the gen_weight is positive.
-            ihisto.addVal(3, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+            ihisto.addVal(3, group,ihisto.get_maxfolder(), "Events", (gen_weight > 0) ? 1.0 : -1.0);
           }
         }
         // Bin 5 contains the full number of events analyzed in the signal sample (including all signal points)
-        ihisto.addVal(4,group,ihisto.get_maxfolder(),"Events",1.0); 
+        ihisto.addVal(4,group,ihisto.get_maxfolder(),"Events",1.0);
 	    }
 	    else if(!isSignalMC || isData ){ // For backgrounds or data.
         // Bin 1 contains the number of events analyzed in a given sample.
@@ -4409,24 +4520,24 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
     if(isSignalMC){ // For signal samples (unskimmed)
       if(finalInputSignal){
-        
+
         // Bin 1 will contain only the events that correspond to a certain signal mass point
-        syst_histo.addVal(false, group,max, "Events", 1); 
-        
+        syst_histo.addVal(false, group,max, "Events", 1);
+
         if(distats["Run"].bfind("ApplyGenWeight")) {
-          
+
           if(finalInputSignal){
             // Bin 3 contains the number of raw signal MC events passing a particular cut, same as bin1 but without any weights.
-            syst_histo.addVal(2, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+            syst_histo.addVal(2, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0);
           }
           // Bin 4 contains number of raw MC events for a given signal point for which the gen_weight is positive.
-          syst_histo.addVal(3, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0); 
+          syst_histo.addVal(3, group,max, "Events", (gen_weight > 0) ? 1.0 : -1.0);
         }
       }
       // Bin 5 contains the full number of events analyzed in the signal sample (including all signal points)
-      syst_histo.addVal(4,group,max,"Events",1.0); 
+      syst_histo.addVal(4,group,max,"Events",1.0);
     }
-    else if(!isSignalMC){ // For backgrounds 
+    else if(!isSignalMC){ // For backgrounds
       // Bin 1 contains the number of events analyzed in a given sample.
       syst_histo.addVal(false, group,max, "Events", 1);
 
@@ -4852,16 +4963,16 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       double diMass1 = CalculateDiLepMassDeltaPt(part1, part2, mass1, mass2);
       histAddVal(diMass1, "ReconstructableMassDeltaPt");
 
-      double cosDphiLeadLepMet = cos(absnormPhi(llep.Phi() - _MET->phi()));                                                                                                                                    
+      double cosDphiLeadLepMet = cos(absnormPhi(llep.Phi() - _MET->phi()));
       histAddVal(cosDphiLeadLepMet, "RecoCosDphiPtLeadLepandMet");
 
-      double AbscosDphiLeadLepMet = abs(cos(absnormPhi(llep.Phi() - _MET->phi())));                                                                                                                                    
-      histAddVal(AbscosDphiLeadLepMet, "RecoAbsCosDphiPtLeadLepandMet"); 
+      double AbscosDphiLeadLepMet = abs(cos(absnormPhi(llep.Phi() - _MET->phi())));
+      histAddVal(AbscosDphiLeadLepMet, "RecoAbsCosDphiPtLeadLepandMet");
 
   	  if(calculateLeptonMetMt(llep) > 0){
   	  	histAddVal(diMass1, "ReconstructableMassDeltaPt_nonzeroMt");
   	  	histAddVal(cosDphiLeadLepMet, "RecoCosDphiPtLeadLepandMet_nonzeroMt");
-  	  	histAddVal(AbscosDphiLeadLepMet, "RecoAbsCosDphiPtLeadLepandMet_nonzeroMt"); 
+  	  	histAddVal(AbscosDphiLeadLepMet, "RecoAbsCosDphiPtLeadLepandMet_nonzeroMt");
   	  }
 
       double ptSum = part1.Pt() + part2.Pt();
@@ -4954,10 +5065,10 @@ void Analyzer::fill_Tree(){
 */
 
 void Analyzer::initializePileupInfo(const bool& specialPU, std::string outfilename){
-   // If specialPUcalculation is true, then take the name of the output file (when submitting jobs) 
+   // If specialPUcalculation is true, then take the name of the output file (when submitting jobs)
    // to retrieve the right MC nTruePU distribution to calculate the PU weights, otherwise, it will do
    // the calculation as usual, having a single MC nTruePU histogram (MCHistos option).
-   // If you need to run the Analyzer interactively and use the specialPUcalculation option, make sure that you 
+   // If you need to run the Analyzer interactively and use the specialPUcalculation option, make sure that you
    // include the name of the sample to analyze. For example, you can look at the names given to output files in past
    // runs sumbitted as jobs and use those names instead. This will be improved later.
 
@@ -5010,7 +5121,7 @@ void Analyzer::initializePileupInfo(const bool& specialPU, std::string outfilena
     std::abort();
    }
    catch(...){
-    std::cerr << "ERROR in initializePileupInfo! Unknown exception." << std::endl; 
+    std::cerr << "ERROR in initializePileupInfo! Unknown exception." << std::endl;
     std::cerr << "\tAborting Analyzer..." << std::endl;
     std::abort();
    } // end of catch blocks
@@ -5020,53 +5131,47 @@ void Analyzer::initializePileupInfo(const bool& specialPU, std::string outfilena
 
 void Analyzer::initializePileupWeights(std::string MCHisto, std::string DataHisto, std::string DataHistoName, std::string MCHistoName) {
 
-  TFile *file1 = new TFile((PUSPACE+MCHisto).c_str());
-  TH1D* histmc = (TH1D*)file1->FindObjectAny(MCHistoName.c_str());
-  if(!histmc) throw std::runtime_error(("Failed to extract histogram "+MCHistoName+" from "+PUSPACE+MCHisto+"!").c_str());
+    TFile *file1 = new TFile((PUSPACE+MCHisto).c_str());
+    TH1D* histmc = (TH1D*)file1->FindObjectAny(MCHistoName.c_str());
+    if(!histmc) throw std::runtime_error(("Failed to extract histogram "+MCHistoName+" from "+PUSPACE+MCHisto+"!").c_str());
+    histmc->Scale(1./histmc->Integral());
+    histmc->SetDirectory(0);
 
-  TFile* file2 = new TFile((PUSPACE+DataHisto).c_str());
-  TH1D* histdata = (TH1D*)file2->FindObjectAny(DataHistoName.c_str());
-  if(!histdata) throw std::runtime_error(("Failed to extract histogram "+DataHistoName+" from "+PUSPACE+DataHisto+"!").c_str());
+    TFile* file2 = new TFile((PUSPACE+DataHisto).c_str());
+    hist_pu_wgt = dynamic_cast<TH1D*> (file2->FindObjectAny(DataHistoName.c_str()) );
+    if(!hist_pu_wgt) throw std::runtime_error(("Failed to extract histogram "+DataHistoName+" from "+PUSPACE+DataHisto+"!").c_str());
 
-  TH1D* histdata_up = (TH1D*)file2->FindObjectAny((DataHistoName+"Up").c_str());
-  TH1D* histdata_down = (TH1D*)file2->FindObjectAny((DataHistoName+"Do").c_str());
+    hist_pu_wgt->Scale(1.0/hist_pu_wgt->Integral());
+    hist_pu_wgt->Divide(histmc);
+    hist_pu_wgt->SetDirectory(0);
 
-  histmc->Scale(1./histmc->Integral());
-  histdata->Scale(1./histdata->Integral());
-  if(histdata_up){
-    histdata_up->Scale(1./histdata_up->Integral());
-    histdata_down->Scale(1./histdata_down->Integral());
-  }
-
-  //double factor = histmc->Integral() / histdata->Integral();
-  float value,valueUp,valueDown;
-  // The bin corresponding to nTruePU = 0 will be bin = 1 and, the calculated weight will be stored 
-  // in hPU[bin]. That's why when we calculate the pu_weight in setupEventGeneral, we require hPU[(int)nTruePU+1].
-  for(int bin=0; bin <= histmc->GetNbinsX(); bin++) {
-    if(histmc->GetBinContent(bin) == 0){
-      value = 1;
-      valueUp = 1;
-      valueDown = 1;
-    }else{ 
-      value = histdata->GetBinContent(bin) / histmc->GetBinContent(bin);
-      if(histdata_up){ 
-        valueUp = histdata_up->GetBinContent(bin) / histmc->GetBinContent(bin);
-        valueDown = histdata_down->GetBinContent(bin) / histmc->GetBinContent(bin);
-      }
+    hist_pu_wgt_up = dynamic_cast<TH1D*> ( file2->FindObjectAny((DataHistoName+"Up").c_str()) );
+    if(hist_pu_wgt_up){
+      hist_pu_wgt_up->Scale(1.0/hist_pu_wgt_up->Integral());
+      hist_pu_wgt_up->Divide(histmc);
+      hist_pu_wgt_up->SetDirectory(0);
     }
-    hPU[bin]      = value;
-    if(histdata_up){
-      hPU_up[bin]   = valueUp;
-      hPU_down[bin] = valueDown;
-    }else{
-      hPU_up[bin]   = value;
-      hPU_down[bin] = value;
+
+    hist_pu_wgt_do = dynamic_cast<TH1D*> ( file2->FindObjectAny((DataHistoName+"Do").c_str()) );
+    if(hist_pu_wgt_do){
+      hist_pu_wgt_do->Scale(1.0/hist_pu_wgt_do->Integral());
+      hist_pu_wgt_do->Divide(histmc);
+      hist_pu_wgt_do->SetDirectory(0);
     }
-  }
 
-  file1->Close();
-  file2->Close();
+    file1->Close();
+    file2->Close();
 
+}
+
+void Analyzer::initializeNPVWeights(std::string year){
+
+  TFile *file = new TFile((PUSPACE+"NPVweights.root").c_str());
+  histnpvwgt = dynamic_cast<TH1D*>( file->FindObjectAny( ("NVertices_"+year).c_str() ) );
+  if(!histnpvwgt) throw std::runtime_error(("Failed to extract NPV weight histogram from "+PUSPACE+"NPVweights.root!").c_str());
+  histnpvwgt->SetDirectory(0);
+
+  file->Close();
 }
 
 void Analyzer::initializeWkfactor(std::vector<std::string> infiles) {
