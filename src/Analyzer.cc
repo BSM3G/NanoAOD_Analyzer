@@ -502,7 +502,7 @@ void Analyzer::setupEventGeneral(int nevent){
 
   }
   // Get the number of primary vertices, applies to both data and MC
-  SetBranch("PV_npvs", bestVertices);
+  SetBranch("PV_npvsGood", bestVertices);
 
   // Get the offset energy density for jet energy corrections: https://twiki.cern.ch/twiki/bin/view/CMS/IntroToJEC
   SetBranch("fixedGridRhoFastjetAll", jec_rho);
