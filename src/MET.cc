@@ -209,17 +209,17 @@ void Met::applyXYshiftCorr(std::string const& year, std::string const& runera, i
 
    } else if(year == "2018" && isdata){ // In this case, we use normal MET (not v2 as in 2017)
      if(runera == "2018A"){
-       metxcorr = -(-0.0478335*npv -0.108032);
-       metycorr = -(0.125148*npv + 0.355672);
+       metxcorr = -(0.362865*npv - 1.94505);
+       metycorr = -(0.0709085*npv - 0.307365);
      } else if(runera == "2018B"){
-       metxcorr = -(-0.0478335*npv - 0.108032);
-       metycorr = -(0.125148*npv + 0.355672);
+       metxcorr = -(0.492083*npv - 2.93552);
+       metycorr = -(0.17874*npv - 0.786844);
      } else if(runera == "2018C"){
-       metxcorr = -(-0.0916985*npv + 0.393247);
-       metycorr = -(0.151445*npv + 0.114491);
+       metxcorr = -(0.521349*npv - 1.44544);
+       metycorr = -(0.118956*npv - 1.96434);
      } else if(runera == "2018D"){
-       metxcorr = -(-0.0581169*npv + 0.567316);
-       metycorr = -(0.147549*npv + 0.403088);
+       metxcorr = -(0.531151*npv -1.37568);
+       metycorr = -(0.0884639*npv -1.57089);
      }
    } else if(year == "2018" && !isdata && runera == "2018MC"){ // In this case, we use normal MET (not v2 as in 2017)
 
