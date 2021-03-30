@@ -2,11 +2,11 @@
 	        Smear
 #######################################
 
-SmearTheJet 1
+SmearTheJet 0
 GenMatchingDeltaR 0.2
-ResolutionMatching 1
+ResolutionMatching 0
 MuonMatchingDeltaR  0.2
-ModifiedPUsmearing 1
+ModifiedPUsmearing 0
 
 ########################################
                Jet1
@@ -15,10 +15,10 @@ ModifiedPUsmearing 1
 EtaCut 0.0 4.7
 PtCut 30.0
 
-ApplyLooseID 1
+ApplyLooseID 0
 ApplyTightID 0
 
-ApplyPileupJetID 1
+ApplyPileupJetID 0
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
@@ -53,10 +53,10 @@ Apply2017EEnoiseVeto false
 EtaCut 0.0 4.7
 PtCut 30.0
 
-ApplyLooseID 1
+ApplyLooseID 0
 ApplyTightID 0
 
-ApplyPileupJetID 1
+ApplyPileupJetID 0
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
@@ -90,10 +90,10 @@ Apply2017EEnoiseVeto false
 
 PtCut 30.0
 
-ApplyLooseID 1
+ApplyLooseID 0
 ApplyTightID 0
 
-ApplyPileupJetID 1
+ApplyPileupJetID 0
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
@@ -124,10 +124,10 @@ DoDiscrByThisJet 0
 EtaCut 0.0 5.0
 PtCut 30.0
 
-ApplyLooseID 1
+ApplyLooseID 0
 ApplyTightID 0
 
-ApplyPileupJetID 1
+ApplyPileupJetID 0
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
@@ -158,10 +158,10 @@ DoDiscrByThisJet 0
 EtaCut 0.0 5.0
 PtCut 30.0
 
-ApplyLooseID 1
+ApplyLooseID 0
 ApplyTightID 0
 
-ApplyPileupJetID 1
+ApplyPileupJetID 0
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
@@ -190,10 +190,10 @@ Apply2017EEnoiseVeto false
 EtaCut 0.0 2.4
 PtCut 20.0
 
-ApplyLooseID 1
+ApplyLooseID 0
 ApplyTightID 0
 
-ApplyPileupJetID 1
+ApplyPileupJetID 0
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
@@ -222,5 +222,5 @@ ApplyJetBTaggingDeepFlav 0
 JetBTaggingWP   medium
 JetBTaggingCut  0.6321
 MatchBToGen     0
-UseBtagSF       1
+UseBtagSF       0
 RemoveBJetsFromJets 0

@@ -2,11 +2,11 @@
 
 Gen
 
-DiscrTauByPtAndEta true
+DiscrTauByPtAndEta false
 TauPtCut -10.0  10000.0 
 TauEtaCut 10.0
 
-DiscrHadTauByPtAndEta true
+DiscrHadTauByPtAndEta false
 HadTauPtCut   18.0  9999.9
 HadTauEtaCut  2.4
 DiscrByTauDecayMode false
@@ -22,8 +22,17 @@ DiscrBJetByPtandEta  false
 BJetPtCut 0.0 9999.9
 BJetEtaCut 5.0 
 
-DiscrLightLepByMotherID 0
-LightLepMotherIDs 23. 24.
+DiscrGenMuonByMotherID true
+GenMuonMotherIDs 23. 24.
+DiscrGenMuonByPtandEta false
+GenMuonPtCut 3.0 9999.9
+GenMuonEtaCut 2.1
+
+DiscrGenElectronByMotherID false
+GenElectronMotherIDs 23. 24.
+DiscrGenElectronByPtandEta false
+GenElectronPtCut 0.0 9999.9
+GenElectronEtaCut 2.1
 
 //// ----- THESE OPTIONS ARE NOT USED ANYMORE ----- ////
 

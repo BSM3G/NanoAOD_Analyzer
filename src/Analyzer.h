@@ -145,6 +145,8 @@ public:
   void getGoodParticles(int);
   void getGoodGenHadronicTaus(const PartStats&);
   void getGoodGenJets(const PartStats&);
+  // void getGoodGenMuons(const PartStats&);
+  // void getGoodGenElectrons(const PartStats&);
   void getGoodGenBJets(const PartStats&);
   void getGoodGenHadronicTauNeutrinos(const PartStats&);
   TLorentzVector getGenVisibleTau4Vector(int, int);
@@ -236,6 +238,8 @@ public:
   Generated* _Gen;
   GenHadronicTaus* _GenHadTau;
   GenJets* _GenJet;
+  // GenElectrons* _GenElectron;
+  // GenMuons* _GenMuon;
   Electron* _Electron;
   Muon* _Muon;
   Taus* _Tau;

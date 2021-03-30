@@ -169,6 +169,28 @@ int      genPartonFlavor[MAXINDEX];
   
 };
 
+// /////////////////////////////////////////////////////////////////////////
+// class GenMuons : public Particle {
+
+// public:
+//   GenMuons();
+//   GenMuons(TTree*, std::string, std::vector<std::string>);
+  
+// int      genPartIdxMother[MAXINDEX];
+  
+// };
+
+// /////////////////////////////////////////////////////////////////////////
+// class GenElectrons : public Particle {
+
+// public:
+//   GenElectrons();
+//   GenElectrons(TTree*, std::string, std::vector<std::string>);
+  
+// int      genPartIdxMother[MAXINDEX];
+  
+// };
+
 /////////////////////////////////////////////////////////////////////////
 class Jet : public Particle {
 

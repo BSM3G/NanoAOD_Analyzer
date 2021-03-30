@@ -180,6 +180,8 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     _Gen = new Generated(BOOM, filespace + "Gen_info.in", syst_names);
     _GenHadTau = new GenHadronicTaus(BOOM, filespace + "Gen_info.in", syst_names);
     _GenJet = new GenJets(BOOM, filespace + "Gen_info.in", syst_names);
+    // _GenMuon = new GenMuons(BOOM, filespace + "Gen_info.in", syst_names);
+    // _GenElectron = new GenElectrons(BOOM, filespace + "Gen_info.in", syst_names);
      allParticles= {_Gen,_GenHadTau,_GenJet,_Electron,_Muon,_Tau,_Jet,_FatJet,_Photon};
   } else {
     std::cout<<"This is Data if not, change the flag!"<<std::endl;
@@ -433,6 +435,8 @@ Analyzer::~Analyzer() {
     delete _Gen;
     delete _GenHadTau;
     delete _GenJet;
+    // delete _GenMuon;
+    // delete _GenElectron;
     delete _Photon;
   }
 
@@ -763,12 +767,16 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     _Gen->setOrigReco();
     _GenHadTau->setOrigReco();
     _GenJet->setOrigReco();
+    // _GenMuon->setOrigReco();
+    // _GenElectron->setOrigReco();
 
     getGoodGen(_Gen->pstats["Gen"]);
     getGoodGenHadronicTaus(_GenHadTau->pstats["Gen"]);
     getGoodGenJets(_GenJet->pstats["Gen"]);
     getGoodGenBJets(_GenJet->pstats["Gen"]);
     getGoodGenHadronicTauNeutrinos(_Gen->pstats["Gen"]);
+    // getGoodGenMuons(_GenMuon->pstats["Gen"]);
+    // getGoodGenElectrons(_GenElectron->pstats["Gen"]);
     // getGoodGenBJet(); //01.16.19
 
     //--- filtering inclusive HT-binned samples: must be done after setupEventGeneral --- //
@@ -2792,9 +2800,24 @@ void Analyzer::getGoodGen(const PartStats& stats) {
       if(stats.bfind("DiscrTauByPtAndEta")){
         if(particle_id == 15 && (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
       }
-      // Cuts on light lepton mother IDs
-      else if(stats.bfind("DiscrLightLepByMotherID")){
-       if( (particle_id == 11 || particle_id == 13) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("LightLepMotherIDs").first || abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("LightLepMotherIDs").second)) continue;
+      // Cuts on Gen muon mother IDs, muons are particle_id 13
+      else if(stats.bfind("DiscrGenMuonByMotherID")){
+       if( (particle_id == 13) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenMuonMotherIDs").first || abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenMuonMotherIDs").second)) continue;
+      }
+
+      // Cuts on Gen muon kinematics, muons are particle_id 13
+      else if(stats.bfind("DiscrGenMuonByPtandEta")){
+       if( (particle_id != 13) || (_Gen->pt(j) < stats.pmap.at("GenMuonPtCut").first) || (_Gen->pt(j) > stats.pmap.at("GenMuonPtCut").second) || (abs(_Gen->eta(j)) > stats.dmap.at("GenMuonEtaCut"))) continue;
+      }
+
+      // Cuts on Gen electron mother IDs, electrons are particle_id 11
+      else if(stats.bfind("DiscrGenElectronByMotherID")){
+       if( (particle_id == 11) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenElectronMotherIDs").first || abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenElectronMotherIDs").second)) continue;
+      }
+
+      // Cuts on Gen electron kinematics, muons are particle_id 11
+      else if(stats.bfind("DiscrGenElectronByPtandEta")){
+       if( (particle_id != 11) || (_Gen->pt(j) < stats.pmap.at("GenElectronPtCut").first) || (_Gen->pt(j) > stats.pmap.at("GenElectronPtCut").second) || (abs(_Gen->eta(j)) > stats.dmap.at("GenElectronEtaCut"))) continue;
       }
 
       active_part->at(genMaper.at(particle_id)->ePos)->push_back(j);
@@ -2835,6 +2858,28 @@ void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
      active_part->at(CUTS::eGJet)->push_back(i);
    }
  }
+
+ // void Analyzer::getGoodGenMuons(const PartStats& stats){
+
+ //   // Loop over all gen-level jets from the GenJet collection to apply certain selections
+ //   for(size_t i=0; i < _GenMuon->size(); i++){
+ //     if(stats.bfind("DiscrGenMuonByPtandEta")){
+ //       if(_GenMuon->pt(i) < stats.pmap.at("GenMuonPtCut").first || _GenMuon->pt(i) > stats.pmap.at("GenMuonPtCut").second || abs(_GenMuon->eta(i)) > stats.dmap.at("GenMuonEtaCut")) continue;
+ //     }
+ //     active_part->at(CUTS::eGMuon)->push_back(i);
+ //   }
+ // }
+
+ // void Analyzer::getGoodGenElectrons(const PartStats& stats){
+
+ //   // Loop over all gen-level jets from the GenJet collection to apply certain selections
+ //   for(size_t i=0; i < _GenElectron->size(); i++){
+ //     if(stats.bfind("DiscrGenElectronByPtandEta")){
+ //       if(_GenElectron->pt(i) < stats.pmap.at("GenElectronPtCut").first || _GenElectron->pt(i) > stats.pmap.at("GenElectronPtCut").second || abs(_GenElectron->eta(i)) > stats.dmap.at("GenElectronEtaCut")) continue;
+ //     }
+ //     active_part->at(CUTS::eGElec)->push_back(i);
+ //   }
+ // }
 
  // --- Function that applies selections to b-jets at gen-level (stored in the GenVisTau list) --- //
  void Analyzer::getGoodGenBJets(const PartStats& stats){
