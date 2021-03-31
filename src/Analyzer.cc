@@ -2795,28 +2795,31 @@ void Analyzer::getGoodGen(const PartStats& stats) {
     if( (particle_id < 5 || particle_id == 9 || particle_id == 21) && genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(5)->status){
       active_part->at(genMaper.at(5)->ePos)->push_back(j);
     }
+
     else if(genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(particle_id)->status) {
+      
       // Cuts on gen-taus (before decaying)
       if(stats.bfind("DiscrTauByPtAndEta")){
         if(particle_id == 15 && (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
       }
+      
       // Cuts on Gen muon mother IDs, muons are particle_id 13
-      else if(stats.bfind("DiscrGenMuonByMotherID")){
-       if( (particle_id == 13) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenMuonMotherIDs").first || abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenMuonMotherIDs").second)) continue;
+      if(stats.bfind("DiscrGenMuonByMotherID")){
+       if( (particle_id == 13) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenMuonMotherIDs").first) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenMuonMotherIDs").second)) continue;
       }
 
       // Cuts on Gen muon kinematics, muons are particle_id 13
-      else if(stats.bfind("DiscrGenMuonByPtandEta")){
+      if(stats.bfind("DiscrGenMuonByPtandEta")){
        if( (particle_id != 13) || (_Gen->pt(j) < stats.pmap.at("GenMuonPtCut").first) || (_Gen->pt(j) > stats.pmap.at("GenMuonPtCut").second) || (abs(_Gen->eta(j)) > stats.dmap.at("GenMuonEtaCut"))) continue;
       }
 
       // Cuts on Gen electron mother IDs, electrons are particle_id 11
-      else if(stats.bfind("DiscrGenElectronByMotherID")){
-       if( (particle_id == 11) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenElectronMotherIDs").first || abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenElectronMotherIDs").second)) continue;
+      if(stats.bfind("DiscrGenElectronByMotherID")){
+       if( (particle_id == 11) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenElectronMotherIDs").first) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenElectronMotherIDs").second)) continue;
       }
 
       // Cuts on Gen electron kinematics, muons are particle_id 11
-      else if(stats.bfind("DiscrGenElectronByPtandEta")){
+      if(stats.bfind("DiscrGenElectronByPtandEta")){
        if( (particle_id != 11) || (_Gen->pt(j) < stats.pmap.at("GenElectronPtCut").first) || (_Gen->pt(j) > stats.pmap.at("GenElectronPtCut").second) || (abs(_Gen->eta(j)) > stats.dmap.at("GenElectronEtaCut"))) continue;
       }
 

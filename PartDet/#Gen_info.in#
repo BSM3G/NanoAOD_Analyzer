@@ -23,8 +23,8 @@ BJetPtCut 0.0 9999.9
 BJetEtaCut 5.0 
 
 DiscrGenMuonByMotherID true
-GenMuonMotherIDs 23 24
-DiscrGenMuonByPtandEta true
+GenMuonMotherIDs 23. 24.
+DiscrGenMuonByPtandEta false
 GenMuonPtCut 3.0 9999.9
 GenMuonEtaCut 2.1
 

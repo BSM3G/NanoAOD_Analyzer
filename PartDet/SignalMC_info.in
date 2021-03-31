@@ -3,4 +3,19 @@
 ####################################
 
 ModelTag VBF_EWKino_StauDominated
-MassParameters 150_147p50_145p00
+MassParameters 100_75p00_50p00
+
+
+####################################
+#
+#   Model tag			Mass parameters		m(N2) [GeV]	deltaM(n2,n1) [GeV]	xsec [pb]
+# VBF_EWKino_StauDominated	150_147p50_145p00	      150		5    
+#				150_125p00_100p00	      150		50   
+#				300_297p50_295p00	      300		5    
+#				300_275p00_250p00	      300		50   
+# VBF_EWKino_Higgsino		100_99p75_99p50		      100		0.5  
+#				100_99p50_99p00		      100		1    
+#				100_95p00_90p00		      100		10   
+#				100_75p00_50p00		      100		50   
+#
+####################################
