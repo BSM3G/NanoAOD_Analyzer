@@ -502,6 +502,7 @@ void Analyzer::setupEventGeneral(int nevent){
 
   }
   // Get the number of primary vertices, applies to both data and MC
+  SetBranch("PV_npvs", totalVertices);
   SetBranch("PV_npvsGood", bestVertices);
 
   // Get the offset energy density for jet energy corrections: https://twiki.cern.ch/twiki/bin/view/CMS/IntroToJEC
@@ -4515,6 +4516,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     // In all cases: Bin 2 contains the weighted number of events passing a certain selection.
     histAddVal(true, "Events");
     histAddVal(bestVertices, "NVertices");
+    histAddVal(totalVertices, "NTotalVertices");
 
   } else if(group == "FillRun" && issyst) {
 
@@ -4552,6 +4554,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     // In all cases: Bin 2 contains the weighted number of events passing a certain selection.
     histAddVal(true, "Events");
     histAddVal(bestVertices, "NVertices");
+    histAddVal(totalVertices, "NTotalVertices");
 
   } else if(!isData && group == "FillGen") {
 

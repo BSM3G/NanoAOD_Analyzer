@@ -301,6 +301,7 @@ public:
   bool isData, isSignalMC, CalculatePUSystematics, doSystematics;
 
   float nTruePU = 0;
+  int totalVertices = 0;
   int bestVertices = 0;
   float gen_weight = 0;
   float generatorht = 0;
