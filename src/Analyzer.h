@@ -345,6 +345,11 @@ public:
   Float_t jec_rho =20.;
   std::string runera;
   std::vector< std::vector<float> > jets_jer_sfs;
+  float minDeltaPhiMet_formet = 9999.9;
+  float maxDeltaPhiMet_formet = 0.0;
+  float maxjetptprojonmet_plus_formet = 0.0, maxjetptprojonmet_minus_formet = 0.0;
+  int index_minjmetdphi_formet = -1, index_maxjmetdphi_formet = -1;
+  int index_maxjetptprojonmet_plus_formet = -1, index_maxjetptprojonmet_minus_formet = -1;
 
   const static std::vector<CUTS> genCuts;
   const static std::vector<CUTS> jetCuts;

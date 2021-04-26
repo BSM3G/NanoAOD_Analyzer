@@ -2032,10 +2032,21 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
   std::string systname = syst_names.at(syst);
 
+  // Include the phi-corrections to raw MET -- this is equivalent to apply them to type0-I MET
+  if(distats["Run"].bfind("ApplyMETxyShiftCorrections")){
+    _MET->applyXYshiftCorr(year, runera, bestVertices, isData, systname, syst);
+  }
+
   // Define the deltas to be applied to MET at the end (2017). These deltas account for the unclustered and clustered energy
   float delta_x_EEnoise_rawJets = 0.0, delta_y_EEnoise_rawJets = 0.0, delta_x_EEnoise_T1Jets = 0.0, delta_y_EEnoise_T1Jets = 0.0;
   // Define the jet energy threshold below which we consider it to be unclustered energy.
   float jetUnclEnThreshold = 15.0;
+
+  minDeltaPhiMet_formet = 9999.9;
+  maxDeltaPhiMet_formet = 0.0;
+  maxjetptprojonmet_plus_formet = 0.0, maxjetptprojonmet_minus_formet = 0.0;
+  index_minjmetdphi_formet = -1, index_maxjmetdphi_formet = -1;
+  index_maxjetptprojonmet_plus_formet = -1, index_maxjetptprojonmet_minus_formet = -1;
 
   for(size_t i = 0; i < jet.size(); i++){
 
@@ -2111,13 +2122,13 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     float jet_pt_nomu_nom = jetL1L2L3_jerNom_noMuonP4.Pt(), jet_mass_nomu_nom = jetL1L2L3_jerNom_noMuonP4.M();
     float jet_pt_nomu_jerShifted = jetL1L2L3_jerShifted_noMuonP4.Pt(), jet_mass_nomu_jerShifted = jetL1L2L3_jerShifted_noMuonP4.M();
 
+    bool jetlepmatch = false;
     // Verify that this is only done in simulation, if smearing option is turned on and the jet is above the unclustered energy threshold.
     if( (!isData) && (stats.bfind("SmearTheJet")) && (jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold) ){
 
       // Check if there are any ovelaps with genuine muons. Treat any electrons or hadronic taus which show up in the jet vector as jets.
       // Jet overlap removal in the config files will take care of them later by removing them from the jet vector.
-
-      bool jetlepmatch = false;
+      jetlepmatch = false;
 
       if( JetMatchesLepton(*_Muon, origJetReco, stats.dmap.at("MuonMatchingDeltaR"), CUTS::eGMuon) ){
         // Investigate if this is a muon coming from a b-jet by checking the flavor of the gen-level jet:
@@ -2148,38 +2159,10 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
       // Save the three JER scale factors (nominal, down and up) as a vector in a vector: 0 - nominal, 1 - down, 2 - up
       std::vector<float> jet_jer_sf = jetScaleRes.GetSmearValsPtSF(jetL1L2L3_noMuonP4, genJet, jec_rho);
 
-      bool genjetmatch = false, passtightPUjetID = false, smearunmatchedjet = true;
+      bool genjetmatch = false, passtightPUjetID = false, smearunmatchedjet = true, forwardjetsmearing = true;
 
       // Correct the nominal p4 for this jet.
-      if( !stats.bfind("ModifiedPUsmearing") ){
-
-        // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
-        jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
-
-        jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
-        jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
-
-        if(!jetlepmatch){ // Do the smearing only if there is no overlap with muons, this block will only change the sfs and jet pt/mass.
-
-          if(systname == "orig"){ // This corresponds to the nominal values; set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
-            jer_shift = jer_sf_nom;
-            jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
-            jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
-
-          } else if(systname.find("_Res_") != std::string::npos){
-            if(systname == "Jet_Res_Up"){
-              jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
-            }else if(systname == "Jet_Res_Down"){
-              jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
-            }
-            jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
-            jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
-          }
-
-        }
-
-      } else {
-
+      if( stats.bfind("ModifiedPUsmearing") ){
         genjetmatch = ( genJet != TLorentzVector(0,0,0,0) ) ? true : false;
         passtightPUjetID = _Jet->getPileupJetID(i, 0); // i - jet index, 0 = bit0 (tight ID). If true, it passes tight PU jet ID, otherwise, it fails PU jet ID.
 
@@ -2210,6 +2193,124 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
           }
         }
 
+      } else if ( stats.bfind("ModifiedForwardSmearing") ){
+
+        if( (jetL1L2L3_noMuonP4.Pt() <= 50.0) && ( abs(jetL1L2L3_noMuonP4.Eta()) > 2.5 ) ) forwardjetsmearing = false;
+
+        if( forwardjetsmearing && !jetlepmatch){
+
+          // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
+          jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
+
+          // Correct the nominal mass and pt for this jet.
+          jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
+          jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
+
+          if(systname == "orig"){ // This corresponds to the nominal values: set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
+            jer_shift = jer_sf_nom;
+            jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
+            jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
+
+          }else if(systname.find("_Res_") != std::string::npos){
+            if(systname == "Jet_Res_Up"){
+              jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
+            }else if(systname == "Jet_Res_Down"){
+              jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
+            }
+            jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
+            jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
+          }
+        }
+
+      } else if ( stats.bfind("CombinedModifiedSmearing") ){
+
+        if( abs( jetL1L2L3_noMuonP4.Eta() ) <= 2.5 ){ // central jets
+
+          genjetmatch = genJet != TLorentzVector(0,0,0,0);
+          passtightPUjetID = _Jet->getPileupJetID(i, 0); // i - jet index, 0 = bit0 (tight ID). If true, it passes tight PU jet ID, otherwise, it fails PU jet ID.
+          if (jetL1L2L3_noMuonP4.Pt() <= 50.0) smearunmatchedjet = !genjetmatch && passtightPUjetID ? true : false;
+
+          if( (genjetmatch || smearunmatchedjet) && !jetlepmatch){
+
+            // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
+            jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
+
+            // Correct the nominal mass and pt for this jet.
+            jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
+            jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
+
+            if(systname == "orig"){ // This corresponds to the nominal values: set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
+              jer_shift = jer_sf_nom;
+              jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
+              jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
+
+            }else if(systname.find("_Res_") != std::string::npos){
+              if(systname == "Jet_Res_Up"){
+                jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
+              }else if(systname == "Jet_Res_Down"){
+                jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
+              }
+              jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
+              jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
+            }
+          }
+
+        } else if( abs( jetL1L2L3_noMuonP4.Eta() ) > 2.5 ) { // forward jets
+
+          if( jetL1L2L3_noMuonP4.Pt() <= 50.0 ) forwardjetsmearing = false;
+
+          if( forwardjetsmearing && !jetlepmatch){
+
+            // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
+            jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
+
+            // Correct the nominal mass and pt for this jet.
+            jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
+            jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
+
+            if(systname == "orig"){ // This corresponds to the nominal values: set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
+              jer_shift = jer_sf_nom;
+              jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
+              jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
+
+            }else if(systname.find("_Res_") != std::string::npos){
+              if(systname == "Jet_Res_Up"){
+                jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
+              }else if(systname == "Jet_Res_Down"){
+                jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
+              }
+              jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
+              jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
+            }
+          }
+
+        }
+
+      } else {
+        // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
+        jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
+
+        jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
+        jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
+
+        if(!jetlepmatch){ // Do the smearing only if there is no overlap with muons, this block will only change the sfs and jet pt/mass.
+
+          if(systname == "orig"){ // This corresponds to the nominal values; set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
+            jer_shift = jer_sf_nom;
+            jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
+            jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
+
+          } else if(systname.find("_Res_") != std::string::npos){
+            if(systname == "Jet_Res_Up"){
+              jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
+            } else if(systname == "Jet_Res_Down"){
+              jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
+            }
+            jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
+            jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
+          }
+
+        }
       }
     }
 
@@ -2284,6 +2385,138 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     	}
     }
 
+    // Study jet pt projections on MET axis for data
+    if(isData && (jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold) ){
+      // study separation of jets from Met
+      if( (year.compare("2016") == 0) || (year.compare("2018") == 0)){
+        float deltaPhiJetMet_data = normPhi(rawJetP4_noMuon.Phi() - _MET->phi());
+        float cosinedPhiJetMet_data = cos(deltaPhiJetMet_data);
+        float jetptmetproj_p_data = 0.0, jetptmetproj_m_data = 0.0;
+
+        if(cosinedPhiJetMet_data < 0.0){
+          jetptmetproj_m_data = rawJetP4_noMuon.Pt() * cosinedPhiJetMet_data;
+        } else if(cosinedPhiJetMet_data > 0.0){
+          jetptmetproj_p_data = rawJetP4_noMuon.Pt() * cosinedPhiJetMet_data;
+        }
+
+        if(abs(deltaPhiJetMet_data) < minDeltaPhiMet_formet){
+          minDeltaPhiMet_formet = abs(deltaPhiJetMet_data);
+          index_minjmetdphi_formet = i;
+        }
+
+        if(abs(deltaPhiJetMet_data) > maxDeltaPhiMet_formet){
+          maxDeltaPhiMet_formet = abs(deltaPhiJetMet_data);
+          index_maxjmetdphi_formet = i;
+        }
+
+        if(abs(jetptmetproj_m_data) > maxjetptprojonmet_minus_formet){
+          maxjetptprojonmet_minus_formet = abs(jetptmetproj_m_data);
+          index_maxjetptprojonmet_minus_formet = i;
+        }
+
+        if(abs(jetptmetproj_p_data) > maxjetptprojonmet_plus_formet){
+          maxjetptprojonmet_plus_formet = abs(jetptmetproj_p_data);
+          index_maxjetptprojonmet_plus_formet = i;
+        }
+      } else if ( year.compare("2017") == 0 ){
+        if( ! ((abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && (rawJetP4_noMuon.Pt() < 50.0) ) ){
+          float deltaPhiJetMet_data = normPhi(rawJetP4_noMuon.Phi() - _MET->phi());
+          float cosinedPhiJetMet_data = cos(deltaPhiJetMet_data);
+          float jetptmetproj_p_data = 0.0, jetptmetproj_m_data = 0.0;
+
+          if(cosinedPhiJetMet_data < 0.0){
+            jetptmetproj_m_data = rawJetP4_noMuon.Pt() * cosinedPhiJetMet_data;
+          } else if(cosinedPhiJetMet_data > 0.0){
+            jetptmetproj_p_data = rawJetP4_noMuon.Pt() * cosinedPhiJetMet_data;
+          }
+
+          if(abs(deltaPhiJetMet_data) < minDeltaPhiMet_formet){
+            minDeltaPhiMet_formet = abs(deltaPhiJetMet_data);
+            index_minjmetdphi_formet = i;
+          }
+
+          if(abs(deltaPhiJetMet_data) > maxDeltaPhiMet_formet){
+            maxDeltaPhiMet_formet = abs(deltaPhiJetMet_data);
+            index_maxjmetdphi_formet = i;
+          }
+
+          if(abs(jetptmetproj_m_data) > maxjetptprojonmet_minus_formet){
+            maxjetptprojonmet_minus_formet = abs(jetptmetproj_m_data);
+            index_maxjetptprojonmet_minus_formet = i;
+          }
+
+          if(abs(jetptmetproj_p_data) > maxjetptprojonmet_plus_formet){
+            maxjetptprojonmet_plus_formet = abs(jetptmetproj_p_data);
+            index_maxjetptprojonmet_plus_formet = i;
+          }
+        }
+      }
+    } else if( (!isData) && (jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold) && (!jetlepmatch) ){
+      if( (year.compare("2016") == 0) || (year.compare("2018") == 0)){
+        float deltaPhiJetMet = normPhi(rawJetP4_noMuon.Phi() - _MET->phi());
+        float cosinedPhiJetMet = cos(deltaPhiJetMet);
+        float jetptmetproj_p = 0.0, jetptmetproj_m = 0.0;
+
+        if(cosinedPhiJetMet < 0.0){
+          jetptmetproj_m = rawJetP4_noMuon.Pt() * cosinedPhiJetMet;
+        } else if(cosinedPhiJetMet > 0.0){
+          jetptmetproj_p = rawJetP4_noMuon.Pt() * cosinedPhiJetMet;
+        }
+
+        if(abs(deltaPhiJetMet) < minDeltaPhiMet_formet){
+          minDeltaPhiMet_formet = abs(deltaPhiJetMet);
+          index_minjmetdphi_formet = i;
+        }
+
+        if(abs(deltaPhiJetMet) > maxDeltaPhiMet_formet){
+          maxDeltaPhiMet_formet = abs(deltaPhiJetMet);
+          index_maxjmetdphi_formet = i;
+        }
+
+        if(abs(jetptmetproj_m) > maxjetptprojonmet_minus_formet){
+          maxjetptprojonmet_minus_formet = abs(jetptmetproj_m);
+          index_maxjetptprojonmet_minus_formet = i;
+        }
+
+        if(abs(jetptmetproj_p) > maxjetptprojonmet_plus_formet){
+          maxjetptprojonmet_plus_formet = abs(jetptmetproj_p);
+          index_maxjetptprojonmet_plus_formet = i;
+        }
+      } else if ( year.compare("2017") == 0 ){
+        if( ! ((abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && (rawJetP4_noMuon.Pt() < 50.0) ) ){
+          float deltaPhiJetMet = normPhi(rawJetP4_noMuon.Phi() - _MET->phi());
+          float cosinedPhiJetMet = cos(deltaPhiJetMet);
+          float jetptmetproj_p = 0.0, jetptmetproj_m = 0.0;
+
+          if(cosinedPhiJetMet < 0.0){
+            jetptmetproj_m = rawJetP4_noMuon.Pt() * cosinedPhiJetMet;
+          } else if(cosinedPhiJetMet > 0.0){
+            jetptmetproj_p = rawJetP4_noMuon.Pt() * cosinedPhiJetMet;
+          }
+
+          if(abs(deltaPhiJetMet) < minDeltaPhiMet_formet){
+            minDeltaPhiMet_formet = abs(deltaPhiJetMet);
+            index_minjmetdphi_formet = i;
+          }
+
+          if(abs(deltaPhiJetMet) > maxDeltaPhiMet_formet){
+            maxDeltaPhiMet_formet = abs(deltaPhiJetMet);
+            index_maxjmetdphi_formet = i;
+          }
+
+          if(abs(jetptmetproj_m) > maxjetptprojonmet_minus_formet){
+            maxjetptprojonmet_minus_formet = abs(jetptmetproj_m);
+            index_maxjetptprojonmet_minus_formet = i;
+          }
+
+          if(abs(jetptmetproj_p) > maxjetptprojonmet_plus_formet){
+            maxjetptprojonmet_plus_formet = abs(jetptmetproj_p);
+            index_maxjetptprojonmet_plus_formet = i;
+          }
+        }
+      }
+    }
+
     // --------------------- Propagation of JER/JES to MET --------------------- //
 
     double jetTotalEmEF = _Jet->neutralEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
@@ -2323,25 +2556,17 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
           delta_y_EEnoise_rawJets += rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
 
           // Get the delta for removing L1L2L3-L1 corrected jets in the EE region from the default MET branch
-          // Take into account if the jets are smeared in resolution, multiplying by jer_sf_nom
-          delta_x_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * cos(jetL1L2L3_jerNom_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * cos(rawJetP4_noMuon.Phi());
-          delta_y_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * sin(jetL1L2L3_jerNom_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
-
+          delta_x_EEnoise_T1Jets += (jetL1L2L3_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * cos(jetL1L2L3_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * cos(rawJetP4_noMuon.Phi());
+          delta_y_EEnoise_T1Jets += (jetL1L2L3_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * sin(jetL1L2L3_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
         }
       }
     }
-
   }
 
     // Propagate "unclustered energy" uncertainty to MET to finalize the 2017 MET recipe v2
     if(year.compare("2017") == 0){
       // Remove the L1L2L3-L1 corrected jets in the EE region from the default MET branch
       _MET->removeEEnoiseUnclEnergy(delta_x_EEnoise_T1Jets, delta_y_EEnoise_T1Jets, delta_x_EEnoise_rawJets, delta_y_EEnoise_rawJets, systname, syst);
-    }
-
-    // Once we're done with all the propagation of JEC/JER to the raw MET, we have Type-I. Now include the xy-shift corrections
-    if(distats["Run"].bfind("ApplyMETxyShiftCorrections")){
-      _MET->applyXYshiftCorr(year, runera, bestVertices, isData, systname, syst);
     }
 
 }
@@ -4359,6 +4584,7 @@ void Analyzer::fill_histogram(std::string year) {
     if(i == 0) {
       active_part = &goodParts;
       fillCuts(true);
+      if(isSignalMC && !finalInputSignal) continue;
       for(auto it: *groups) {
         fill_Folder(it, maxCut, histo, false);
       }
@@ -4444,7 +4670,7 @@ void Analyzer::fill_histogram(std::string year) {
     for(auto itCut : nonParticleCuts){
       active_part->at(itCut)=goodParts.at(itCut);
     }
-
+    if(isSignalMC && !finalInputSignal) continue;
     if(!fillCuts(false)) continue;
 
     for(auto it: *syst_histo.get_groups()) {
@@ -4651,13 +4877,82 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       }
     }
     histAddVal(mass, "LeptonMass");
+  } else if(group == "FillJetPtProjMet"){
 
+    if(_Jet->size() > 0){
+      if(index_minjmetdphi_formet > -1){
+        histAddVal(_Jet->pt(index_minjmetdphi_formet), "InitialMinAbsDPhiMetJetPt");
+        histAddVal(_Jet->eta(index_minjmetdphi_formet), "InitialMinAbsDPhiMetJetEta");
+        histAddVal2(_Jet->eta(index_minjmetdphi_formet), _MET->pt(), "InitialMinAbsDPhiMetVsJetEta");
+        histAddVal2(_Jet->eta(index_minjmetdphi_formet), _Jet->pt(index_minjmetdphi_formet), "InitialMinAbsDPhiMetJetPtvsEta");
+        histAddVal(_Jet->phi(index_minjmetdphi_formet), "InitialMinAbsDPhiMetJetPhi");
+        histAddVal(minDeltaPhiMet_formet, "InitialMinAbsDPhiMetJet");
+        histAddVal2(minDeltaPhiMet_formet, _MET->pt(), "InitialMetvsMinAbsDPhiMetJet");
+      }
+
+      if(index_maxjmetdphi_formet > -1){
+        histAddVal(_Jet->pt(index_maxjmetdphi_formet), "InitialMaxAbsDPhiMetJetPt");
+        histAddVal(_Jet->eta(index_maxjmetdphi_formet), "InitialMaxAbsDPhiMetJetEta");
+        histAddVal2(_Jet->eta(index_maxjmetdphi_formet), _MET->pt(), "InitialMaxAbsDPhiMetVsJetEta");
+        histAddVal2(_Jet->eta(index_minjmetdphi_formet), _Jet->pt(index_maxjmetdphi_formet), "InitialMaxAbsDPhiMetJetPtvsEta");
+        histAddVal(_Jet->phi(index_maxjmetdphi_formet), "InitialMaxAbsDPhiMetJetPhi");
+        histAddVal(maxDeltaPhiMet_formet, "InitialMaxAbsDPhiMetJet");
+        histAddVal2(maxDeltaPhiMet_formet, _MET->pt(), "InitialMetvsMaxAbsDPhiMetJet");
+      }
+
+      if(index_maxjetptprojonmet_minus_formet > -1){
+        histAddVal(_Jet->pt(index_maxjetptprojonmet_minus_formet), "InitialMaxJetProjMetMinusPt");
+        histAddVal(_Jet->eta(index_maxjetptprojonmet_minus_formet), "InitialMaxJetProjMetMinusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_minus_formet), _MET->pt(), "InitialMaxJetProjMetMinusVsEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_minus_formet), _Jet->pt(index_maxjetptprojonmet_minus_formet), "InitialMaxJetProjMetMinusPtvsEta");
+        histAddVal(_Jet->phi(index_maxjetptprojonmet_minus_formet), "InitialMaxJetProjMetMinusPhi");
+        histAddVal(maxjetptprojonmet_minus_formet, "InitialMaxJetProjMetMinusMag");
+        histAddVal2(maxjetptprojonmet_minus_formet, _MET->pt(), "InitialMetvsMaxJetProjMetMinusMag");
+      }
+
+      if(index_maxjetptprojonmet_plus_formet > -1){
+        histAddVal(_Jet->pt(index_maxjetptprojonmet_plus_formet), "InitialMaxJetProjMetPlusPt");
+        histAddVal(_Jet->eta(index_maxjetptprojonmet_plus_formet), "InitialMaxJetProjMetPlusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_plus_formet), _MET->pt(), "InitialMaxJetProjMetPlusVsEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_plus_formet), _Jet->pt(index_maxjetptprojonmet_plus_formet), "InitialMaxJetProjMetPlusPtvsEta");
+        histAddVal(_Jet->phi(index_maxjetptprojonmet_plus_formet), "InitialMaxJetProjMetPlusPhi");
+        histAddVal(maxjetptprojonmet_plus_formet, "InitialMaxJetProjMetPlusMag");
+        histAddVal2(maxjetptprojonmet_plus_formet, _MET->pt(), "InitialMetvsMaxJetProjMetPlusMag");
+      }
+
+      if(index_maxjetptprojonmet_plus_formet > -1 || index_maxjetptprojonmet_minus_formet > -1){
+        int maxprojonmet_idx_formet = maxjetptprojonmet_minus_formet > maxjetptprojonmet_plus_formet ? index_maxjetptprojonmet_minus_formet : index_maxjetptprojonmet_plus_formet;
+        float maxprojonmet_formet = std::max(maxjetptprojonmet_minus_formet, maxjetptprojonmet_plus_formet);
+
+        histAddVal(_Jet->pt(maxprojonmet_idx_formet), "InitialMaxJetProjMetPt");
+        histAddVal(_Jet->eta(maxprojonmet_idx_formet), "InitialMaxJetProjMetEta");
+        histAddVal2(_Jet->eta(maxprojonmet_idx_formet), _MET->pt(), "InitialMaxJetProjMetVsEta");
+        histAddVal2(_Jet->eta(maxprojonmet_idx_formet), _Jet->pt(maxprojonmet_idx_formet), "InitialMaxJetProjMetPtvsEta");
+        histAddVal(_Jet->phi(maxprojonmet_idx_formet), "InitialMaxJetProjMetPhi");
+        histAddVal(maxprojonmet_formet, "InitialMaxJetProjMetMag");
+        histAddVal2(maxprojonmet_formet, _MET->pt(), "InitialMetvsMaxJetProjMetMag");
+        histAddVal(normPhi(_Jet->phi(maxprojonmet_idx_formet) - _MET->phi()), "InitialMaxJetProjMetDeltaPhi");
+        histAddVal2(normPhi(_Jet->phi(maxprojonmet_idx_formet) - _MET->phi()), _MET->pt(), "InitialMetvsMaxJetProjMetDeltaPhi");
+        if( cos( normPhi(_Jet->phi(maxprojonmet_idx_formet) - _MET->phi()) ) > 0 ){
+          histAddVal(1, "InitialMaxJetProjMetSign");
+          histAddVal2(1, _MET->pt(), "InitialMetvsMaxJetProjMetSign");
+        } else {
+          histAddVal(-1, "InitialMaxJetProjMetSign");
+          histAddVal2(-1, _MET->pt(), "InitialMetvsMaxJetProjMetSign");
+        }
+        histAddVal(cos( normPhi(_Jet->phi(maxprojonmet_idx_formet) - _MET->phi()) ), "InitialMaxJetProjMetCosDPhi");
+      }
+    }
   } else if(fillInfo[group]->type == FILLER::Single) {
     Particle* part = fillInfo[group]->part;
     CUTS ePos = fillInfo[group]->ePos;
 
     // Added variable to calculate minimum deltaPhi between particle and MET
     float minDeltaPhiMet = 9999.9;
+    float maxDeltaPhiMet = 0.0;
+    float maxjetptprojonmet_plus = 0.0, maxjetptprojonmet_minus = 0.0;
+    int index_minjmetdphi = -1, index_maxjmetdphi = -1;
+    int index_maxjetptprojonmet_plus = -1, index_maxjetptprojonmet_minus = -1;
 
     // int i = 0;
     for(auto it : *active_part->at(ePos)) {
@@ -4690,6 +4985,36 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         if(deltaPhiMet < minDeltaPhiMet){
           minDeltaPhiMet = deltaPhiMet;
         }
+
+        float cosDPhiJetMet = cos(normPhi(part->p4(it).Phi() - _MET->phi()));
+        float jetptmetproj_plus = 0.0, jetptmetproj_minus = 0.0;
+
+        if(cosDPhiJetMet < 0.0){
+          jetptmetproj_minus = part->p4(it).Pt() * cosDPhiJetMet;
+        } else if(cosDPhiJetMet > 0.0){
+          jetptmetproj_plus = part->p4(it).Pt() * cosDPhiJetMet;
+        }
+
+        if(deltaPhiMet < minDeltaPhiMet){
+          minDeltaPhiMet = deltaPhiMet;
+          index_minjmetdphi = it;
+        }
+
+        if(deltaPhiMet > maxDeltaPhiMet){
+          maxDeltaPhiMet = deltaPhiMet;
+          index_maxjmetdphi = it;
+        }
+
+        if(abs(jetptmetproj_minus) > maxjetptprojonmet_minus){
+          maxjetptprojonmet_minus = abs(jetptmetproj_minus);
+          index_maxjetptprojonmet_minus = it;
+        }
+
+        if(abs(jetptmetproj_plus) > maxjetptprojonmet_plus){
+          maxjetptprojonmet_plus = abs(jetptmetproj_plus);
+          index_maxjetptprojonmet_plus = it;
+        }
+
       }
 
       if(ePos == CUTS::eRBJet){
@@ -4700,6 +5025,71 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     if(part->type == PType::Jet){
       // std::cout << "the minimum minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
       histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
+
+      if(index_minjmetdphi > -1){
+        histAddVal(_Jet->pt(index_minjmetdphi), "MinAbsDPhiMetPt");
+        histAddVal(_Jet->eta(index_minjmetdphi), "MinAbsDPhiMetEta");
+        histAddVal2(_Jet->eta(index_minjmetdphi), _MET->pt(), "MetvsMinAbsDPhiMetEta");
+        histAddVal2(_Jet->eta(index_minjmetdphi), _Jet->pt(index_minjmetdphi), "MetvsMinAbsDPhiMetPtvsEta");
+        histAddVal(_Jet->phi(index_minjmetdphi), "MinAbsDPhiMetPhi");
+        histAddVal(minDeltaPhiMet, "MinAbsDPhiMet");
+        histAddVal2(minDeltaPhiMet, _MET->pt(), "MetvsMinAbsDPhiMet");
+      }
+
+      if(index_maxjmetdphi > -1){
+        histAddVal(_Jet->pt(index_maxjmetdphi), "MaxAbsDPhiMetPt");
+        histAddVal(_Jet->eta(index_maxjmetdphi), "MaxAbsDPhiMetEta");
+        histAddVal2(_Jet->eta(index_maxjmetdphi), _MET->pt(), "MetvsMaxAbsDPhiMetEta");
+        histAddVal2(_Jet->eta(index_maxjmetdphi), _Jet->pt(index_maxjmetdphi), "MetvsMaxAbsDPhiMetPtvsEta");
+        histAddVal(_Jet->phi(index_maxjmetdphi), "MaxAbsDPhiMetPhi");
+        histAddVal(maxDeltaPhiMet, "MaxAbsDPhiMet");
+        histAddVal2(maxDeltaPhiMet, _MET->pt(), "MetvsMaxAbsDPhiMet");
+      }
+
+      if(index_maxjetptprojonmet_minus > -1){
+        histAddVal(_Jet->pt(index_maxjetptprojonmet_minus), "MaxProjMetMinusPt");
+        histAddVal(_Jet->eta(index_maxjetptprojonmet_minus), "MaxProjMetMinusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_minus), _MET->pt(), "MetvsMaxProjMetMinusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_minus), _Jet->pt(index_maxjetptprojonmet_minus), "MetvsMaxProjMetMinusPtvsEta");
+        histAddVal(_Jet->phi(index_maxjetptprojonmet_minus), "MaxProjMetMinusPhi");
+        histAddVal(maxjetptprojonmet_minus, "MaxProjMetMinusMag");
+        histAddVal2(maxjetptprojonmet_minus, _MET->pt(), "MetvsMaxProjMetMinusMag");
+      }
+
+      if(index_maxjetptprojonmet_plus > -1){
+        histAddVal(_Jet->pt(index_maxjetptprojonmet_plus), "MaxProjMetPlusPt");
+        histAddVal(_Jet->eta(index_maxjetptprojonmet_plus), "MaxProjMetPlusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_plus), _MET->pt(), "MetvsMaxProjMetPlusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_plus), _Jet->pt(index_maxjetptprojonmet_plus), "MetvsMaxProjMetPlusPtvsEta");
+        histAddVal(_Jet->phi(index_maxjetptprojonmet_plus), "MaxProjMetPlusPhi");
+        histAddVal(maxjetptprojonmet_plus, "MaxProjMetPlusMag");
+        histAddVal2(maxjetptprojonmet_plus, _MET->pt(), "MetvsMaxProjMetPlusMag");
+      }
+
+      if( index_maxjetptprojonmet_minus > -1 || index_maxjetptprojonmet_plus > -1){
+        int maxprojonmet_idx = maxjetptprojonmet_minus > maxjetptprojonmet_plus ? index_maxjetptprojonmet_minus : index_maxjetptprojonmet_plus;
+        float maxprojonmet = std::max(maxjetptprojonmet_minus, maxjetptprojonmet_plus);
+
+        histAddVal(_Jet->pt(maxprojonmet_idx), "MaxProjMetPt");
+        histAddVal(_Jet->eta(maxprojonmet_idx), "MaxProjMetEta");
+        histAddVal2(_Jet->eta(maxprojonmet_idx), _MET->pt(), "MetvsMaxProjMetEta");
+        histAddVal2(_Jet->eta(maxprojonmet_idx), _Jet->pt(maxprojonmet_idx), "MetvsMaxProjMetPtvsEta");
+        histAddVal(_Jet->phi(maxprojonmet_idx), "MaxProjMetPhi");
+        histAddVal(maxprojonmet, "MaxProjMetMag");
+        histAddVal2(maxprojonmet, _MET->pt(), "MetvsMaxProjMetMag");
+        histAddVal(normPhi(_Jet->phi(maxprojonmet_idx) - _MET->phi()), "MaxProjMetDeltaPhi");
+        histAddVal2(normPhi(_Jet->phi(maxprojonmet_idx) - _MET->phi()), _Jet->pt(maxprojonmet_idx), "MetvsMaxProjMetDeltaPhi");
+        if( cos( normPhi(_Jet->phi(maxprojonmet_idx) - _MET->phi()) ) > 0 ){
+          histAddVal(1, "MaxProjMetSign");
+          histAddVal2(1, _MET->pt(), "MetvsMaxProjMetSign");
+        } else {
+          histAddVal(-1, "MaxProjMetSign");
+          histAddVal2(-1, _MET->pt(), "MetvsMaxProjMetSign");
+        }
+
+        histAddVal(cos( normPhi(_Jet->phi(maxprojonmet_idx) - _MET->phi()) ), "MaxProjMetCosDPhi");
+      }
+
     }
 
     if((part->type != PType::Jet ) && active_part->at(ePos)->size() > 0) {
