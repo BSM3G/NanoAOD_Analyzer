@@ -23,12 +23,13 @@
 
 
 FillRun 1
-Events        2   0.    2.
-NVertices   100   0.  100.
+Events        		5   0.    5.
+NVertices  		  100   0.  100.
+NTotalVertices	  100   0.  100. 
 
 //------------------------------------------------//
 
-FillGen 1
+FillGen 0
 
 PUNTrueInt    99 0. 99. // nTruePU - change the number of bins accordingly for each year's datatset
 GenHT       4000 0. 4000.
@@ -72,6 +73,55 @@ GenZDiLepMass	  1000	0.	 5000.
 //////GenZprimeMass    100 0. 10000.      NOT IMPLIMENTED
 //////GenZprimeStatusCode     100 0. 100.
 //////GenTauStatusCode     100 0. 100.
+
+//------------------------------------------------//
+
+FillJetPtProjMet 0
+
+InitialMinAbsDPhiMetJetPt 			200 	0. 			500.
+InitialMinAbsDPhiMetJetEta			100    -5.0 		 +5.0
+InitialMinAbsDPhiMetVsJetEta        100    -5.0 		 +5.0 	100     0.0        1000.0 
+InitialMinAbsDPhiMetJetPtvsEta      100    -5.0 		 +5.0 	200     0.0        500.0 	
+InitialMinAbsDPhiMetJetPhi			252    -6.3          +6.3
+InitialMinAbsDPhiMetJet 		  	 70     0.0          +3.5
+InitialMetvsMinAbsDPhiMetJet		70     0.0          +3.5 	100     0.0        1000.0	
+
+InitialMaxAbsDPhiMetJetPt 			200 	0. 			500.
+InitialMaxAbsDPhiMetJetEta			100    -5.0 		 +5.0
+InitialMaxAbsDPhiMetVsJetEta        100    -5.0 		 +5.0	100     0.0        1000.0
+InitialMaxAbsDPhiMetJetPtvsEta        100    -5.0 		 +5.0	100     0.0        1000.0 	
+InitialMaxAbsDPhiMetJetPhi			252    -6.3          +6.3
+InitialMaxAbsDPhiMetJet 		  	 70     0.0          +3.5
+InitialMetvsMaxAbsDPhiMetJet		70     0.0          +3.5	100     0.0        1000.0	
+
+InitialMaxJetProjMetMinusPt 			200 	0. 			500.
+InitialMaxJetProjMetMinusEta			100    -5.0 		 +5.0
+InitialMaxJetProjMetMinusVsEta          100    -5.0 		 +5.0	100     0.0        1000.0 
+InitialMaxJetProjMetMinusPtvsEta        100    -5.0 		 +5.0	200     0.0        500.0 	
+InitialMaxJetProjMetMinusPhi			252    -6.3          +6.3
+InitialMaxJetProjMetMinusMag            500       0.0   1000.0
+InitialMetvsMaxJetProjMetMinusMag 		500       0.0   1000.0	100     0.0        1000.0   
+
+InitialMaxJetProjMetPlusPt 	    		200 	0. 			500.
+InitialMaxJetProjMetPlusEta			    100    -5.0 		 +5.0
+InitialMaxJetProjMetPlusVsEta           100    -5.0 		 +5.0	100     0.0        1000.0 	
+InitialMaxJetProjMetPlusPtvsEta         100    -5.0 		 +5.0	200     0.0        500.0 	
+InitialMaxJetProjMetPlusPhi				252    -6.3          +6.3
+InitialMaxJetProjMetPlusMag        		500       0.0   1000.0
+InitialMetvsMaxJetProjMetPlusMag 		500       0.0   1000.0	100     0.0        1000.0   
+
+InitialMaxJetProjMetPt 			200 	0. 			500.
+InitialMaxJetProjMetEta			100    -5.0 		 +5.0
+InitialMaxJetProjMetVsEta       100    -5.0 		 +5.0	100     0.0        1000.0 
+InitialMaxJetProjMetPtvsEta     100    -5.0 		 +5.0	200     0.0        500.0 	
+InitialMaxJetProjMetPhi			252    -6.3          +6.3
+InitialMaxJetProjMetMag         500       0.0   1000.0
+InitialMetvsMaxJetProjMetMag    500       0.0   1000.0	100     0.0        1000.0
+InitialMaxJetProjMetSign        6      -3.0    +3.0
+InitialMetvsMaxJetProjMetSign   6      -3.0    +3.0		100     0.0        1000.0   
+InitialMaxJetProjMetDeltaPhi    256      -3.2    +3.2
+InitialMetvsMaxJetProjMetDeltaPhi    256      -3.2    +3.2 	100     0.0        1000.0   
+InitialMaxJetProjMetCosDPhi 	300      -1.5    +1.5
 
 //------------------------------------------------//
 
@@ -165,6 +215,51 @@ Jet1Phi      144  -6.3   +6.3
 Jet1DPhiMet       126  -6.3    +6.3
 Jet1AbsDPhiMet    126   0.0    +6.3
 Jet1MinAbsDPhiMet  126   0.0    +6.3
+
+Jet1MinAbsDPhiMetPt 			200 	0. 			500.
+Jet1MinAbsDPhiMetEta			100    -5.0 		 +5.0
+Jet1MetvsMinAbsDPhiMetEta       100    -5.0 		 +5.0	100     0.         1000.0  
+Jet1MetvsMinAbsDPhiMetPtvsEta   100    -5.0 		 +5.0	200     0.         500.0   
+Jet1MinAbsDPhiMetPhi			252    -6.3          +6.3
+Jet1MinAbsDPhiMet		  	     70     0.0          +3.5
+Jet1MetvsMinAbsDPhiMet           70     0.0          +3.5	100     0.         1000.0    
+
+Jet1MaxAbsDPhiMetPt 			200 	0. 			500.
+Jet1MaxAbsDPhiMetEta			100    -5.0 		 +5.0
+Jet1MetvsMaxAbsDPhiMetEta       100    -5.0 		 +5.0	100     0.         1000.0   
+Jet1MetvsMaxAbsDPhiMetPtvsEta   100    -5.0 		 +5.0	200     0.         500.0   
+Jet1MaxAbsDPhiMetPhi			252    -6.3          +6.3
+Jet1MaxAbsDPhiMet 		  	 70     0.0          +3.5
+Jet1MetvsMaxAbsDPhiMet          70     0.0          +3.5	100     0.         1000.0    
+
+Jet1MaxProjMetMinusPt 			200 	0. 			500.
+Jet1MaxProjMetMinusEta			100    -5.0 		 +5.0
+Jet1MetvsMaxProjMetMinusEta		100    -5.0 		 +5.0	100     0.         1000.0
+Jet1MetvsMaxProjMetMinusPtvsEta	100    -5.0 		 +5.0	200     0.         500.0	
+Jet1MaxProjMetMinusPhi			252    -6.3          +6.3
+Jet1MaxProjMetMinusMag          500       0.0   1000.0
+Jet1MetvsMaxProjMetMinusMag     500       0.0   1000.0	100     0.         1000.0   
+
+Jet1MaxProjMetPlusPt 	     200 	0. 			500.
+Jet1MaxProjMetPlusEta		 100    -5.0 		 +5.0
+Jet1MetvsMaxProjMetPlusEta	 100    -5.0 		 +5.0	100     0.         1000.0 	
+Jet1MetvsMaxProjMetPlusPtvsEta	 100    -5.0 		 +5.0	200     0.         500.0
+Jet1MaxProjMetPlusPhi		 252    -6.3          +6.3
+Jet1MaxProjMetPlusMag        500       0.0   1000.0
+Jet1MetvsMaxProjMetPlusMag   500       0.0   1000.0		100     0.         1000.0      
+
+Jet1MaxProjMetPt 			200 	0. 			500.
+Jet1MaxProjMetEta			100    -5.0 		 +5.0
+Jet1MetvsMaxProjMetEta		100    -5.0 		 +5.0	100     0.         1000.0	
+Jet1MetvsMaxProjMetPtvsEta		100    -5.0 		 +5.0	200     0.         500.0	
+Jet1MaxProjMetPhi			252    -6.3          +6.3
+Jet1MaxProjMetMag         500       0.0   1000.0
+Jet1MetvsMaxProjMetMag      500       0.0   1000.0	100     0.         1000.0   
+Jet1MaxProjMetSign          6      -3.0    +3.0
+Jet1MetvsMaxProjMetSign     6      -3.0    +3.0		100     0.         1000.0     
+Jet1MaxProjMetDeltaPhi    256      -3.2    +3.2
+Jet1MetvsMaxProjMetDeltaPhi    256      -3.2    +3.2	100     0.         1000.0    
+Jet1MaxProjMetCosDPhi 	300      -1.5    +1.5
 
 FillJet2 1
 

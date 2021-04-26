@@ -6,7 +6,9 @@ SmearTheJet 1		   # The current recommendation is to use this option (1).
 GenMatchingDeltaR 0.2
 ResolutionMatching 1       # When smearing jet energy resolution, this option must be 1.
 MuonMatchingDeltaR  0.2
-ModifiedPUsmearing 0       # This is a modified approach to the JER smearing. Check the Analyzer wiki for more info.
+ModifiedPUsmearing 0       	# This is a modified approach to the JER smearing. Check the Analyzer wiki for more info.
+ModifiedForwardSmearing 0	# Second option to smear JER. Check Analyzer wiki for more info.
+CombinedModifiedSmearing 0	# Combination of both approaches above. Check Analyzer wiki for more info.
 
 ########################################
                Jet1

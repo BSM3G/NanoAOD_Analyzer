@@ -41,6 +41,7 @@ NGenTau		0  -1
 ***NRecoJet2	      1   -1   
 ***NDiJetCombinations 0    0
 
+METCut 				  0   -1
 NRecoElectron2	      0   -1
 NRecoMuon2	      0   -1
 NRecoCentralJet	      0   -1
