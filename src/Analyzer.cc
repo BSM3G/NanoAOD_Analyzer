@@ -686,6 +686,116 @@ bool Analyzer::checkGoodRunsAndLumis(int event){
 
 }
 
+// Additional event veto for 2017E and 2017F (only apply to data)
+bool Analyzer::additionalEENoiseEventVeto(const PartStats& stats, std::string year, std::string era){
+
+  //std::cout << "Run year = " << year << ", run era = " << era << std::endl;
+
+  if(year.compare("2017") != 0){
+    //std::cout << "This is not 2017, additional EE noise veto returning true!" << std::endl;
+    return true;
+  }
+
+  if( (year.compare("2017") == 0) && ((era.compare("2017E") != 0) && (era.compare("2017F") != 0)) ){
+    //std::cout << "This is year 2017, but era " << era << ", therefore EE noise veto returning true! " << std::endl;
+    return true;
+  }
+
+  //std::cout << "This is year 2017, era = " << era << ", and EE noise veto is ON, starting for loop... " << std::endl;
+
+  int i=0;
+  std::vector<int> jetsminuseta3p2to2p6;
+  std::vector<int> jetspluseta2p6to3p2;
+
+  for(auto lvec: *_Jet) {
+
+    bool passCuts = true;
+
+    passCuts = passCuts && (lvec.Pt() > stats.dmap.at("PtCut"));
+
+    for( auto cut: stats.bset) {
+      if(!passCuts) break;
+      else if(cut == "Apply2017EEnoiseVeto") passCuts = passCuts && passJetVetoEEnoise2017(i);
+      else if(cut == "ApplyLooseID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedLooseJetID(i);
+        }
+      }
+      else if(cut == "ApplyTightID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedTightJetID(i);
+        }
+      }
+      else if(cut == "ApplyTightLepVetoID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
+        }
+      }
+      else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(lvec, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(lvec, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
+      // ----anti-overlap requirements
+      else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
+      else if (cut =="RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithElectron1s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec1, stats.dmap.at("Electron1MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
+      else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
+    }
+
+    if(passCuts){
+      // Check if it is in the positive or negative eta region
+
+      //std::cout << "Jet #" << i << " passed all selections, checking pt and eta... " << std::endl;
+      //std::cout << "... pt = " << lvec.Pt() << ", eta = " << lvec.Eta() << std::endl;
+
+      if( (lvec.Pt() < 80.0) && ((lvec.Eta() > -3.15) && (lvec.Eta() < -2.66)) ){ 
+        //std::cout << "... jet in problematic pt and negative eta region, adding to the list." << std::endl;
+        jetsminuseta3p2to2p6.push_back(i); 
+      }
+      
+      if( (lvec.Pt() < 80.0) && ((lvec.Eta() > 2.66) && (lvec.Eta() < 3.15)) ){ 
+        //std::cout << "... jet in problematic pt and positive eta region, adding to the list." << std::endl;
+        jetspluseta2p6to3p2.push_back(i); 
+      }
+    }
+
+    i++;
+
+  }
+
+  bool passVeto = true;
+  //std::cout << "Final step of EE noise veto... checking number of noisy jets..." << std::endl;
+  int n_noisyjets = jetsminuseta3p2to2p6.size() + jetspluseta2p6to3p2.size();
+
+  if(n_noisyjets > 0){ 
+    passVeto = false; 
+  }
+
+  //std::cout << "This event has " << n_noisyjets << " noisy jets, passVeto = " << std::boolalpha << passVeto << std::endl;
+
+  return passVeto;
+
+}
+
+
 bool Analyzer::passHEMveto2018(){
 
   bool hasJetinHEM = false;
@@ -819,6 +929,19 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 	    	return;
 	    }
   	}
+
+    // Apply event veto for 2017 E and F once the jet energy corrections are applied (after applyJetEnergyCorrections)
+    //if(distats["Run"].bfind("ApplyEEnoiseVeto2017EF") == 0) std::cout << "EE noise veto not in Run_info.in, returning true!" << std::endl;
+
+    if(distats["Run"].bfind("ApplyEEnoiseVeto2017EF")){
+      bool passEEnoiseVeto = additionalEENoiseEventVeto(_Jet->pstats["Jet1"], year, runera);
+      if(passEEnoiseVeto == false){
+        clear_values();
+        return;
+      }
+    }
+
+
   }
 
   // Call the new function passMetFilters

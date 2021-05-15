@@ -141,7 +141,7 @@ int main (int argc, char* argv[]) {
 
   //main event loop
   for(size_t i=0; i < Nentries; i++) {
-
+    // std::cout << " ------ Event #" << i << " ------- " << std::endl;
     //if(i == 0) spechialAna.begin_run();   // Special analyzer
     testing.clear_values();
 

@@ -120,6 +120,7 @@ public:
   void setCutNeeds();
 
   bool passHEMveto2018();
+  bool additionalEENoiseEventVeto(const PartStats&, std::string, std::string);
   bool passJetVetoEEnoise2017(int);
 
   bool skimSignalMC(int);
