@@ -4873,6 +4873,7 @@ void Analyzer::fill_histogram(std::string year) {
     if(i == 0) {
       active_part = &goodParts;
       fillCuts(true);
+      if(isSignalMC && !finalInputSignal) continue;
       for(auto it: *groups) {
         fill_Folder(it, maxCut, histo, false);
       }
@@ -4958,6 +4959,7 @@ void Analyzer::fill_histogram(std::string year) {
     }
 
     if(!fillCuts(false)) continue;
+    if(isSignalMC && !finalInputSignal) continue;
 
     for(auto it: *syst_histo.get_groups()) {
       fill_Folder(it, i, syst_histo, true);
