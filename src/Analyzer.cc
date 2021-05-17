@@ -2904,6 +2904,8 @@ void Analyzer::getGoodGen(const PartStats& stats) {
 
   int particle_id = 0;
 
+  std::vector<int> intermiedateP4CorrPart;
+
   for(size_t j = 0; j < _Gen->size(); j++) {
 
     particle_id = abs(_Gen->pdg_id[j]);
@@ -2912,16 +2914,85 @@ void Analyzer::getGoodGen(const PartStats& stats) {
       active_part->at(genMaper.at(5)->ePos)->push_back(j);
     }
     else if(genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(particle_id)->status) {
-      // Cuts on gen-taus (before decaying)
-      if(stats.bfind("DiscrTauByPtAndEta")){
-        if(particle_id == 15 && (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
-      }
-      // Cuts on light lepton mother IDs
-      else if(stats.bfind("DiscrLightLepByMotherID")){
-       if( (particle_id == 11 || particle_id == 13) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("LightLepMotherIDs").first || abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("LightLepMotherIDs").second)) continue;
+
+      if(particle_id == 15){
+
+        if(stats.bfind("DiscrTauByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
+
+        if(stats.bfind("DiscrTauByMotherID")){
+          int motherpart_idx = _Gen->genPartIdxMother[j];
+          int mother_pid = abs(_Gen->pdg_id[motherpart_idx]);   
+
+          if(mother_pid == particle_id){
+            // std::cout << "Lepton with same ID for mother particle" << std::endl;
+            int motherpart_idx_tmp = motherpart_idx;
+            int mother_pid_tmp = mother_pid;            
+
+            while(mother_pid_tmp == particle_id){
+              motherpart_idx = _Gen->genPartIdxMother[motherpart_idx_tmp];
+              mother_pid_tmp = abs(_Gen->pdg_id[motherpart_idx]);
+              motherpart_idx_tmp = motherpart_idx;
+            }
+             
+            mother_pid = mother_pid_tmp;
+            //std::cout << "Final mother ID = " << mother_pid << std::endl;
+          }
+           
+          if( (mother_pid != stats.pmap.at("TauMotherIDs").first) && (mother_pid != stats.pmap.at("TauMotherIDs").second) ) continue;
+        }
+      } else if(particle_id == 11){
+        if(stats.bfind("DiscrElecByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("ElecPtCut").first || _Gen->pt(j) > stats.pmap.at("ElecPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("ElecEtaCut"))) continue;
+
+        if(stats.bfind("DiscrElecByMotherID")){
+            int motherpart_idx = _Gen->genPartIdxMother[j];
+            int mother_pid = abs(_Gen->pdg_id[motherpart_idx]);
+            
+            if(mother_pid == particle_id){
+                //std::cout << "Lepton with same ID for mother particle" << std::endl;
+                int motherpart_idx_tmp = motherpart_idx;
+                int mother_pid_tmp = mother_pid;
+                
+                while(mother_pid_tmp == particle_id){
+                   motherpart_idx = _Gen->genPartIdxMother[motherpart_idx_tmp];
+                   mother_pid_tmp = abs(_Gen->pdg_id[motherpart_idx]);
+                   motherpart_idx_tmp = motherpart_idx;
+                } 
+              
+                 mother_pid = mother_pid_tmp;
+                 //std::cout << "Final mother ID = " << mother_pid << std::endl;
+            }
+            
+            if( (mother_pid != stats.pmap.at("ElecMotherIDs").first) && (mother_pid != stats.pmap.at("ElecMotherIDs").second) ) continue;
+        }
+      } else if(particle_id == 13){
+
+         if(stats.bfind("DiscrMuonByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("MuonPtCut").first || _Gen->pt(j) > stats.pmap.at("MuonPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("MuonEtaCut"))) continue;
+
+         if(stats.bfind("DiscrTauByMotherID")){
+            int motherpart_idx = _Gen->genPartIdxMother[j];
+            int mother_pid = abs(_Gen->pdg_id[motherpart_idx]);
+            
+            if(mother_pid == particle_id){
+                // std::cout << "Lepton with same ID for mother particle" << std::endl;
+                int motherpart_idx_tmp = motherpart_idx;
+                int mother_pid_tmp = mother_pid;
+                
+                while(mother_pid_tmp == particle_id){
+                   motherpart_idx = _Gen->genPartIdxMother[motherpart_idx_tmp];
+                   mother_pid_tmp = abs(_Gen->pdg_id[motherpart_idx]);
+                   motherpart_idx_tmp = motherpart_idx;
+                } 
+              
+                 mother_pid = mother_pid_tmp;
+                 //std::cout << "Final mother ID = " << mother_pid << std::endl;
+            }
+            
+            if( (mother_pid != stats.pmap.at("MuonMotherIDs").first) && (mother_pid != stats.pmap.at("MuonMotherIDs").second) ) continue;
+         }
       }
 
       active_part->at(genMaper.at(particle_id)->ePos)->push_back(j);
+      //if(genMaper.at(particle_id)->ePos == CUTS::eGTau) std::cout << "index of Gen collection stored = " << j << std::endl;
     }
 
   }
