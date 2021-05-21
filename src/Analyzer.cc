@@ -2805,7 +2805,28 @@ void Analyzer::getGoodGen(const PartStats& stats) {
       
       // Cuts on Gen muon mother IDs, muons are particle_id 13
       if(stats.bfind("DiscrGenMuonByMotherID")){
-       if( (particle_id == 13) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenMuonMotherIDs").first) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenMuonMotherIDs").second)) continue;
+	//if( (particle_id == 13) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenMuonMotherIDs").first) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("GenMuonMotherIDs").second)) continue;
+	//}
+
+       int motherpart_idx = _Gen->genPartIdxMother[j];
+       int mother_pid = abs(_Gen->pdg_id[motherpart_idx]);
+
+       if (mother_pid == particle_id) {
+          // std::cout << "Lepton with same ID for mother particle" << std::endl;
+       int motherpart_idx_tmp = motherpart_idx;
+       int mother_pid_tmp = mother_pid;
+
+       while (mother_pid_tmp == particle_id) {
+       motherpart_idx = _Gen->genPartIdxMother[motherpart_idx_tmp];
+       mother_pid_tmp = abs(_Gen->pdg_id[motherpart_idx]);
+       motherpart_idx_tmp = motherpart_idx;
+       }
+
+       mother_pid = mother_pid_tmp;
+          // std::cout << "Final mother ID = " << mother_pid << std::endl;  
+        } 
+     
+        if ( (particle_id == 13) && ((mother_pid != stats.pmap.at("GenMuonMotherIDs").first) && (mother_pid != stats.pmap.at("GenMuonMotherIDs").second)) ) continue;
       }
 
       // Cuts on Gen muon kinematics, muons are particle_id 13
@@ -3084,7 +3105,10 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
     else if (lvec.Pt() < stats.pmap.at("PtCut").first || lvec.Pt() > stats.pmap.at("PtCut").second) passCuts = passCuts && false;
 
     if((lep.pstats.at("Smear").bfind("MatchToGen")) && (!isData)) {   /////check
-      if(matchLeptonToGen(lvec, lep.pstats.at("Smear") ,eGenPos) == TLorentzVector(0,0,0,0)) continue;
+      if(matchLeptonToGen(lvec, lep.pstats.at("Smear") ,eGenPos) == TLorentzVector(0,0,0,0)){ 
+	i++;
+	continue;
+      }
     }
 
     for( auto cut: stats.bset) {
