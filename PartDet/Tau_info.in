@@ -85,6 +85,9 @@ MetDphiCut 1.3 3.15
 DiscrByMetMt false
 MetMtCut 0.0    50.0
 
+DiscrByGenMatchingStatus false
+GenMatchingStatusRange 3  5
+
 /////////////////////////////
              Tau2
 //////////////////////////////
@@ -142,3 +145,6 @@ MetDphiCut 1.30   3.15
 
 DiscrByMetMt false
 MetMtCut 0.0 40.0
+
+DiscrByGenMatchingStatus false
+GenMatchingStatusRange 3  5

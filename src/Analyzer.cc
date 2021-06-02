@@ -771,12 +771,12 @@ bool Analyzer::additionalEENoiseEventVeto(const PartStats& stats, std::string ye
       //std::cout << "Jet #" << i << " passed all selections, checking pt and eta... " << std::endl;
       //std::cout << "... pt = " << lvec.Pt() << ", eta = " << lvec.Eta() << std::endl;
 
-      if( (lvec.Pt() < 80.0) && ((lvec.Eta() > -3.15) && (lvec.Eta() < -2.66)) ){ 
+      if( (lvec.Pt() < 80.0) && ((lvec.Eta() > -3.14) && (lvec.Eta() < -2.65)) ){ 
         //std::cout << "... jet in problematic pt and negative eta region, adding to the list." << std::endl;
         jetsminuseta3p2to2p6.push_back(i); 
       }
       
-      if( (lvec.Pt() < 80.0) && ((lvec.Eta() > 2.66) && (lvec.Eta() < 3.15)) ){ 
+      if( (lvec.Pt() < 80.0) && ((lvec.Eta() > 2.65) && (lvec.Eta() < 3.14)) ){ 
         //std::cout << "... jet in problematic pt and positive eta region, adding to the list." << std::endl;
         jetspluseta2p6to3p2.push_back(i); 
       }

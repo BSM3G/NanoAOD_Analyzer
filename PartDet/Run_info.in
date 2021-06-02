@@ -32,9 +32,6 @@ ApplyGenWeight  false
 ApplyL1PrefiringWeight false
 ApplyHEMVeto2018 false
 
-# ApplyAdditionalEEnoiseVeto2017 true
-# ApplyVetoTypeIII true
-
 /// ------ Data-specific cuts ------///
 FilterDataByGoldenJSON true
 ApplyEEnoiseVeto2017EF true
@@ -76,7 +73,7 @@ MhtCut 50.0
 DiscrByHT false
 HtCut 30.0
 
-JetPtForMhtAndHt 30.0        
+JetPtForMhtAndHt 30.0
 JetEtaForMhtAndHt 4.7
 ApplyJetLooseIDforMhtAndHt false
 ApplyJetTightIDforMhtAndHt true
