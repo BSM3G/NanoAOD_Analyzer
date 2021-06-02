@@ -163,7 +163,20 @@ void Particle::getPartStats(std::string filename) {
 
       else if(stemp[1].find_first_not_of("0123456789+-.") == std::string::npos) pstats[group].dmap[stemp[0]]=stod(stemp[1]);
       else pstats[group].smap[stemp[0]] = stemp[1];
-    } else  pstats[group].pmap[stemp[0]] = std::make_pair(stod(stemp[1]), stod(stemp[2]));
+    //} else  pstats[group].pmap[stemp[0]] = std::make_pair(stod(stemp[1]), stod(stemp[2]));
+    } else if(stemp.size() == 3){
+       pstats[group].pmap[stemp[0]] = std::make_pair(stod(stemp[1]), stod(stemp[2]));
+    } else{
+       if(stemp.at(0).find("MotherIDs") != std::string::npos) {
+        std::vector<int> vecInts;
+        for(auto value : stemp){
+          if(value.find("MotherIDs") == std::string::npos and "=" != value){
+             vecInts.push_back(stod(value));
+          }
+        }
+        pstats[group].vmap[stemp[0]] = vecInts;
+      }
+    }
   }
   info_file.close();
 }

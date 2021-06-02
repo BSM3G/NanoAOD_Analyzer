@@ -500,6 +500,11 @@ void Analyzer::setupEventGeneral(int nevent){
       SetBranch("LHE_HT",generatorht);
     }
 
+    if(BOOM->FindBranch("GenMET_pt") != 0){
+      SetBranch("GenMET_pt", genmet_pt);
+      SetBranch("GenMET_phi", genmet_phi);
+    }
+
   }
   // Get the number of primary vertices, applies to both data and MC
   SetBranch("PV_npvs", totalVertices);
@@ -884,6 +889,8 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     _Gen->setOrigReco();
     _GenHadTau->setOrigReco();
     _GenJet->setOrigReco();
+
+    genMotherPartIndex.clear();
 
     getGoodGen(_Gen->pstats["Gen"]);
     getGoodGenHadronicTaus(_GenHadTau->pstats["Gen"]);
@@ -2789,12 +2796,41 @@ TLorentzVector Analyzer::matchLeptonToGen(const TLorentzVector& recoLepton4Vecto
   if(ePos == CUTS::eGHadTau){
     return matchHadTauToGen(recoLepton4Vector, stats.dmap.at("GenMatchingDeltaR"));
   }
-  for(auto it : *active_part->at(ePos)) {
-    if(recoLepton4Vector.DeltaR(_Gen->p4(it)) <= stats.dmap.at("GenMatchingDeltaR")) {
-      if(stats.bfind("UseMotherID") && abs(_Gen->pdg_id[_Gen->genPartIdxMother[it]]) != stats.dmap.at("MotherID")) continue;
-      return _Gen->p4(it);
-    }
-  }
+
+  float minDeltaR = 999.9, tmpDeltaR = 999.9;
+  int pidx = -1;
+
+  if( !stats.bfind("UseMotherID") ){
+     int i = 0;
+     for(auto it : *active_part->at(ePos)) {
+
+       tmpDeltaR = recoLepton4Vector.DeltaR(_Gen->p4(it));
+      if(tmpDeltaR < minDeltaR){
+         minDeltaR = tmpDeltaR;
+         pidx = it;
+       }
+       i++;
+     }
+   } else {
+     for(auto it : *active_part->at(ePos)) {
+
+       int motherpart_idx = genMotherPartIndex.at(it);
+       int motherpart_id = abs(_Gen->pdg_id[motherpart_idx]);
+
+       if( motherpart_id != stats.dmap.at("MotherID") ) continue;
+
+       if( abs(_Gen->pdg_id[_Gen->genPartIdxMother[it]]) != stats.dmap.at("MotherID") ) continue;
+       tmpDeltaR = recoLepton4Vector.DeltaR(_Gen->p4(it));
+
+       if(tmpDeltaR < minDeltaR){
+        minDeltaR = tmpDeltaR;
+        pidx = it;
+      }
+     }
+   }
+
+  if(minDeltaR <= stats.dmap.at("GenMatchingDeltaR")) return _Gen->p4(pidx);
+   
   return TLorentzVector(0,0,0,0);
 }
 
@@ -2915,84 +2951,55 @@ void Analyzer::getGoodGen(const PartStats& stats) {
     }
     else if(genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(particle_id)->status) {
 
+      int motherpart_idx = _Gen->genPartIdxMother[j];
+      int mother_pid = abs(_Gen->pdg_id[motherpart_idx]);   
+
+      if(mother_pid == particle_id){
+
+        int motherpart_idx_tmp = motherpart_idx;
+        int mother_pid_tmp = mother_pid;            
+
+        while(mother_pid_tmp == particle_id){
+          motherpart_idx = _Gen->genPartIdxMother[motherpart_idx_tmp];
+          mother_pid_tmp = abs(_Gen->pdg_id[motherpart_idx]);
+          motherpart_idx_tmp = motherpart_idx;
+        }
+         
+        mother_pid = mother_pid_tmp;
+      }
+
+      // Look for particles that are coming from pileup
+      int particle_idx_tmp = motherpart_idx;
+      int firstmother_idx_tmp = _Gen->genPartIdxMother[particle_idx_tmp];
+
+      while(firstmother_idx_tmp != -1){
+        particle_idx_tmp = firstmother_idx_tmp;
+        firstmother_idx_tmp = _Gen->genPartIdxMother[particle_idx_tmp];
+      }
+
+      int og_motherpart_idx = particle_idx_tmp;
+
       if(particle_id == 15){
 
         if(stats.bfind("DiscrTauByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
-
-        if(stats.bfind("DiscrTauByMotherID")){
-          int motherpart_idx = _Gen->genPartIdxMother[j];
-          int mother_pid = abs(_Gen->pdg_id[motherpart_idx]);   
-
-          if(mother_pid == particle_id){
-            // std::cout << "Lepton with same ID for mother particle" << std::endl;
-            int motherpart_idx_tmp = motherpart_idx;
-            int mother_pid_tmp = mother_pid;            
-
-            while(mother_pid_tmp == particle_id){
-              motherpart_idx = _Gen->genPartIdxMother[motherpart_idx_tmp];
-              mother_pid_tmp = abs(_Gen->pdg_id[motherpart_idx]);
-              motherpart_idx_tmp = motherpart_idx;
-            }
-             
-            mother_pid = mother_pid_tmp;
-            //std::cout << "Final mother ID = " << mother_pid << std::endl;
-          }
-           
-          if( (mother_pid != stats.pmap.at("TauMotherIDs").first) && (mother_pid != stats.pmap.at("TauMotherIDs").second) ) continue;
-        }
+        if(stats.bfind("DiscrTauByNotFromPileup") && (og_motherpart_idx != 0) && (og_motherpart_idx != 1) ) continue;
+        if(stats.bfind("DiscrTauByMotherID") && (mother_pid != stats.pmap.at("TauMotherIDs").first) && (mother_pid != stats.pmap.at("TauMotherIDs").second) ) continue;
+      
       } else if(particle_id == 11){
-        if(stats.bfind("DiscrElecByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("ElecPtCut").first || _Gen->pt(j) > stats.pmap.at("ElecPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("ElecEtaCut"))) continue;
 
-        if(stats.bfind("DiscrElecByMotherID")){
-            int motherpart_idx = _Gen->genPartIdxMother[j];
-            int mother_pid = abs(_Gen->pdg_id[motherpart_idx]);
-            
-            if(mother_pid == particle_id){
-                //std::cout << "Lepton with same ID for mother particle" << std::endl;
-                int motherpart_idx_tmp = motherpart_idx;
-                int mother_pid_tmp = mother_pid;
-                
-                while(mother_pid_tmp == particle_id){
-                   motherpart_idx = _Gen->genPartIdxMother[motherpart_idx_tmp];
-                   mother_pid_tmp = abs(_Gen->pdg_id[motherpart_idx]);
-                   motherpart_idx_tmp = motherpart_idx;
-                } 
-              
-                 mother_pid = mother_pid_tmp;
-                 //std::cout << "Final mother ID = " << mother_pid << std::endl;
-            }
-            
-            if( (mother_pid != stats.pmap.at("ElecMotherIDs").first) && (mother_pid != stats.pmap.at("ElecMotherIDs").second) ) continue;
-        }
+        if(stats.bfind("DiscrElecByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("ElecPtCut").first || _Gen->pt(j) > stats.pmap.at("ElecPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("ElecEtaCut"))) continue;
+        if(stats.bfind("DiscrElecByNotFromPileup") && (og_motherpart_idx != 0) && (og_motherpart_idx != 1) ) continue;
+        if(stats.bfind("DiscrElecByMotherID") && (mother_pid != stats.pmap.at("ElecMotherIDs").first) && (mother_pid != stats.pmap.at("ElecMotherIDs").second) ) continue;
+
       } else if(particle_id == 13){
 
          if(stats.bfind("DiscrMuonByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("MuonPtCut").first || _Gen->pt(j) > stats.pmap.at("MuonPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("MuonEtaCut"))) continue;
-
-         if(stats.bfind("DiscrTauByMotherID")){
-            int motherpart_idx = _Gen->genPartIdxMother[j];
-            int mother_pid = abs(_Gen->pdg_id[motherpart_idx]);
-            
-            if(mother_pid == particle_id){
-                // std::cout << "Lepton with same ID for mother particle" << std::endl;
-                int motherpart_idx_tmp = motherpart_idx;
-                int mother_pid_tmp = mother_pid;
-                
-                while(mother_pid_tmp == particle_id){
-                   motherpart_idx = _Gen->genPartIdxMother[motherpart_idx_tmp];
-                   mother_pid_tmp = abs(_Gen->pdg_id[motherpart_idx]);
-                   motherpart_idx_tmp = motherpart_idx;
-                } 
-              
-                 mother_pid = mother_pid_tmp;
-                 //std::cout << "Final mother ID = " << mother_pid << std::endl;
-            }
-            
-            if( (mother_pid != stats.pmap.at("MuonMotherIDs").first) && (mother_pid != stats.pmap.at("MuonMotherIDs").second) ) continue;
-         }
+         if(stats.bfind("DiscrMuonByNotFromPileup") && (og_motherpart_idx != 0) && (og_motherpart_idx != 1) ) continue;
+         if(stats.bfind("DiscrMuonByMotherID") && (mother_pid != stats.pmap.at("MuonMotherIDs").first) && (mother_pid != stats.pmap.at("MuonMotherIDs").second) ) continue;
       }
 
       active_part->at(genMaper.at(particle_id)->ePos)->push_back(j);
-      //if(genMaper.at(particle_id)->ePos == CUTS::eGTau) std::cout << "index of Gen collection stored = " << j << std::endl;
+      genMotherPartIndex[j] = motherpart_idx;
     }
 
   }
@@ -3004,8 +3011,20 @@ void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
   // Loop over all gen-level hadronic taus stored in the corresponding list to apply certain selections
   for(size_t i=0; i < _GenHadTau->size(); i++){
 
-    if(_GenHadTau->pt(i) < stats.pmap.at("HadTauPtCut").first || _GenHadTau->pt(i) > stats.pmap.at("HadTauPtCut").second || abs(_GenHadTau->eta(i)) > stats.dmap.at("HadTauEtaCut")) continue;
-    else if( stats.bfind("DiscrByTauDecayMode") && (_GenHadTau->decayMode[i] < stats.pmap.at("TauDecayModes").first || _GenHadTau->decayMode[i] > stats.pmap.at("TauDecayModes").second)) continue;
+    if( stats.bfind("DiscrHadTauByPtAndEta") && (_GenHadTau->pt(i) < stats.pmap.at("HadTauPtCut").first || _GenHadTau->pt(i) > stats.pmap.at("HadTauPtCut").second || abs(_GenHadTau->eta(i)) > stats.dmap.at("HadTauEtaCut"))) continue;
+    
+    if( stats.bfind("DiscrByTauDecayMode") && (_GenHadTau->decayMode[i] < stats.pmap.at("TauDecayModes").first || _GenHadTau->decayMode[i] > stats.pmap.at("TauDecayModes").second)) continue;
+
+    int passMotherIDreq = 0;
+    if( stats.bfind("DiscrHadTauByMotherID") ){
+      for(size_t j=0; j<stats.vmap.at("HadTauMotherIDs").size(); j++){
+        // std::cout << "Mother ID reqirement #" << i << ": " << stats.vmap.at("HadTauMotherIDs").at(i) << std::endl;
+        if( abs(_Gen->pdg_id[_GenHadTau->genPartIdxMother[i]]) != stats.vmap.at("HadTauMotherIDs").at(j) ) continue;
+
+        passMotherIDreq++;
+      }
+    } 
+    if( stats.bfind("DiscrHadTauByMotherID") && passMotherIDreq == 0) continue;
 
     active_part->at(CUTS::eGHadTau)->push_back(i);
   }
@@ -3158,7 +3177,10 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
     else if (lvec.Pt() < stats.pmap.at("PtCut").first || lvec.Pt() > stats.pmap.at("PtCut").second) passCuts = passCuts && false;
 
     if((lep.pstats.at("Smear").bfind("MatchToGen")) && (!isData)) {   /////check
-      if(matchLeptonToGen(lvec, lep.pstats.at("Smear") ,eGenPos) == TLorentzVector(0,0,0,0)) continue;
+      if(matchLeptonToGen(lvec, lep.pstats.at("Smear") ,eGenPos) == TLorentzVector(0,0,0,0)){ 
+        i++;
+        continue;
+      }
     }
 
     for( auto cut: stats.bset) {
@@ -3216,7 +3238,12 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
         else if(cut == "decayModeFindingNewDMs") passCuts = passCuts && _Tau->DecayModeNewDMs[i] != 0;
         // else if(cut == "decayModeFinding") passCuts = passCuts && _Tau->DecayMode[i] != 0; // original
         else if(cut == "decayModeFinding") passCuts = passCuts && _Tau->DecayModeOldDMs[i] != 0;
-              // ----anti-overlap requirements
+        else if(cut == "DiscrByGenMatchingStatus"){
+          int genPartFlavor =  static_cast<int>(_Tau->genPartFlav[i]);
+          passCuts = passCuts && ( (genPartFlavor >= stats.pmap.at("GenMatchingStatusRange").first) && (genPartFlavor <= stats.pmap.at("GenMatchingStatusRange").second));
+          // std::cout << "Tau #" << i << ", status = " << genPartFlavor << ", passCut? " << std::boolalpha <<  ((genPartFlavor >= stats.pmap.at("StatusRange").first) && (genPartFlavor <= stats.pmap.at("StatusRange").second)) << std::endl;
+        }
+        // ----anti-overlap requirements
         else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithElectron1s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec1, stats.dmap.at("Electron1MatchingDeltaR"));
@@ -4418,11 +4445,18 @@ void Analyzer::checkParticleDecayList(){
 void Analyzer::writeParticleDecayList(int event){  //01.16.19
   BOOM->GetEntry(event);
   std::fstream file("particle_decay_list.txt", std::fstream::in | std::fstream::out | std::fstream::app);
+
+  if(isSignalMC && !finalInputSignal) {
+     file.close();
+     return;
+   }
+
+   file << " ----- Event #" << event << " ----- " << "\n";
+
   if (file.is_open()){
   for (unsigned p=0; p < _Gen->size(); p++){
     file << std::setw(2) << p << std::setw(2) << " " << std::setw(8) << "pdg_id: " << std::setw(4) << abs(_Gen->pdg_id[p]) << std::setw(2) << "  " << std::setw(5) << "p_T: " << std::setw(10) << _Gen->pt(p) << std::setw(2) << "  " << std::setw(5) << "phi: " << std::setw(10) << _Gen->phi(p) << std::setw(10) << "status: " << std::setw(3) << _Gen->status[p] << std::setw(2) << "  " << std::setw(7) << "mind:" << std::setw(1) << " " << std::setw(2) << _Gen->genPartIdxMother[p] << "\n";
   }
-  file << "----------" << "\n";
   file.close();}
   else std::cout << "Unable to open file." << std::endl;
   return;
@@ -4984,10 +5018,13 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(gen_weight, "Weight");
     histAddVal(l1prefiringwgt, "L1PrefiringWeight");
 
+    std::vector<int> goodGenLeptons;
+
     int nhadtau = 0;
     TLorentzVector genVec(0,0,0,0);
     int i = 0;
     for(vec_iter it=active_part->at(CUTS::eGTau)->begin(); it!=active_part->at(CUTS::eGTau)->end(); it++, i++) {
+      goodGenLeptons.push_back(*it);
       int nu = active_part->at(CUTS::eGNuTau)->at(i);
       if(nu != -1) {
         genVec = _Gen->p4(*it) - _Gen->p4(nu);
@@ -4999,6 +5036,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(_Gen->pt(*it), "TauPt");
       histAddVal(_Gen->eta(*it), "TauEta");
       histAddVal(_Gen->phi(*it), "TauPhi");
+      histAddVal(_Gen->pdg_id[genMotherPartIndex.at(*it)], "TauMotherPID");
       for(vec_iter it2=it+1; it2!=active_part->at(CUTS::eGTau)->end(); it2++) {
         histAddVal(diParticleMass(_Gen->p4(*it),_Gen->p4(*it2), "none"), "DiTauMass");
       }
@@ -5048,29 +5086,74 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(active_part->at(CUTS::eGW)->size(), "NW");
 
     for(auto it : *active_part->at(CUTS::eGMuon)) {
+      goodGenLeptons.push_back(it);
       histAddVal(_Gen->energy(it), "MuonEnergy");
       histAddVal(_Gen->pt(it), "MuonPt");
       histAddVal(_Gen->eta(it), "MuonEta");
       histAddVal(_Gen->phi(it), "MuonPhi");
+      histAddVal(_Gen->pdg_id[genMotherPartIndex.at(it)], "MuonMotherPID");
     }
     histAddVal(active_part->at(CUTS::eGMuon)->size(), "NMuon");
 
+    for(auto it: *active_part->at(CUTS::eGElec)){
+       goodGenLeptons.push_back(it);
+
+       histAddVal(_Gen->energy(it), "ElectronEnergy");
+       histAddVal(_Gen->pt(it), "ElectronPt");
+       histAddVal(_Gen->eta(it), "ElectronEta");
+       histAddVal(_Gen->phi(it), "ElectronPhi");
+       histAddVal(_Gen->pdg_id[genMotherPartIndex.at(it)], "ElectronMotherPID");
+     }
+     histAddVal(active_part->at(CUTS::eGElec)->size(), "NElectron");
+
+
     histAddVal(gendilepmass, "ZDiLepMass");
 
-    double mass=0;
+    double mass=0, sf_mass=0; // sf_mass == mass of same flavor dilepton pairs
     TLorentzVector lep1(0,0,0,0), lep2(0,0,0,0);
-    for(size_t igen=0; igen<_Gen->size(); igen++){
-      if(abs(_Gen->pdg_id[igen])==11 or abs(_Gen->pdg_id[igen])==13 or abs(_Gen->pdg_id[igen])==15){
-        if(lep1!=TLorentzVector(0,0,0,0)){
-          lep2= _Gen->p4(igen);
-          mass=(lep1+lep2).M();
-          break;
-        }else{
-          lep1= _Gen->RecoP4(igen);
-        }
+
+    for(size_t i=0; i<goodGenLeptons.size(); i++){
+      int igen = goodGenLeptons.at(i);
+      int lep1_pdgid = 0;
+      // std::cout << "Gen pdg_id = " << (abs(_Gen->pdg_id[igen])) << ", status = " << _Gen->status[igen] << std::endl;
+
+      if(lep1!=TLorentzVector(0,0,0,0)){
+        lep2= _Gen->p4(igen);
+        mass=(lep1+lep2).M();
+
+        if( abs(_Gen->pdg_id[igen]) == lep1_pdgid) sf_mass = (lep1+lep2).M();
+        break;
+      }else{
+        lep1= _Gen->p4(igen);
+        lep1_pdgid = abs(_Gen->pdg_id[igen]);
       }
+
+      histAddVal(_Gen->p4(igen).Pt(), "LeptonPt");
+      histAddVal(_Gen->p4(igen).Eta(), "LeptonEta");
+      histAddVal(_Gen->p4(igen).Phi(), "LeptonPhi");
+      histAddVal(_Gen->p4(igen).E(), "LeptonE");
+
+        //nb_leptons++;
     }
-    histAddVal(mass, "LeptonMass");
+
+    histAddVal(mass, "DiLeptonMass");
+    histAddVal(sf_mass, "SFDiLeptonMass");
+    histAddVal(goodGenLeptons.size(), "NLepton");
+
+    for(size_t i_genjet=0; i_genjet < _GenJet->size(); i_genjet++){
+      histAddVal(_GenJet->pt(i_genjet), "JetPt");
+      histAddVal(_GenJet->eta(i_genjet), "JetEta");
+      histAddVal(_GenJet->phi(i_genjet), "JetPhi");
+      histAddVal(_GenJet->energy(i_genjet), "JetEnergy");
+      histAddVal(_GenJet->genHadronFlavor[i_genjet], "JetHadronFlavor");
+      histAddVal(_GenJet->genPartonFlavor[i_genjet], "JetPartonFlavor");
+    }
+
+    histAddVal(_GenJet->size(), "NJet");
+
+    histAddVal(genmet_pt, "MetPt");
+    histAddVal(genmet_phi, "MetPhi");
+
   } else if(group == "FillJetPtProjMet"){
 
     if(_Jet->size() > 0){
@@ -5157,6 +5240,19 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(part->p4(it).DeltaPhi(_MET->p4()), "MetDphi");
       if(part->type == PType::Tau) {
         histAddVal(_Tau->charge(it), "Charge");
+        int tauiso = static_cast<int>(_Tau->TauIdDiscr[it]);
+        int antiele =static_cast<int>(_Tau->againstElectron[it]);
+        int antimu = static_cast<int>(_Tau->againstMuon[it]);
+
+        histAddVal(tauiso, "IsolationWP");
+        histAddVal(antiele, "AntiEleWP");
+        histAddVal(antimu, "AntiMuWP");
+        histAddVal(_Tau->decayModeInt[it], "DecayMode");
+
+        if(!isData){
+          int genPartonFlavor = static_cast<int>(_Tau->genPartFlav[it]);
+          histAddVal(genPartonFlavor, "GenMatchingStatus")
+        }
       }
       if(part->type != PType::Jet) {
         histAddVal(calculateLeptonMetMt(part->p4(it)), "MetMt");

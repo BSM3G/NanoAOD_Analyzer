@@ -148,6 +148,7 @@ public:
   void getGoodGenHadronicTauNeutrinos(const PartStats&);
   TLorentzVector getGenVisibleTau4Vector(int, int);
   void getGoodGen(const PartStats&);
+  std::unordered_map<int, int> genMotherPartIndex;
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
   void getGoodRecoLeadJets(CUTS, const PartStats&, const int);
@@ -306,6 +307,8 @@ public:
   int bestVertices = 0;
   float gen_weight = 0;
   float generatorht = 0;
+  float genmet_pt = 0;
+  float genmet_phi = 0;
   float gendilepmass = 0;
 
   // Met filters' variables
