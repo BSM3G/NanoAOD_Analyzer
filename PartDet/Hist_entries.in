@@ -32,10 +32,10 @@ NTotalVertices	  100   0.  100.
 
 FillGen 0
 
-PUNTrueInt    99 0. 99. // nTruePU - change the number of bins accordingly for each year's datatset
-GenHT       4000 0. 4000.
-GenWeight  10000 -50000. 50000. 
-L1PrefiringWeight 200 0. 1.
+PUNTrueInt         99        0.       99. // nTruePU - change the number of bins accordingly for each year's datatset
+GenHT            4000        0.     4000.
+GenWeight       10000   -50000.    50000. 
+L1PrefiringWeight 200        0.        1.
 
 NGenMuon           20   0.       20.
 GenMuonEnergy     200   0.      500.
