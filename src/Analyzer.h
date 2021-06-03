@@ -120,6 +120,7 @@ public:
   void setCutNeeds();
 
   bool passHEMveto2018();
+  bool additionalEENoiseEventVeto(const PartStats&, std::string, std::string);
   bool passJetVetoEEnoise2017(int);
 
   bool skimSignalMC(int);
@@ -147,6 +148,7 @@ public:
   void getGoodGenHadronicTauNeutrinos(const PartStats&);
   TLorentzVector getGenVisibleTau4Vector(int, int);
   void getGoodGen(const PartStats&);
+  std::unordered_map<int, int> genMotherPartIndex;
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
   void getGoodRecoLeadJets(CUTS, const PartStats&, const int);
@@ -301,9 +303,12 @@ public:
   bool isData, isSignalMC, CalculatePUSystematics, doSystematics;
 
   float nTruePU = 0;
+  int totalVertices = 0;
   int bestVertices = 0;
   float gen_weight = 0;
   float generatorht = 0;
+  float genmet_pt = 0;
+  float genmet_phi = 0;
   float gendilepmass = 0;
 
   // Met filters' variables
@@ -344,6 +349,11 @@ public:
   Float_t jec_rho =20.;
   std::string runera;
   std::vector< std::vector<float> > jets_jer_sfs;
+  float minDeltaPhiMet_formet = 9999.9;
+  float maxDeltaPhiMet_formet = 0.0;
+  float maxjetptprojonmet_plus_formet = 0.0, maxjetptprojonmet_minus_formet = 0.0;
+  int index_minjmetdphi_formet = -1, index_maxjmetdphi_formet = -1;
+  int index_maxjetptprojonmet_plus_formet = -1, index_maxjetptprojonmet_minus_formet = -1;
 
   const static std::vector<CUTS> genCuts;
   const static std::vector<CUTS> jetCuts;

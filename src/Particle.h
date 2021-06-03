@@ -27,6 +27,7 @@ struct PartStats {
   std::unordered_map<std::string,double> dmap;
   std::unordered_map<std::string,std::string> smap;
   std::unordered_map<std::string,std::pair<double,double> > pmap;
+  std::unordered_map<std::string,std::vector<int> > vmap;
   //  std::unordered_map<std::string,bool> bmap;
   std::vector<std::string> bset;
 

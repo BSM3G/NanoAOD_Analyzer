@@ -1,16 +1,35 @@
-/////////// Dont change this file!///////
-
+#######################
 Gen
+#######################
 
-DiscrTauByPtAndEta true
+DiscrTauByPtAndEta false
 TauPtCut -10.0  10000.0 
 TauEtaCut 10.0
+DiscrTauByMotherID  1
+TauMotherIDs   1000015. 1000015.
+DiscrTauByNotFromPileup false
 
-DiscrHadTauByPtAndEta true
+DiscrElecByPtAndEta   false
+ElecPtCut  -10.0    100000.0
+ElecEtaCut  10.0
+DiscrElecByMotherID   0
+ElecMotherIDs   15.   15.
+DiscrElecByNotFromPileup false
+
+DiscrMuonByPtAndEta   false
+MuonPtCut   -10.0   100000.0
+MuonEtaCut   10.0
+DiscrMuonByMotherID   0
+MuonMotherIDs    15.   15.
+DiscrMuonByNotFromPileup false
+
+DiscrHadTauByPtAndEta false
 HadTauPtCut   18.0  9999.9
-HadTauEtaCut  2.4
+HadTauEtaCut  2.5
 DiscrByTauDecayMode false
-TauDecayModes		0    15          
+TauDecayModes       0    15          
+DiscrHadTauByMotherID false
+HadTauMotherIDs 15 16 111 211 113 213 20113 20213 1000022 
 
 DiscrJetByPtandEta false
 JetPtCut 0.0  9999.9
@@ -21,29 +40,3 @@ PartonFlavorRange  0    22
 DiscrBJetByPtandEta  false
 BJetPtCut 0.0 9999.9
 BJetEtaCut 5.0 
-
-DiscrLightLepByMotherID 0
-LightLepMotherIDs 23. 24.
-
-//// ----- THESE OPTIONS ARE NOT USED ANYMORE ----- ////
-
-TauID 15.
-TauStatus 2.
-
-TopID 6.
-TopStatus 2.
-
-ElectronID 11.
-ElectronStatus 1.
-
-MuonID 13.
-MuonStatus 1.
-
-ZID 23.
-ZStatus 2.
-
-WID 24.
-WStatus 2.
-
-HiggsID 25.
-HiggsStatus 2.

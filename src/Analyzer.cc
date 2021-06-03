@@ -500,9 +500,15 @@ void Analyzer::setupEventGeneral(int nevent){
       SetBranch("LHE_HT",generatorht);
     }
 
+    if(BOOM->FindBranch("GenMET_pt") != 0){
+      SetBranch("GenMET_pt", genmet_pt);
+      SetBranch("GenMET_phi", genmet_phi);
+    }
+
   }
   // Get the number of primary vertices, applies to both data and MC
-  SetBranch("PV_npvs", bestVertices);
+  SetBranch("PV_npvs", totalVertices);
+  SetBranch("PV_npvsGood", bestVertices);
 
   // Get the offset energy density for jet energy corrections: https://twiki.cern.ch/twiki/bin/view/CMS/IntroToJEC
   SetBranch("fixedGridRhoFastjetAll", jec_rho);
@@ -685,6 +691,116 @@ bool Analyzer::checkGoodRunsAndLumis(int event){
 
 }
 
+// Additional event veto for 2017E and 2017F (only apply to data)
+bool Analyzer::additionalEENoiseEventVeto(const PartStats& stats, std::string year, std::string era){
+
+  //std::cout << "Run year = " << year << ", run era = " << era << std::endl;
+
+  if(year.compare("2017") != 0){
+    //std::cout << "This is not 2017, additional EE noise veto returning true!" << std::endl;
+    return true;
+  }
+
+  if( (year.compare("2017") == 0) && ((era.compare("2017E") != 0) && (era.compare("2017F") != 0)) ){
+    //std::cout << "This is year 2017, but era " << era << ", therefore EE noise veto returning true! " << std::endl;
+    return true;
+  }
+
+  //std::cout << "This is year 2017, era = " << era << ", and EE noise veto is ON, starting for loop... " << std::endl;
+
+  int i=0;
+  std::vector<int> jetsminuseta3p2to2p6;
+  std::vector<int> jetspluseta2p6to3p2;
+
+  for(auto lvec: *_Jet) {
+
+    bool passCuts = true;
+
+    passCuts = passCuts && (lvec.Pt() > stats.dmap.at("PtCut"));
+
+    for( auto cut: stats.bset) {
+      if(!passCuts) break;
+      else if(cut == "Apply2017EEnoiseVeto") passCuts = passCuts && passJetVetoEEnoise2017(i);
+      else if(cut == "ApplyLooseID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedLooseJetID(i);
+        }
+      }
+      else if(cut == "ApplyTightID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedTightJetID(i);
+        }
+      }
+      else if(cut == "ApplyTightLepVetoID"){
+        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+          if(!stats.bfind("FailPUJetID")){
+            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+          } else {
+            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+          }
+        } else {
+          passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
+        }
+      }
+      else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(lvec, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(lvec, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
+      // ----anti-overlap requirements
+      else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
+      else if (cut =="RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithElectron1s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec1, stats.dmap.at("Electron1MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithElectron2s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec2, stats.dmap.at("Electron2MatchingDeltaR"));
+      else if(cut == "RemoveOverlapWithTau1s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau1, stats.dmap.at("Tau1MatchingDeltaR"));
+      else if (cut =="RemoveOverlapWithTau2s") passCuts = passCuts && !isOverlaping(lvec, *_Tau, CUTS::eRTau2, stats.dmap.at("Tau2MatchingDeltaR"));
+    }
+
+    if(passCuts){
+      // Check if it is in the positive or negative eta region
+
+      //std::cout << "Jet #" << i << " passed all selections, checking pt and eta... " << std::endl;
+      //std::cout << "... pt = " << lvec.Pt() << ", eta = " << lvec.Eta() << std::endl;
+
+      if( (lvec.Pt() < 80.0) && ((lvec.Eta() > -3.14) && (lvec.Eta() < -2.65)) ){ 
+        //std::cout << "... jet in problematic pt and negative eta region, adding to the list." << std::endl;
+        jetsminuseta3p2to2p6.push_back(i); 
+      }
+      
+      if( (lvec.Pt() < 80.0) && ((lvec.Eta() > 2.65) && (lvec.Eta() < 3.14)) ){ 
+        //std::cout << "... jet in problematic pt and positive eta region, adding to the list." << std::endl;
+        jetspluseta2p6to3p2.push_back(i); 
+      }
+    }
+
+    i++;
+
+  }
+
+  bool passVeto = true;
+  //std::cout << "Final step of EE noise veto... checking number of noisy jets..." << std::endl;
+  int n_noisyjets = jetsminuseta3p2to2p6.size() + jetspluseta2p6to3p2.size();
+
+  if(n_noisyjets > 0){ 
+    passVeto = false; 
+  }
+
+  //std::cout << "This event has " << n_noisyjets << " noisy jets, passVeto = " << std::boolalpha << passVeto << std::endl;
+
+  return passVeto;
+
+}
+
+
 bool Analyzer::passHEMveto2018(){
 
   bool hasJetinHEM = false;
@@ -774,6 +890,8 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     _GenHadTau->setOrigReco();
     _GenJet->setOrigReco();
 
+    genMotherPartIndex.clear();
+
     getGoodGen(_Gen->pstats["Gen"]);
     getGoodGenHadronicTaus(_GenHadTau->pstats["Gen"]);
     getGoodGenJets(_GenJet->pstats["Gen"]);
@@ -818,6 +936,19 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 	    	return;
 	    }
   	}
+
+    // Apply event veto for 2017 E and F once the jet energy corrections are applied (after applyJetEnergyCorrections)
+    //if(distats["Run"].bfind("ApplyEEnoiseVeto2017EF") == 0) std::cout << "EE noise veto not in Run_info.in, returning true!" << std::endl;
+
+    if(distats["Run"].bfind("ApplyEEnoiseVeto2017EF")){
+      bool passEEnoiseVeto = additionalEENoiseEventVeto(_Jet->pstats["Jet1"], year, runera);
+      if(passEEnoiseVeto == false){
+        clear_values();
+        return;
+      }
+    }
+
+
   }
 
   // Call the new function passMetFilters
@@ -2031,10 +2162,21 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
 
   std::string systname = syst_names.at(syst);
 
+  // Include the phi-corrections to raw MET -- this is equivalent to apply them to type0-I MET
+  if(distats["Run"].bfind("ApplyMETxyShiftCorrections")){
+    _MET->applyXYshiftCorr(year, runera, bestVertices, isData, systname, syst);
+  }
+
   // Define the deltas to be applied to MET at the end (2017). These deltas account for the unclustered and clustered energy
   float delta_x_EEnoise_rawJets = 0.0, delta_y_EEnoise_rawJets = 0.0, delta_x_EEnoise_T1Jets = 0.0, delta_y_EEnoise_T1Jets = 0.0;
   // Define the jet energy threshold below which we consider it to be unclustered energy.
   float jetUnclEnThreshold = 15.0;
+
+  minDeltaPhiMet_formet = 9999.9;
+  maxDeltaPhiMet_formet = 0.0;
+  maxjetptprojonmet_plus_formet = 0.0, maxjetptprojonmet_minus_formet = 0.0;
+  index_minjmetdphi_formet = -1, index_maxjmetdphi_formet = -1;
+  index_maxjetptprojonmet_plus_formet = -1, index_maxjetptprojonmet_minus_formet = -1;
 
   for(size_t i = 0; i < jet.size(); i++){
 
@@ -2110,13 +2252,13 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     float jet_pt_nomu_nom = jetL1L2L3_jerNom_noMuonP4.Pt(), jet_mass_nomu_nom = jetL1L2L3_jerNom_noMuonP4.M();
     float jet_pt_nomu_jerShifted = jetL1L2L3_jerShifted_noMuonP4.Pt(), jet_mass_nomu_jerShifted = jetL1L2L3_jerShifted_noMuonP4.M();
 
+    bool jetlepmatch = false;
     // Verify that this is only done in simulation, if smearing option is turned on and the jet is above the unclustered energy threshold.
     if( (!isData) && (stats.bfind("SmearTheJet")) && (jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold) ){
 
       // Check if there are any ovelaps with genuine muons. Treat any electrons or hadronic taus which show up in the jet vector as jets.
       // Jet overlap removal in the config files will take care of them later by removing them from the jet vector.
-
-      bool jetlepmatch = false;
+      jetlepmatch = false;
 
       if( JetMatchesLepton(*_Muon, origJetReco, stats.dmap.at("MuonMatchingDeltaR"), CUTS::eGMuon) ){
         // Investigate if this is a muon coming from a b-jet by checking the flavor of the gen-level jet:
@@ -2147,38 +2289,10 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
       // Save the three JER scale factors (nominal, down and up) as a vector in a vector: 0 - nominal, 1 - down, 2 - up
       std::vector<float> jet_jer_sf = jetScaleRes.GetSmearValsPtSF(jetL1L2L3_noMuonP4, genJet, jec_rho);
 
-      bool genjetmatch = false, passtightPUjetID = false, smearunmatchedjet = true;
+      bool genjetmatch = false, passtightPUjetID = false, smearunmatchedjet = true, forwardjetsmearing = true;
 
       // Correct the nominal p4 for this jet.
-      if( !stats.bfind("ModifiedPUsmearing") ){
-
-        // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
-        jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
-
-        jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
-        jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
-
-        if(!jetlepmatch){ // Do the smearing only if there is no overlap with muons, this block will only change the sfs and jet pt/mass.
-
-          if(systname == "orig"){ // This corresponds to the nominal values; set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
-            jer_shift = jer_sf_nom;
-            jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
-            jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
-
-          } else if(systname.find("_Res_") != std::string::npos){
-            if(systname == "Jet_Res_Up"){
-              jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
-            }else if(systname == "Jet_Res_Down"){
-              jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
-            }
-            jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
-            jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
-          }
-
-        }
-
-      } else {
-
+      if( stats.bfind("ModifiedPUsmearing") ){
         genjetmatch = ( genJet != TLorentzVector(0,0,0,0) ) ? true : false;
         passtightPUjetID = _Jet->getPileupJetID(i, 0); // i - jet index, 0 = bit0 (tight ID). If true, it passes tight PU jet ID, otherwise, it fails PU jet ID.
 
@@ -2209,6 +2323,124 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
           }
         }
 
+      } else if ( stats.bfind("ModifiedForwardSmearing") ){
+
+        if( (jetL1L2L3_noMuonP4.Pt() <= 50.0) && ( abs(jetL1L2L3_noMuonP4.Eta()) > 2.5 ) ) forwardjetsmearing = false;
+
+        if( forwardjetsmearing && !jetlepmatch){
+
+          // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
+          jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
+
+          // Correct the nominal mass and pt for this jet.
+          jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
+          jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
+
+          if(systname == "orig"){ // This corresponds to the nominal values: set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
+            jer_shift = jer_sf_nom;
+            jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
+            jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
+
+          }else if(systname.find("_Res_") != std::string::npos){
+            if(systname == "Jet_Res_Up"){
+              jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
+            }else if(systname == "Jet_Res_Down"){
+              jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
+            }
+            jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
+            jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
+          }
+        }
+
+      } else if ( stats.bfind("CombinedModifiedSmearing") ){
+
+        if( abs( jetL1L2L3_noMuonP4.Eta() ) <= 2.5 ){ // central jets
+
+          genjetmatch = genJet != TLorentzVector(0,0,0,0);
+          passtightPUjetID = _Jet->getPileupJetID(i, 0); // i - jet index, 0 = bit0 (tight ID). If true, it passes tight PU jet ID, otherwise, it fails PU jet ID.
+          if (jetL1L2L3_noMuonP4.Pt() <= 50.0) smearunmatchedjet = !genjetmatch && passtightPUjetID ? true : false;
+
+          if( (genjetmatch || smearunmatchedjet) && !jetlepmatch){
+
+            // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
+            jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
+
+            // Correct the nominal mass and pt for this jet.
+            jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
+            jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
+
+            if(systname == "orig"){ // This corresponds to the nominal values: set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
+              jer_shift = jer_sf_nom;
+              jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
+              jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
+
+            }else if(systname.find("_Res_") != std::string::npos){
+              if(systname == "Jet_Res_Up"){
+                jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
+              }else if(systname == "Jet_Res_Down"){
+                jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
+              }
+              jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
+              jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
+            }
+          }
+
+        } else if( abs( jetL1L2L3_noMuonP4.Eta() ) > 2.5 ) { // forward jets
+
+          if( jetL1L2L3_noMuonP4.Pt() <= 50.0 ) forwardjetsmearing = false;
+
+          if( forwardjetsmearing && !jetlepmatch){
+
+            // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
+            jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
+
+            // Correct the nominal mass and pt for this jet.
+            jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
+            jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
+
+            if(systname == "orig"){ // This corresponds to the nominal values: set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
+              jer_shift = jer_sf_nom;
+              jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
+              jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
+
+            }else if(systname.find("_Res_") != std::string::npos){
+              if(systname == "Jet_Res_Up"){
+                jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
+              }else if(systname == "Jet_Res_Down"){
+                jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
+              }
+              jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
+              jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
+            }
+          }
+
+        }
+
+      } else {
+        // Update the resolution scale factors as well as the 4 vectors for the jet momentum.
+        jer_sf_nom = jet_jer_sf.at(0); // 0 is the nominal value
+
+        jet_pt_nomu_nom = jetL1L2L3_noMuonP4.Pt() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.Pt() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.Pt() * jer_sf_nom;
+        jet_mass_nomu_nom = jetL1L2L3_noMuonP4.M() * jer_sf_nom > 0.0 ? jetL1L2L3_noMuonP4.M() * jer_sf_nom : -1.0 * jetL1L2L3_noMuonP4.M() * jer_sf_nom;
+
+        if(!jetlepmatch){ // Do the smearing only if there is no overlap with muons, this block will only change the sfs and jet pt/mass.
+
+          if(systname == "orig"){ // This corresponds to the nominal values; set the scale factor; if smearing, update jet_pt_nom and jet_mass_nom
+            jer_shift = jer_sf_nom;
+            jet_pt_nomu_jerShifted = jet_pt_nomu_nom;
+            jet_mass_nomu_jerShifted = jet_mass_nomu_nom;
+
+          } else if(systname.find("_Res_") != std::string::npos){
+            if(systname == "Jet_Res_Up"){
+              jer_shift = jet_jer_sf.at(2); // i is the jet index, 2 is the up value
+            } else if(systname == "Jet_Res_Down"){
+              jer_shift = jet_jer_sf.at(1); // i is the jet index, 1 is the down value
+            }
+            jet_pt_nomu_jerShifted = jetL1L2L3_noMuonP4.Pt() * jer_shift;
+            jet_mass_nomu_jerShifted = jetL1L2L3_noMuonP4.M() * jer_shift;
+          }
+
+        }
       }
     }
 
@@ -2283,6 +2515,138 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
     	}
     }
 
+    // Study jet pt projections on MET axis for data
+    if(isData && (jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold) ){
+      // study separation of jets from Met
+      if( (year.compare("2016") == 0) || (year.compare("2018") == 0)){
+        float deltaPhiJetMet_data = normPhi(rawJetP4_noMuon.Phi() - _MET->phi());
+        float cosinedPhiJetMet_data = cos(deltaPhiJetMet_data);
+        float jetptmetproj_p_data = 0.0, jetptmetproj_m_data = 0.0;
+
+        if(cosinedPhiJetMet_data < 0.0){
+          jetptmetproj_m_data = rawJetP4_noMuon.Pt() * cosinedPhiJetMet_data;
+        } else if(cosinedPhiJetMet_data > 0.0){
+          jetptmetproj_p_data = rawJetP4_noMuon.Pt() * cosinedPhiJetMet_data;
+        }
+
+        if(abs(deltaPhiJetMet_data) < minDeltaPhiMet_formet){
+          minDeltaPhiMet_formet = abs(deltaPhiJetMet_data);
+          index_minjmetdphi_formet = i;
+        }
+
+        if(abs(deltaPhiJetMet_data) > maxDeltaPhiMet_formet){
+          maxDeltaPhiMet_formet = abs(deltaPhiJetMet_data);
+          index_maxjmetdphi_formet = i;
+        }
+
+        if(abs(jetptmetproj_m_data) > maxjetptprojonmet_minus_formet){
+          maxjetptprojonmet_minus_formet = abs(jetptmetproj_m_data);
+          index_maxjetptprojonmet_minus_formet = i;
+        }
+
+        if(abs(jetptmetproj_p_data) > maxjetptprojonmet_plus_formet){
+          maxjetptprojonmet_plus_formet = abs(jetptmetproj_p_data);
+          index_maxjetptprojonmet_plus_formet = i;
+        }
+      } else if ( year.compare("2017") == 0 ){
+        if( ! ((abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && (rawJetP4_noMuon.Pt() < 50.0) ) ){
+          float deltaPhiJetMet_data = normPhi(rawJetP4_noMuon.Phi() - _MET->phi());
+          float cosinedPhiJetMet_data = cos(deltaPhiJetMet_data);
+          float jetptmetproj_p_data = 0.0, jetptmetproj_m_data = 0.0;
+
+          if(cosinedPhiJetMet_data < 0.0){
+            jetptmetproj_m_data = rawJetP4_noMuon.Pt() * cosinedPhiJetMet_data;
+          } else if(cosinedPhiJetMet_data > 0.0){
+            jetptmetproj_p_data = rawJetP4_noMuon.Pt() * cosinedPhiJetMet_data;
+          }
+
+          if(abs(deltaPhiJetMet_data) < minDeltaPhiMet_formet){
+            minDeltaPhiMet_formet = abs(deltaPhiJetMet_data);
+            index_minjmetdphi_formet = i;
+          }
+
+          if(abs(deltaPhiJetMet_data) > maxDeltaPhiMet_formet){
+            maxDeltaPhiMet_formet = abs(deltaPhiJetMet_data);
+            index_maxjmetdphi_formet = i;
+          }
+
+          if(abs(jetptmetproj_m_data) > maxjetptprojonmet_minus_formet){
+            maxjetptprojonmet_minus_formet = abs(jetptmetproj_m_data);
+            index_maxjetptprojonmet_minus_formet = i;
+          }
+
+          if(abs(jetptmetproj_p_data) > maxjetptprojonmet_plus_formet){
+            maxjetptprojonmet_plus_formet = abs(jetptmetproj_p_data);
+            index_maxjetptprojonmet_plus_formet = i;
+          }
+        }
+      }
+    } else if( (!isData) && (jetL1L2L3_noMuonP4.Pt() > jetUnclEnThreshold) && (!jetlepmatch) ){
+      if( (year.compare("2016") == 0) || (year.compare("2018") == 0)){
+        float deltaPhiJetMet = normPhi(rawJetP4_noMuon.Phi() - _MET->phi());
+        float cosinedPhiJetMet = cos(deltaPhiJetMet);
+        float jetptmetproj_p = 0.0, jetptmetproj_m = 0.0;
+
+        if(cosinedPhiJetMet < 0.0){
+          jetptmetproj_m = rawJetP4_noMuon.Pt() * cosinedPhiJetMet;
+        } else if(cosinedPhiJetMet > 0.0){
+          jetptmetproj_p = rawJetP4_noMuon.Pt() * cosinedPhiJetMet;
+        }
+
+        if(abs(deltaPhiJetMet) < minDeltaPhiMet_formet){
+          minDeltaPhiMet_formet = abs(deltaPhiJetMet);
+          index_minjmetdphi_formet = i;
+        }
+
+        if(abs(deltaPhiJetMet) > maxDeltaPhiMet_formet){
+          maxDeltaPhiMet_formet = abs(deltaPhiJetMet);
+          index_maxjmetdphi_formet = i;
+        }
+
+        if(abs(jetptmetproj_m) > maxjetptprojonmet_minus_formet){
+          maxjetptprojonmet_minus_formet = abs(jetptmetproj_m);
+          index_maxjetptprojonmet_minus_formet = i;
+        }
+
+        if(abs(jetptmetproj_p) > maxjetptprojonmet_plus_formet){
+          maxjetptprojonmet_plus_formet = abs(jetptmetproj_p);
+          index_maxjetptprojonmet_plus_formet = i;
+        }
+      } else if ( year.compare("2017") == 0 ){
+        if( ! ((abs(rawJetP4_noMuon.Eta()) > 2.65 && abs(rawJetP4_noMuon.Eta()) < 3.14 ) && (rawJetP4_noMuon.Pt() < 50.0) ) ){
+          float deltaPhiJetMet = normPhi(rawJetP4_noMuon.Phi() - _MET->phi());
+          float cosinedPhiJetMet = cos(deltaPhiJetMet);
+          float jetptmetproj_p = 0.0, jetptmetproj_m = 0.0;
+
+          if(cosinedPhiJetMet < 0.0){
+            jetptmetproj_m = rawJetP4_noMuon.Pt() * cosinedPhiJetMet;
+          } else if(cosinedPhiJetMet > 0.0){
+            jetptmetproj_p = rawJetP4_noMuon.Pt() * cosinedPhiJetMet;
+          }
+
+          if(abs(deltaPhiJetMet) < minDeltaPhiMet_formet){
+            minDeltaPhiMet_formet = abs(deltaPhiJetMet);
+            index_minjmetdphi_formet = i;
+          }
+
+          if(abs(deltaPhiJetMet) > maxDeltaPhiMet_formet){
+            maxDeltaPhiMet_formet = abs(deltaPhiJetMet);
+            index_maxjmetdphi_formet = i;
+          }
+
+          if(abs(jetptmetproj_m) > maxjetptprojonmet_minus_formet){
+            maxjetptprojonmet_minus_formet = abs(jetptmetproj_m);
+            index_maxjetptprojonmet_minus_formet = i;
+          }
+
+          if(abs(jetptmetproj_p) > maxjetptprojonmet_plus_formet){
+            maxjetptprojonmet_plus_formet = abs(jetptmetproj_p);
+            index_maxjetptprojonmet_plus_formet = i;
+          }
+        }
+      }
+    }
+
     // --------------------- Propagation of JER/JES to MET --------------------- //
 
     double jetTotalEmEF = _Jet->neutralEmEnergyFraction[i] + _Jet->chargedEmEnergyFraction[i];
@@ -2322,25 +2686,17 @@ void Analyzer::applyJetEnergyCorrections(Particle& jet, const CUTS eGenPos, cons
           delta_y_EEnoise_rawJets += rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
 
           // Get the delta for removing L1L2L3-L1 corrected jets in the EE region from the default MET branch
-          // Take into account if the jets are smeared in resolution, multiplying by jer_sf_nom
-          delta_x_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * cos(jetL1L2L3_jerNom_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * cos(rawJetP4_noMuon.Phi());
-          delta_y_EEnoise_T1Jets += (jetL1L2L3_jerNom_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * sin(jetL1L2L3_jerNom_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
-
+          delta_x_EEnoise_T1Jets += (jetL1L2L3_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * cos(jetL1L2L3_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * cos(rawJetP4_noMuon.Phi());
+          delta_y_EEnoise_T1Jets += (jetL1L2L3_noMuonP4.Pt() - jetL1_noMuonP4.Pt()) * sin(jetL1L2L3_noMuonP4.Phi()) + rawJetP4_noMuon.Pt() * sin(rawJetP4_noMuon.Phi());
         }
       }
     }
-
   }
 
     // Propagate "unclustered energy" uncertainty to MET to finalize the 2017 MET recipe v2
     if(year.compare("2017") == 0){
       // Remove the L1L2L3-L1 corrected jets in the EE region from the default MET branch
       _MET->removeEEnoiseUnclEnergy(delta_x_EEnoise_T1Jets, delta_y_EEnoise_T1Jets, delta_x_EEnoise_rawJets, delta_y_EEnoise_rawJets, systname, syst);
-    }
-
-    // Once we're done with all the propagation of JEC/JER to the raw MET, we have Type-I. Now include the xy-shift corrections
-    if(distats["Run"].bfind("ApplyMETxyShiftCorrections")){
-      _MET->applyXYshiftCorr(year, runera, bestVertices, isData, systname, syst);
     }
 
 }
@@ -2440,12 +2796,41 @@ TLorentzVector Analyzer::matchLeptonToGen(const TLorentzVector& recoLepton4Vecto
   if(ePos == CUTS::eGHadTau){
     return matchHadTauToGen(recoLepton4Vector, stats.dmap.at("GenMatchingDeltaR"));
   }
-  for(auto it : *active_part->at(ePos)) {
-    if(recoLepton4Vector.DeltaR(_Gen->p4(it)) <= stats.dmap.at("GenMatchingDeltaR")) {
-      if(stats.bfind("UseMotherID") && abs(_Gen->pdg_id[_Gen->genPartIdxMother[it]]) != stats.dmap.at("MotherID")) continue;
-      return _Gen->p4(it);
-    }
-  }
+
+  float minDeltaR = 999.9, tmpDeltaR = 999.9;
+  int pidx = -1;
+
+  if( !stats.bfind("UseMotherID") ){
+     int i = 0;
+     for(auto it : *active_part->at(ePos)) {
+
+       tmpDeltaR = recoLepton4Vector.DeltaR(_Gen->p4(it));
+      if(tmpDeltaR < minDeltaR){
+         minDeltaR = tmpDeltaR;
+         pidx = it;
+       }
+       i++;
+     }
+   } else {
+     for(auto it : *active_part->at(ePos)) {
+
+       int motherpart_idx = genMotherPartIndex.at(it);
+       int motherpart_id = abs(_Gen->pdg_id[motherpart_idx]);
+
+       if( motherpart_id != stats.dmap.at("MotherID") ) continue;
+
+       if( abs(_Gen->pdg_id[_Gen->genPartIdxMother[it]]) != stats.dmap.at("MotherID") ) continue;
+       tmpDeltaR = recoLepton4Vector.DeltaR(_Gen->p4(it));
+
+       if(tmpDeltaR < minDeltaR){
+        minDeltaR = tmpDeltaR;
+        pidx = it;
+      }
+     }
+   }
+
+  if(minDeltaR <= stats.dmap.at("GenMatchingDeltaR")) return _Gen->p4(pidx);
+   
   return TLorentzVector(0,0,0,0);
 }
 
@@ -2555,6 +2940,8 @@ void Analyzer::getGoodGen(const PartStats& stats) {
 
   int particle_id = 0;
 
+  std::vector<int> intermiedateP4CorrPart;
+
   for(size_t j = 0; j < _Gen->size(); j++) {
 
     particle_id = abs(_Gen->pdg_id[j]);
@@ -2563,16 +2950,56 @@ void Analyzer::getGoodGen(const PartStats& stats) {
       active_part->at(genMaper.at(5)->ePos)->push_back(j);
     }
     else if(genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(particle_id)->status) {
-      // Cuts on gen-taus (before decaying)
-      if(stats.bfind("DiscrTauByPtAndEta")){
-        if(particle_id == 15 && (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
+
+      int motherpart_idx = _Gen->genPartIdxMother[j];
+      int mother_pid = abs(_Gen->pdg_id[motherpart_idx]);   
+
+      if(mother_pid == particle_id){
+
+        int motherpart_idx_tmp = motherpart_idx;
+        int mother_pid_tmp = mother_pid;            
+
+        while(mother_pid_tmp == particle_id){
+          motherpart_idx = _Gen->genPartIdxMother[motherpart_idx_tmp];
+          mother_pid_tmp = abs(_Gen->pdg_id[motherpart_idx]);
+          motherpart_idx_tmp = motherpart_idx;
+        }
+         
+        mother_pid = mother_pid_tmp;
       }
-      // Cuts on light lepton mother IDs
-      else if(stats.bfind("DiscrLightLepByMotherID")){
-       if( (particle_id == 11 || particle_id == 13) && (abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("LightLepMotherIDs").first || abs(_Gen->pdg_id[_Gen->genPartIdxMother[j]]) != stats.pmap.at("LightLepMotherIDs").second)) continue;
+
+      // Look for particles that are coming from pileup
+      int particle_idx_tmp = motherpart_idx;
+      int firstmother_idx_tmp = _Gen->genPartIdxMother[particle_idx_tmp];
+
+      while(firstmother_idx_tmp != -1){
+        particle_idx_tmp = firstmother_idx_tmp;
+        firstmother_idx_tmp = _Gen->genPartIdxMother[particle_idx_tmp];
+      }
+
+      int og_motherpart_idx = particle_idx_tmp;
+
+      if(particle_id == 15){
+
+        if(stats.bfind("DiscrTauByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
+        if(stats.bfind("DiscrTauByNotFromPileup") && (og_motherpart_idx != 0) && (og_motherpart_idx != 1) ) continue;
+        if(stats.bfind("DiscrTauByMotherID") && (mother_pid != stats.pmap.at("TauMotherIDs").first) && (mother_pid != stats.pmap.at("TauMotherIDs").second) ) continue;
+      
+      } else if(particle_id == 11){
+
+        if(stats.bfind("DiscrElecByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("ElecPtCut").first || _Gen->pt(j) > stats.pmap.at("ElecPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("ElecEtaCut"))) continue;
+        if(stats.bfind("DiscrElecByNotFromPileup") && (og_motherpart_idx != 0) && (og_motherpart_idx != 1) ) continue;
+        if(stats.bfind("DiscrElecByMotherID") && (mother_pid != stats.pmap.at("ElecMotherIDs").first) && (mother_pid != stats.pmap.at("ElecMotherIDs").second) ) continue;
+
+      } else if(particle_id == 13){
+
+         if(stats.bfind("DiscrMuonByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("MuonPtCut").first || _Gen->pt(j) > stats.pmap.at("MuonPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("MuonEtaCut"))) continue;
+         if(stats.bfind("DiscrMuonByNotFromPileup") && (og_motherpart_idx != 0) && (og_motherpart_idx != 1) ) continue;
+         if(stats.bfind("DiscrMuonByMotherID") && (mother_pid != stats.pmap.at("MuonMotherIDs").first) && (mother_pid != stats.pmap.at("MuonMotherIDs").second) ) continue;
       }
 
       active_part->at(genMaper.at(particle_id)->ePos)->push_back(j);
+      genMotherPartIndex[j] = motherpart_idx;
     }
 
   }
@@ -2584,8 +3011,20 @@ void Analyzer::getGoodGenHadronicTaus(const PartStats& stats){
   // Loop over all gen-level hadronic taus stored in the corresponding list to apply certain selections
   for(size_t i=0; i < _GenHadTau->size(); i++){
 
-    if(_GenHadTau->pt(i) < stats.pmap.at("HadTauPtCut").first || _GenHadTau->pt(i) > stats.pmap.at("HadTauPtCut").second || abs(_GenHadTau->eta(i)) > stats.dmap.at("HadTauEtaCut")) continue;
-    else if( stats.bfind("DiscrByTauDecayMode") && (_GenHadTau->decayMode[i] < stats.pmap.at("TauDecayModes").first || _GenHadTau->decayMode[i] > stats.pmap.at("TauDecayModes").second)) continue;
+    if( stats.bfind("DiscrHadTauByPtAndEta") && (_GenHadTau->pt(i) < stats.pmap.at("HadTauPtCut").first || _GenHadTau->pt(i) > stats.pmap.at("HadTauPtCut").second || abs(_GenHadTau->eta(i)) > stats.dmap.at("HadTauEtaCut"))) continue;
+    
+    if( stats.bfind("DiscrByTauDecayMode") && (_GenHadTau->decayMode[i] < stats.pmap.at("TauDecayModes").first || _GenHadTau->decayMode[i] > stats.pmap.at("TauDecayModes").second)) continue;
+
+    int passMotherIDreq = 0;
+    if( stats.bfind("DiscrHadTauByMotherID") ){
+      for(size_t j=0; j<stats.vmap.at("HadTauMotherIDs").size(); j++){
+        // std::cout << "Mother ID reqirement #" << i << ": " << stats.vmap.at("HadTauMotherIDs").at(i) << std::endl;
+        if( abs(_Gen->pdg_id[_GenHadTau->genPartIdxMother[i]]) != stats.vmap.at("HadTauMotherIDs").at(j) ) continue;
+
+        passMotherIDreq++;
+      }
+    } 
+    if( stats.bfind("DiscrHadTauByMotherID") && passMotherIDreq == 0) continue;
 
     active_part->at(CUTS::eGHadTau)->push_back(i);
   }
@@ -2738,7 +3177,10 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
     else if (lvec.Pt() < stats.pmap.at("PtCut").first || lvec.Pt() > stats.pmap.at("PtCut").second) passCuts = passCuts && false;
 
     if((lep.pstats.at("Smear").bfind("MatchToGen")) && (!isData)) {   /////check
-      if(matchLeptonToGen(lvec, lep.pstats.at("Smear") ,eGenPos) == TLorentzVector(0,0,0,0)) continue;
+      if(matchLeptonToGen(lvec, lep.pstats.at("Smear") ,eGenPos) == TLorentzVector(0,0,0,0)){ 
+        i++;
+        continue;
+      }
     }
 
     for( auto cut: stats.bset) {
@@ -2796,7 +3238,12 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
         else if(cut == "decayModeFindingNewDMs") passCuts = passCuts && _Tau->DecayModeNewDMs[i] != 0;
         // else if(cut == "decayModeFinding") passCuts = passCuts && _Tau->DecayMode[i] != 0; // original
         else if(cut == "decayModeFinding") passCuts = passCuts && _Tau->DecayModeOldDMs[i] != 0;
-              // ----anti-overlap requirements
+        else if(cut == "DiscrByGenMatchingStatus"){
+          int genPartFlavor =  static_cast<int>(_Tau->genPartFlav[i]);
+          passCuts = passCuts && ( (genPartFlavor >= stats.pmap.at("GenMatchingStatusRange").first) && (genPartFlavor <= stats.pmap.at("GenMatchingStatusRange").second));
+          // std::cout << "Tau #" << i << ", status = " << genPartFlavor << ", passCut? " << std::boolalpha <<  ((genPartFlavor >= stats.pmap.at("StatusRange").first) && (genPartFlavor <= stats.pmap.at("StatusRange").second)) << std::endl;
+        }
+        // ----anti-overlap requirements
         else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithMuon2s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon2, stats.dmap.at("Muon2MatchingDeltaR"));
         else if(cut == "RemoveOverlapWithElectron1s") passCuts = passCuts && !isOverlaping(lvec, *_Electron, CUTS::eRElec1, stats.dmap.at("Electron1MatchingDeltaR"));
@@ -3998,11 +4445,18 @@ void Analyzer::checkParticleDecayList(){
 void Analyzer::writeParticleDecayList(int event){  //01.16.19
   BOOM->GetEntry(event);
   std::fstream file("particle_decay_list.txt", std::fstream::in | std::fstream::out | std::fstream::app);
+
+  if(isSignalMC && !finalInputSignal) {
+     file.close();
+     return;
+   }
+
+   file << " ----- Event #" << event << " ----- " << "\n";
+
   if (file.is_open()){
   for (unsigned p=0; p < _Gen->size(); p++){
     file << std::setw(2) << p << std::setw(2) << " " << std::setw(8) << "pdg_id: " << std::setw(4) << abs(_Gen->pdg_id[p]) << std::setw(2) << "  " << std::setw(5) << "p_T: " << std::setw(10) << _Gen->pt(p) << std::setw(2) << "  " << std::setw(5) << "phi: " << std::setw(10) << _Gen->phi(p) << std::setw(10) << "status: " << std::setw(3) << _Gen->status[p] << std::setw(2) << "  " << std::setw(7) << "mind:" << std::setw(1) << " " << std::setw(2) << _Gen->genPartIdxMother[p] << "\n";
   }
-  file << "----------" << "\n";
   file.close();}
   else std::cout << "Unable to open file." << std::endl;
   return;
@@ -4358,6 +4812,7 @@ void Analyzer::fill_histogram(std::string year) {
     if(i == 0) {
       active_part = &goodParts;
       fillCuts(true);
+      if(isSignalMC && !finalInputSignal) continue;
       for(auto it: *groups) {
         fill_Folder(it, maxCut, histo, false);
       }
@@ -4443,7 +4898,7 @@ void Analyzer::fill_histogram(std::string year) {
     for(auto itCut : nonParticleCuts){
       active_part->at(itCut)=goodParts.at(itCut);
     }
-
+    if(isSignalMC && !finalInputSignal) continue;
     if(!fillCuts(false)) continue;
 
     for(auto it: *syst_histo.get_groups()) {
@@ -4515,6 +4970,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     // In all cases: Bin 2 contains the weighted number of events passing a certain selection.
     histAddVal(true, "Events");
     histAddVal(bestVertices, "NVertices");
+    histAddVal(totalVertices, "NTotalVertices");
 
   } else if(group == "FillRun" && issyst) {
 
@@ -4552,6 +5008,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     // In all cases: Bin 2 contains the weighted number of events passing a certain selection.
     histAddVal(true, "Events");
     histAddVal(bestVertices, "NVertices");
+    histAddVal(totalVertices, "NTotalVertices");
 
   } else if(!isData && group == "FillGen") {
 
@@ -4561,10 +5018,13 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(gen_weight, "Weight");
     histAddVal(l1prefiringwgt, "L1PrefiringWeight");
 
+    std::vector<int> goodGenLeptons;
+
     int nhadtau = 0;
     TLorentzVector genVec(0,0,0,0);
     int i = 0;
     for(vec_iter it=active_part->at(CUTS::eGTau)->begin(); it!=active_part->at(CUTS::eGTau)->end(); it++, i++) {
+      goodGenLeptons.push_back(*it);
       int nu = active_part->at(CUTS::eGNuTau)->at(i);
       if(nu != -1) {
         genVec = _Gen->p4(*it) - _Gen->p4(nu);
@@ -4576,6 +5036,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(_Gen->pt(*it), "TauPt");
       histAddVal(_Gen->eta(*it), "TauEta");
       histAddVal(_Gen->phi(*it), "TauPhi");
+      histAddVal(_Gen->pdg_id[genMotherPartIndex.at(*it)], "TauMotherPID");
       for(vec_iter it2=it+1; it2!=active_part->at(CUTS::eGTau)->end(); it2++) {
         histAddVal(diParticleMass(_Gen->p4(*it),_Gen->p4(*it2), "none"), "DiTauMass");
       }
@@ -4625,36 +5086,150 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(active_part->at(CUTS::eGW)->size(), "NW");
 
     for(auto it : *active_part->at(CUTS::eGMuon)) {
+      goodGenLeptons.push_back(it);
       histAddVal(_Gen->energy(it), "MuonEnergy");
       histAddVal(_Gen->pt(it), "MuonPt");
       histAddVal(_Gen->eta(it), "MuonEta");
       histAddVal(_Gen->phi(it), "MuonPhi");
+      histAddVal(_Gen->pdg_id[genMotherPartIndex.at(it)], "MuonMotherPID");
     }
     histAddVal(active_part->at(CUTS::eGMuon)->size(), "NMuon");
 
+    for(auto it: *active_part->at(CUTS::eGElec)){
+       goodGenLeptons.push_back(it);
+
+       histAddVal(_Gen->energy(it), "ElectronEnergy");
+       histAddVal(_Gen->pt(it), "ElectronPt");
+       histAddVal(_Gen->eta(it), "ElectronEta");
+       histAddVal(_Gen->phi(it), "ElectronPhi");
+       histAddVal(_Gen->pdg_id[genMotherPartIndex.at(it)], "ElectronMotherPID");
+     }
+     histAddVal(active_part->at(CUTS::eGElec)->size(), "NElectron");
+
+
     histAddVal(gendilepmass, "ZDiLepMass");
 
-    double mass=0;
+    double mass=0, sf_mass=0; // sf_mass == mass of same flavor dilepton pairs
     TLorentzVector lep1(0,0,0,0), lep2(0,0,0,0);
-    for(size_t igen=0; igen<_Gen->size(); igen++){
-      if(abs(_Gen->pdg_id[igen])==11 or abs(_Gen->pdg_id[igen])==13 or abs(_Gen->pdg_id[igen])==15){
-        if(lep1!=TLorentzVector(0,0,0,0)){
-          lep2= _Gen->p4(igen);
-          mass=(lep1+lep2).M();
-          break;
-        }else{
-          lep1= _Gen->RecoP4(igen);
+
+    for(size_t i=0; i<goodGenLeptons.size(); i++){
+      int igen = goodGenLeptons.at(i);
+      int lep1_pdgid = 0;
+      // std::cout << "Gen pdg_id = " << (abs(_Gen->pdg_id[igen])) << ", status = " << _Gen->status[igen] << std::endl;
+
+      if(lep1!=TLorentzVector(0,0,0,0)){
+        lep2= _Gen->p4(igen);
+        mass=(lep1+lep2).M();
+
+        if( abs(_Gen->pdg_id[igen]) == lep1_pdgid) sf_mass = (lep1+lep2).M();
+        break;
+      }else{
+        lep1= _Gen->p4(igen);
+        lep1_pdgid = abs(_Gen->pdg_id[igen]);
+      }
+
+      histAddVal(_Gen->p4(igen).Pt(), "LeptonPt");
+      histAddVal(_Gen->p4(igen).Eta(), "LeptonEta");
+      histAddVal(_Gen->p4(igen).Phi(), "LeptonPhi");
+      histAddVal(_Gen->p4(igen).E(), "LeptonE");
+
+        //nb_leptons++;
+    }
+
+    histAddVal(mass, "DiLeptonMass");
+    histAddVal(sf_mass, "SFDiLeptonMass");
+    histAddVal(goodGenLeptons.size(), "NLepton");
+
+    for(size_t i_genjet=0; i_genjet < _GenJet->size(); i_genjet++){
+      histAddVal(_GenJet->pt(i_genjet), "JetPt");
+      histAddVal(_GenJet->eta(i_genjet), "JetEta");
+      histAddVal(_GenJet->phi(i_genjet), "JetPhi");
+      histAddVal(_GenJet->energy(i_genjet), "JetEnergy");
+      histAddVal(_GenJet->genHadronFlavor[i_genjet], "JetHadronFlavor");
+      histAddVal(_GenJet->genPartonFlavor[i_genjet], "JetPartonFlavor");
+    }
+
+    histAddVal(_GenJet->size(), "NJet");
+
+    histAddVal(genmet_pt, "MetPt");
+    histAddVal(genmet_phi, "MetPhi");
+
+  } else if(group == "FillJetPtProjMet"){
+
+    if(_Jet->size() > 0){
+      if(index_minjmetdphi_formet > -1){
+        histAddVal(_Jet->pt(index_minjmetdphi_formet), "InitialMinAbsDPhiMetJetPt");
+        histAddVal(_Jet->eta(index_minjmetdphi_formet), "InitialMinAbsDPhiMetJetEta");
+        histAddVal2(_Jet->eta(index_minjmetdphi_formet), _MET->pt(), "InitialMinAbsDPhiMetVsJetEta");
+        histAddVal2(_Jet->eta(index_minjmetdphi_formet), _Jet->pt(index_minjmetdphi_formet), "InitialMinAbsDPhiMetJetPtvsEta");
+        histAddVal(_Jet->phi(index_minjmetdphi_formet), "InitialMinAbsDPhiMetJetPhi");
+        histAddVal(minDeltaPhiMet_formet, "InitialMinAbsDPhiMetJet");
+        histAddVal2(minDeltaPhiMet_formet, _MET->pt(), "InitialMetvsMinAbsDPhiMetJet");
+      }
+
+      if(index_maxjmetdphi_formet > -1){
+        histAddVal(_Jet->pt(index_maxjmetdphi_formet), "InitialMaxAbsDPhiMetJetPt");
+        histAddVal(_Jet->eta(index_maxjmetdphi_formet), "InitialMaxAbsDPhiMetJetEta");
+        histAddVal2(_Jet->eta(index_maxjmetdphi_formet), _MET->pt(), "InitialMaxAbsDPhiMetVsJetEta");
+        histAddVal2(_Jet->eta(index_minjmetdphi_formet), _Jet->pt(index_maxjmetdphi_formet), "InitialMaxAbsDPhiMetJetPtvsEta");
+        histAddVal(_Jet->phi(index_maxjmetdphi_formet), "InitialMaxAbsDPhiMetJetPhi");
+        histAddVal(maxDeltaPhiMet_formet, "InitialMaxAbsDPhiMetJet");
+        histAddVal2(maxDeltaPhiMet_formet, _MET->pt(), "InitialMetvsMaxAbsDPhiMetJet");
+      }
+
+      if(index_maxjetptprojonmet_minus_formet > -1){
+        histAddVal(_Jet->pt(index_maxjetptprojonmet_minus_formet), "InitialMaxJetProjMetMinusPt");
+        histAddVal(_Jet->eta(index_maxjetptprojonmet_minus_formet), "InitialMaxJetProjMetMinusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_minus_formet), _MET->pt(), "InitialMaxJetProjMetMinusVsEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_minus_formet), _Jet->pt(index_maxjetptprojonmet_minus_formet), "InitialMaxJetProjMetMinusPtvsEta");
+        histAddVal(_Jet->phi(index_maxjetptprojonmet_minus_formet), "InitialMaxJetProjMetMinusPhi");
+        histAddVal(maxjetptprojonmet_minus_formet, "InitialMaxJetProjMetMinusMag");
+        histAddVal2(maxjetptprojonmet_minus_formet, _MET->pt(), "InitialMetvsMaxJetProjMetMinusMag");
+      }
+
+      if(index_maxjetptprojonmet_plus_formet > -1){
+        histAddVal(_Jet->pt(index_maxjetptprojonmet_plus_formet), "InitialMaxJetProjMetPlusPt");
+        histAddVal(_Jet->eta(index_maxjetptprojonmet_plus_formet), "InitialMaxJetProjMetPlusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_plus_formet), _MET->pt(), "InitialMaxJetProjMetPlusVsEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_plus_formet), _Jet->pt(index_maxjetptprojonmet_plus_formet), "InitialMaxJetProjMetPlusPtvsEta");
+        histAddVal(_Jet->phi(index_maxjetptprojonmet_plus_formet), "InitialMaxJetProjMetPlusPhi");
+        histAddVal(maxjetptprojonmet_plus_formet, "InitialMaxJetProjMetPlusMag");
+        histAddVal2(maxjetptprojonmet_plus_formet, _MET->pt(), "InitialMetvsMaxJetProjMetPlusMag");
+      }
+
+      if(index_maxjetptprojonmet_plus_formet > -1 || index_maxjetptprojonmet_minus_formet > -1){
+        int maxprojonmet_idx_formet = maxjetptprojonmet_minus_formet > maxjetptprojonmet_plus_formet ? index_maxjetptprojonmet_minus_formet : index_maxjetptprojonmet_plus_formet;
+        float maxprojonmet_formet = std::max(maxjetptprojonmet_minus_formet, maxjetptprojonmet_plus_formet);
+
+        histAddVal(_Jet->pt(maxprojonmet_idx_formet), "InitialMaxJetProjMetPt");
+        histAddVal(_Jet->eta(maxprojonmet_idx_formet), "InitialMaxJetProjMetEta");
+        histAddVal2(_Jet->eta(maxprojonmet_idx_formet), _MET->pt(), "InitialMaxJetProjMetVsEta");
+        histAddVal2(_Jet->eta(maxprojonmet_idx_formet), _Jet->pt(maxprojonmet_idx_formet), "InitialMaxJetProjMetPtvsEta");
+        histAddVal(_Jet->phi(maxprojonmet_idx_formet), "InitialMaxJetProjMetPhi");
+        histAddVal(maxprojonmet_formet, "InitialMaxJetProjMetMag");
+        histAddVal2(maxprojonmet_formet, _MET->pt(), "InitialMetvsMaxJetProjMetMag");
+        histAddVal(normPhi(_Jet->phi(maxprojonmet_idx_formet) - _MET->phi()), "InitialMaxJetProjMetDeltaPhi");
+        histAddVal2(normPhi(_Jet->phi(maxprojonmet_idx_formet) - _MET->phi()), _MET->pt(), "InitialMetvsMaxJetProjMetDeltaPhi");
+        if( cos( normPhi(_Jet->phi(maxprojonmet_idx_formet) - _MET->phi()) ) > 0 ){
+          histAddVal(1, "InitialMaxJetProjMetSign");
+          histAddVal2(1, _MET->pt(), "InitialMetvsMaxJetProjMetSign");
+        } else {
+          histAddVal(-1, "InitialMaxJetProjMetSign");
+          histAddVal2(-1, _MET->pt(), "InitialMetvsMaxJetProjMetSign");
         }
+        histAddVal(cos( normPhi(_Jet->phi(maxprojonmet_idx_formet) - _MET->phi()) ), "InitialMaxJetProjMetCosDPhi");
       }
     }
-    histAddVal(mass, "LeptonMass");
-
   } else if(fillInfo[group]->type == FILLER::Single) {
     Particle* part = fillInfo[group]->part;
     CUTS ePos = fillInfo[group]->ePos;
 
     // Added variable to calculate minimum deltaPhi between particle and MET
     float minDeltaPhiMet = 9999.9;
+    float maxDeltaPhiMet = 0.0;
+    float maxjetptprojonmet_plus = 0.0, maxjetptprojonmet_minus = 0.0;
+    int index_minjmetdphi = -1, index_maxjmetdphi = -1;
+    int index_maxjetptprojonmet_plus = -1, index_maxjetptprojonmet_minus = -1;
 
     // int i = 0;
     for(auto it : *active_part->at(ePos)) {
@@ -4665,6 +5240,19 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(part->p4(it).DeltaPhi(_MET->p4()), "MetDphi");
       if(part->type == PType::Tau) {
         histAddVal(_Tau->charge(it), "Charge");
+        int tauiso = static_cast<int>(_Tau->TauIdDiscr[it]);
+        int antiele =static_cast<int>(_Tau->againstElectron[it]);
+        int antimu = static_cast<int>(_Tau->againstMuon[it]);
+
+        histAddVal(tauiso, "IsolationWP");
+        histAddVal(antiele, "AntiEleWP");
+        histAddVal(antimu, "AntiMuWP");
+        histAddVal(_Tau->decayModeInt[it], "DecayMode");
+
+        if(!isData){
+          int genPartonFlavor = static_cast<int>(_Tau->genPartFlav[it]);
+          histAddVal(genPartonFlavor, "GenMatchingStatus")
+        }
       }
       if(part->type != PType::Jet) {
         histAddVal(calculateLeptonMetMt(part->p4(it)), "MetMt");
@@ -4687,6 +5275,36 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         if(deltaPhiMet < minDeltaPhiMet){
           minDeltaPhiMet = deltaPhiMet;
         }
+
+        float cosDPhiJetMet = cos(normPhi(part->p4(it).Phi() - _MET->phi()));
+        float jetptmetproj_plus = 0.0, jetptmetproj_minus = 0.0;
+
+        if(cosDPhiJetMet < 0.0){
+          jetptmetproj_minus = part->p4(it).Pt() * cosDPhiJetMet;
+        } else if(cosDPhiJetMet > 0.0){
+          jetptmetproj_plus = part->p4(it).Pt() * cosDPhiJetMet;
+        }
+
+        if(deltaPhiMet < minDeltaPhiMet){
+          minDeltaPhiMet = deltaPhiMet;
+          index_minjmetdphi = it;
+        }
+
+        if(deltaPhiMet > maxDeltaPhiMet){
+          maxDeltaPhiMet = deltaPhiMet;
+          index_maxjmetdphi = it;
+        }
+
+        if(abs(jetptmetproj_minus) > maxjetptprojonmet_minus){
+          maxjetptprojonmet_minus = abs(jetptmetproj_minus);
+          index_maxjetptprojonmet_minus = it;
+        }
+
+        if(abs(jetptmetproj_plus) > maxjetptprojonmet_plus){
+          maxjetptprojonmet_plus = abs(jetptmetproj_plus);
+          index_maxjetptprojonmet_plus = it;
+        }
+
       }
 
       if(ePos == CUTS::eRBJet){
@@ -4697,6 +5315,71 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     if(part->type == PType::Jet){
       // std::cout << "the minimum minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
       histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
+
+      if(index_minjmetdphi > -1){
+        histAddVal(_Jet->pt(index_minjmetdphi), "MinAbsDPhiMetPt");
+        histAddVal(_Jet->eta(index_minjmetdphi), "MinAbsDPhiMetEta");
+        histAddVal2(_Jet->eta(index_minjmetdphi), _MET->pt(), "MetvsMinAbsDPhiMetEta");
+        histAddVal2(_Jet->eta(index_minjmetdphi), _Jet->pt(index_minjmetdphi), "MetvsMinAbsDPhiMetPtvsEta");
+        histAddVal(_Jet->phi(index_minjmetdphi), "MinAbsDPhiMetPhi");
+        histAddVal(minDeltaPhiMet, "MinAbsDPhiMet");
+        histAddVal2(minDeltaPhiMet, _MET->pt(), "MetvsMinAbsDPhiMet");
+      }
+
+      if(index_maxjmetdphi > -1){
+        histAddVal(_Jet->pt(index_maxjmetdphi), "MaxAbsDPhiMetPt");
+        histAddVal(_Jet->eta(index_maxjmetdphi), "MaxAbsDPhiMetEta");
+        histAddVal2(_Jet->eta(index_maxjmetdphi), _MET->pt(), "MetvsMaxAbsDPhiMetEta");
+        histAddVal2(_Jet->eta(index_maxjmetdphi), _Jet->pt(index_maxjmetdphi), "MetvsMaxAbsDPhiMetPtvsEta");
+        histAddVal(_Jet->phi(index_maxjmetdphi), "MaxAbsDPhiMetPhi");
+        histAddVal(maxDeltaPhiMet, "MaxAbsDPhiMet");
+        histAddVal2(maxDeltaPhiMet, _MET->pt(), "MetvsMaxAbsDPhiMet");
+      }
+
+      if(index_maxjetptprojonmet_minus > -1){
+        histAddVal(_Jet->pt(index_maxjetptprojonmet_minus), "MaxProjMetMinusPt");
+        histAddVal(_Jet->eta(index_maxjetptprojonmet_minus), "MaxProjMetMinusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_minus), _MET->pt(), "MetvsMaxProjMetMinusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_minus), _Jet->pt(index_maxjetptprojonmet_minus), "MetvsMaxProjMetMinusPtvsEta");
+        histAddVal(_Jet->phi(index_maxjetptprojonmet_minus), "MaxProjMetMinusPhi");
+        histAddVal(maxjetptprojonmet_minus, "MaxProjMetMinusMag");
+        histAddVal2(maxjetptprojonmet_minus, _MET->pt(), "MetvsMaxProjMetMinusMag");
+      }
+
+      if(index_maxjetptprojonmet_plus > -1){
+        histAddVal(_Jet->pt(index_maxjetptprojonmet_plus), "MaxProjMetPlusPt");
+        histAddVal(_Jet->eta(index_maxjetptprojonmet_plus), "MaxProjMetPlusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_plus), _MET->pt(), "MetvsMaxProjMetPlusEta");
+        histAddVal2(_Jet->eta(index_maxjetptprojonmet_plus), _Jet->pt(index_maxjetptprojonmet_plus), "MetvsMaxProjMetPlusPtvsEta");
+        histAddVal(_Jet->phi(index_maxjetptprojonmet_plus), "MaxProjMetPlusPhi");
+        histAddVal(maxjetptprojonmet_plus, "MaxProjMetPlusMag");
+        histAddVal2(maxjetptprojonmet_plus, _MET->pt(), "MetvsMaxProjMetPlusMag");
+      }
+
+      if( index_maxjetptprojonmet_minus > -1 || index_maxjetptprojonmet_plus > -1){
+        int maxprojonmet_idx = maxjetptprojonmet_minus > maxjetptprojonmet_plus ? index_maxjetptprojonmet_minus : index_maxjetptprojonmet_plus;
+        float maxprojonmet = std::max(maxjetptprojonmet_minus, maxjetptprojonmet_plus);
+
+        histAddVal(_Jet->pt(maxprojonmet_idx), "MaxProjMetPt");
+        histAddVal(_Jet->eta(maxprojonmet_idx), "MaxProjMetEta");
+        histAddVal2(_Jet->eta(maxprojonmet_idx), _MET->pt(), "MetvsMaxProjMetEta");
+        histAddVal2(_Jet->eta(maxprojonmet_idx), _Jet->pt(maxprojonmet_idx), "MetvsMaxProjMetPtvsEta");
+        histAddVal(_Jet->phi(maxprojonmet_idx), "MaxProjMetPhi");
+        histAddVal(maxprojonmet, "MaxProjMetMag");
+        histAddVal2(maxprojonmet, _MET->pt(), "MetvsMaxProjMetMag");
+        histAddVal(normPhi(_Jet->phi(maxprojonmet_idx) - _MET->phi()), "MaxProjMetDeltaPhi");
+        histAddVal2(normPhi(_Jet->phi(maxprojonmet_idx) - _MET->phi()), _Jet->pt(maxprojonmet_idx), "MetvsMaxProjMetDeltaPhi");
+        if( cos( normPhi(_Jet->phi(maxprojonmet_idx) - _MET->phi()) ) > 0 ){
+          histAddVal(1, "MaxProjMetSign");
+          histAddVal2(1, _MET->pt(), "MetvsMaxProjMetSign");
+        } else {
+          histAddVal(-1, "MaxProjMetSign");
+          histAddVal2(-1, _MET->pt(), "MetvsMaxProjMetSign");
+        }
+
+        histAddVal(cos( normPhi(_Jet->phi(maxprojonmet_idx) - _MET->phi()) ), "MaxProjMetCosDPhi");
+      }
+
     }
 
     if((part->type != PType::Jet ) && active_part->at(ePos)->size() > 0) {

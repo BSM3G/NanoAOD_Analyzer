@@ -2,11 +2,14 @@
 	        Smear
 #######################################
 
-SmearTheJet 1		   # The current recommendation is to use this option (1).
+SmearTheJet 0		   # The current recommendation is to use this option (1).
 GenMatchingDeltaR 0.2
-ResolutionMatching 1       # When smearing jet energy resolution, this option must be 1.
+ResolutionMatching 0       # When smearing jet energy resolution, this option must be 1.
 MuonMatchingDeltaR  0.2
-ModifiedPUsmearing 0       # This is a modified approach to the JER smearing. Check the Analyzer wiki for more info.
+ModifiedPUsmearing 0       	# This is a modified approach to the JER smearing. Check the Analyzer wiki for more info.
+ModifiedForwardSmearing 0	# Second option to smear JER. Check Analyzer wiki for more info.
+CombinedModifiedSmearing 0	# Combination of both approaches above. Check Analyzer wiki for more info.
+
 
 ########################################
                Jet1
@@ -15,11 +18,11 @@ ModifiedPUsmearing 0       # This is a modified approach to the JER smearing. Ch
 EtaCut 0. 4.7
 PtCut 30.0
 
-ApplyLooseID 1
-ApplyTightID 0
+ApplyLooseID 0
+ApplyTightID 1
 ApplyTightLepVetoID 0
 
-ApplyPileupJetID 0
+ApplyPileupJetID 1
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
@@ -45,7 +48,7 @@ JMatchingDeltaR 0.8
 RemoveOverlapWithBs 0
 BJMatchingDeltaR 0.4
 
-Apply2017EEnoiseVeto false
+Apply2017EEnoiseVeto true
 
 DiscrByDPhiMet 0
 DPhiMetCut 0.5 999.9
@@ -57,11 +60,11 @@ DPhiMetCut 0.5 999.9
 EtaCut 0. 4.7
 PtCut 30.0
 
-ApplyLooseID 1
-ApplyTightID 0
+ApplyLooseID 0
+ApplyTightID 1
 ApplyTightLepVetoID 0
 
-ApplyPileupJetID 0
+ApplyPileupJetID 1
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
@@ -87,7 +90,7 @@ JMatchingDeltaR 0.8
 RemoveOverlapWithBs 0
 BJMatchingDeltaR 0.4
 
-Apply2017EEnoiseVeto false
+Apply2017EEnoiseVeto true
 
 DiscrByDPhiMet 0
 DPhiMetCut 0.0 0.5
@@ -98,13 +101,13 @@ DPhiMetCut 0.0 0.5
 
 PtCut 30.0
 
-ApplyPileupJetID 0
+ApplyPileupJetID 1
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
 
-ApplyLooseID 1
-ApplyTightID 0
+ApplyLooseID 0
+ApplyTightID 1
 ApplyTightLepVetoID 0
 
 RemoveOverlapWithMuon1s 1
@@ -122,7 +125,7 @@ RemoveOverlapWithTau2s 1
 Tau1MatchingDeltaR 0.4
 Tau2MatchingDeltaR 0.4
 
-Apply2017EEnoiseVeto false
+Apply2017EEnoiseVeto true
 
 ####################################
 	 FirstLeadingJet
@@ -133,13 +136,13 @@ DoDiscrByThisJet 1
 EtaCut 0.0 4.7
 PtCut 30.0
 
-ApplyPileupJetID 0
+ApplyPileupJetID 1
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
 
-ApplyLooseID 1
-ApplyTightID 0
+ApplyLooseID 0
+ApplyTightID 1
 ApplyTightLepVetoID 0
 
 RemoveOverlapWithMuon1s 1 
@@ -157,24 +160,24 @@ RemoveOverlapWithTau2s 1
 Tau1MatchingDeltaR 0.4
 Tau2MatchingDeltaR 0.4
 
-Apply2017EEnoiseVeto false
+Apply2017EEnoiseVeto true
 
 ####################################
 	 SecondLeadingJet
 ###################################
 
-DoDiscrByThisJet 0
+DoDiscrByThisJet 1
 
 EtaCut 0.0 4.7
 PtCut 30.0
 
-ApplyPileupJetID 0
+ApplyPileupJetID 1
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
 
-ApplyLooseID 1
-ApplyTightID 0
+ApplyLooseID 0
+ApplyTightID 1
 ApplyTightLepVetoID 0
 
 RemoveOverlapWithMuon1s 1
@@ -192,7 +195,7 @@ RemoveOverlapWithTau2s 1
 Tau1MatchingDeltaR 0.4
 Tau2MatchingDeltaR 0.4
 
-Apply2017EEnoiseVeto false
+Apply2017EEnoiseVeto true
 
 ###################################
     	     BJet
@@ -201,11 +204,11 @@ Apply2017EEnoiseVeto false
 EtaCut 0.0 2.4
 PtCut 20.0
 
-ApplyLooseID 1
-ApplyTightID 0
+ApplyLooseID 0
+ApplyTightID 1
 ApplyTightLepVetoID 0
 
-ApplyPileupJetID 0
+ApplyPileupJetID 1
 # WPs: tight = 0, medium = 1, loose = 2 
 PUJetIDCut 0
 FailPUJetID 0
@@ -225,7 +228,7 @@ RemoveOverlapWithTau2s 1
 Tau1MatchingDeltaR 0.4
 Tau2MatchingDeltaR 0.4
 
-Apply2017EEnoiseVeto false
+Apply2017EEnoiseVeto true
 
 ApplyJetBTaggingCSVv2 0 
 ApplyJetBTaggingDeepCSV 1
@@ -233,7 +236,7 @@ ApplyJetBTaggingDeepFlav 0
 
 # Check info for different working points: https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation
 JetBTaggingWP   medium
-JetBTaggingCut  0.6321
+JetBTaggingCut  0.4941
 MatchBToGen     0
 UseBtagSF       0
 RemoveBJetsFromJets 0
