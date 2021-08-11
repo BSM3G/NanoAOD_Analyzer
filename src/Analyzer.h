@@ -129,6 +129,7 @@ public:
 
   void smearLepton(Lepton&, CUTS, const PartStats&, const PartStats&, int syst=0);
   void smearTaus(Lepton&, const PartStats&, const PartStats&, int syst=0);
+  void smearPhotons(Photon&, CUTS, const PartStats&, const PartStats&, int syst=0);
   //void smearJet(Particle&, CUTS, const PartStats&, int syst=0);
   void smearJetRes(Particle&, CUTS, const PartStats&, int syst=0);
 
@@ -150,6 +151,7 @@ public:
   void getGoodGen(const PartStats&);
   std::unordered_map<int, int> genMotherPartIndex;
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
+  void getGoodRecoPhotons(const Photon&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
   void getGoodRecoLeadJets(CUTS, const PartStats&, const int);
   void getGoodRecoBJets(CUTS, const PartStats&, const int); //01.16.19

@@ -190,6 +190,15 @@ void Particle::getPartStats(std::string filename) {
 
 
 Photon::Photon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Particle(_BOOM, "Photon", filename, syst_names) {
+
+  auto& phot1 = pstats["Photon1"];
+  auto& phot2 = pstats["Photon2"];
+
+  std::bitset<8> tmp(phot1.dmap.at("DiscrByCBID"));
+  cbIDphot1=tmp;
+  tmp=phot2.dmap.at("DiscrByCBID");
+  cbIDphot2=tmp;
+
   SetBranch("Photon_hoe", hoverE);
   SetBranch("Photon_r9", phoR);
   SetBranch("Photon_sieie", sigmaIEtaIEta);
@@ -197,6 +206,13 @@ Photon::Photon(TTree* _BOOM, std::string filename, std::vector<std::string> syst
   SetBranch("Photon_pfRelIso03_chg", pfIso_chg);
   SetBranch("Photon_electronVeto", eleVeto);
   SetBranch("Photon_pixelSeed", hasPixelSeed);
+  SetBranch("Photon_cutBased", cutBasedID);
+  SetBranch("Photon_mvaID_WP80", mvaID_WP80);
+  SetBranch("Photon_mvaID_WP90", mvaID_WP90);
+}
+
+bool Photon::get_Iso(int index, double min, double max) const {
+  return (pfIso_all[index] >= min && pfIso_all[index] < max);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

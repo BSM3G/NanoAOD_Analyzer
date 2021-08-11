@@ -38,10 +38,10 @@ IsoSumPtCutValue 0.0 0.15
 DiscrIfIsZdecay 0
 
 DiscrByMetDphi 0
-MetDphiCut 1.0 3.15
+MetDphiCut 0.0 3.15
 
 DiscrByMetMt 0
-MetMtCut 0. 100.
+MetMtCut 0. 9999.9
 
 ////////////////////////////////
              Muon2
@@ -63,7 +63,7 @@ IsoSumPtCutValue 0.0 0.15
 DiscrIfIsZdecay 0
 
 DiscrByMetDphi 0
-MetDphiCut 1.0 3.15
+MetDphiCut 0.0 3.15
 
 DiscrByMetMt 0
-MetMtCut 0. 100.
+MetMtCut 0. 9999.9

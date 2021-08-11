@@ -5,30 +5,30 @@ Gen
 DiscrTauByPtAndEta false
 TauPtCut -10.0  10000.0 
 TauEtaCut 10.0
-DiscrTauByMotherID  1
+DiscrTauByMotherID  0
 TauMotherIDs   1000015. 1000015.
-DiscrTauByNotFromPileup false
+DiscrTauByNotFromPileup true
 
 DiscrElecByPtAndEta   false
 ElecPtCut  -10.0    100000.0
 ElecEtaCut  10.0
 DiscrElecByMotherID   0
 ElecMotherIDs   15.   15.
-DiscrElecByNotFromPileup false
+DiscrElecByNotFromPileup true
 
 DiscrMuonByPtAndEta   false
 MuonPtCut   -10.0   100000.0
 MuonEtaCut   10.0
 DiscrMuonByMotherID   0
 MuonMotherIDs    15.   15.
-DiscrMuonByNotFromPileup false
+DiscrMuonByNotFromPileup true
 
 DiscrHadTauByPtAndEta false
 HadTauPtCut   18.0  9999.9
 HadTauEtaCut  2.5
 DiscrByTauDecayMode false
 TauDecayModes       0    15          
-DiscrHadTauByMotherID false
+DiscrHadTauByMotherID true
 HadTauMotherIDs 15 16 111 211 113 213 20113 20213 1000022 
 
 DiscrJetByPtandEta false

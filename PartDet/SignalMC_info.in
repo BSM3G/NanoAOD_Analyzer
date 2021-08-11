@@ -2,5 +2,6 @@
             SignalMC
 ####################################
 
-ModelTag VBF_EWKino_WZ
-MassParameters 100_50p00
+ModelTag VBF_EWKino_StauDominated
+# MassParameters 300_275p00_250p00
+MassParameters 300_262p50_225p00

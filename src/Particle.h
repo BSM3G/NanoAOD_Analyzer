@@ -38,7 +38,7 @@ struct PartStats {
 };
 
 
-enum class PType { Electron, Muon, Tau, Jet, FatJet, None};
+enum class PType { Electron, Muon, Tau, Jet, FatJet, Photon, None};
 
 const Int_t MAXINDEX = 500;
 
@@ -120,6 +120,10 @@ public:
   Photon();
   Photon(TTree*, std::string, std::vector<std::string>, std::string);
 
+  bool get_Iso(int, double, double) const;
+  std::bitset<8> cbIDphot1;
+  std::bitset<8> cbIDphot2;
+
   float hoverE[MAXINDEX];
   float phoR[MAXINDEX];
   float sigmaIEtaIEta[MAXINDEX];
@@ -127,6 +131,9 @@ public:
   float pfIso_chg[MAXINDEX];
   bool eleVeto[MAXINDEX];
   bool hasPixelSeed[MAXINDEX];
+  Int_t cutBasedID[MAXINDEX];
+  bool mvaID_WP80[MAXINDEX];
+  bool mvaID_WP90[MAXINDEX];
 };
 
 

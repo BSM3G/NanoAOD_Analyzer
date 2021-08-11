@@ -35,7 +35,9 @@ const std::string PUSPACE = "Pileup/";
 const std::vector<CUTS> Analyzer::genCuts = {
   CUTS::eGTau, CUTS::eGNuTau, CUTS::eGTop,
   CUTS::eGElec, CUTS::eGMuon, CUTS::eGZ,
-  CUTS::eGW, CUTS::eGHiggs, CUTS::eGJet, CUTS::eGBJet, CUTS::eGHadTau, CUTS::eGMatchedHadTau
+  CUTS::eGW, CUTS::eGHiggs, CUTS::eGJet, 
+  CUTS::eGBJet, CUTS::eGHadTau, CUTS::eGMatchedHadTau,
+  CUTS::eGPhoton,
 };
 
 const std::vector<CUTS> Analyzer::jetCuts = {
@@ -53,9 +55,10 @@ const std::unordered_map<std::string, CUTS> Analyzer::cut_num = {
   {"NGenZ", CUTS::eGZ},                                 {"NGenW", CUTS::eGW},
   {"NGenHiggs", CUTS::eGHiggs},                         {"NGenJet", CUTS::eGJet},
   {"NGenBJet", CUTS::eGBJet},                           {"NGenHadTau", CUTS::eGHadTau},
-  {"NMatchedGenHadTau", CUTS::eGMatchedHadTau},
+  {"NMatchedGenHadTau", CUTS::eGMatchedHadTau},         {"NGenPhoton", CUTS::eGPhoton},
   {"NRecoMuon1", CUTS::eRMuon1},                        {"NRecoMuon2", CUTS::eRMuon2},
   {"NRecoElectron1", CUTS::eRElec1},                    {"NRecoElectron2",CUTS::eRElec2},
+  {"NRecoPhoton1", CUTS::eRPhot1},                      {"NRecoPhoton2",CUTS::eRPhot2},
   {"NRecoTau1", CUTS::eRTau1},                          {"NRecoTau2", CUTS::eRTau2},
   {"NRecoJet1", CUTS::eRJet1},                          {"NRecoJet2", CUTS::eRJet2},
   {"NRecoCentralJet", CUTS::eRCenJet},                  {"NRecoBJet", CUTS::eRBJet},
@@ -341,6 +344,8 @@ void Analyzer::create_fillInfo() {
   fillInfo["FillMuon2"] =      new FillVals(CUTS::eRMuon2, FILLER::Single, _Muon);
   fillInfo["FillElectron1"] =  new FillVals(CUTS::eRElec1, FILLER::Single, _Electron);
   fillInfo["FillElectron2"] =  new FillVals(CUTS::eRElec2, FILLER::Single, _Electron);
+  fillInfo["FillPhoton1"] =  new FillVals(CUTS::eRPhot1, FILLER::Single, _Photon);
+  fillInfo["FillPhoton2"] =  new FillVals(CUTS::eRPhot2, FILLER::Single, _Photon);
 
   fillInfo["FillJet1"] =       new FillVals(CUTS::eRJet1, FILLER::Single, _Jet);
   fillInfo["FillJet2"] =       new FillVals(CUTS::eRJet2, FILLER::Single, _Jet);
@@ -988,6 +993,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     smearLepton(*_Muon, CUTS::eGMuon, _Muon->pstats["Smear"], distats["Muon_systematics"], i);
     // smearLepton(*_Tau, CUTS::eGTau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
     smearTaus(*_Tau, _Tau->pstats["Smear"], distats["Tau_systematics"], i);
+    smearPhotons(*_Photon, CUTS::eGPhoton, _Photon->pstats["Smear"], distats["Photon_systematics"], i);
 
     applyJetEnergyCorrections(*_Jet,CUTS::eGJet,_Jet->pstats["Smear"], year, i);
     applyJetEnergyCorrections(*_FatJet,CUTS::eGJet,_FatJet->pstats["Smear"], year, i);
@@ -1036,6 +1042,8 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon2, CUTS::eGMuon, _Muon->pstats["Muon2"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGHadTau, _Tau->pstats["Tau1"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGHadTau, _Tau->pstats["Tau2"],syst);
+  getGoodRecoPhotons(*_Photon, CUTS::eRPhot1, CUTS::eGPhoton, _Photon->pstats["Photon1"], syst);
+  getGoodRecoPhotons(*_Photon, CUTS::eRPhot2, CUTS::eGPhoton, _Photon->pstats["Photon2"], syst);
   getGoodRecoBJets(CUTS::eRBJet, _Jet->pstats["BJet"],syst); //01.16.19
   getGoodRecoJets(CUTS::eRJet1, _Jet->pstats["Jet1"],syst);
   getGoodRecoJets(CUTS::eRJet2, _Jet->pstats["Jet2"],syst);
@@ -1982,6 +1990,21 @@ void Analyzer::smearLepton(Lepton& lep, CUTS eGenPos, const PartStats& stats, co
       TLorentzVector genVec =  matchLeptonToGen(lepReco, lep.pstats["Smear"],eGenPos);
       systematics.shiftLepton(lep, lepReco, genVec, _MET->systdeltaMEx[syst], _MET->systdeltaMEy[syst], syst);
     }
+  }
+}
+
+void Analyzer::smearPhotons(Photon& photons, CUTS eGenPos, const PartStats& stats, const PartStats& syst_stats, int syst){
+  // This function needs to be revised.
+  if(isData) {
+    photons.setOrigReco();
+    return;
+  }
+
+  std::string systname = syst_names.at(syst);
+  if(!photons.needSyst(syst)) return;
+
+  if(systname=="orig" && !stats.bfind("SmearTheParticle")){
+    photons.setOrigReco();
   }
 }
 
@@ -3257,6 +3280,64 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
 
   return;
 }
+
+void Analyzer::getGoodRecoPhotons(const Photon& gamma, const CUTS ePos, const CUTS eGenPos, const PartStats& stats, const int syst) {
+  if(! neededCuts.isPresent(ePos)) return;
+
+  std::string systname = syst_names.at(syst);
+  if(!gamma.needSyst(syst)) {
+    active_part->at(ePos) = goodParts[ePos];
+    return;
+  }
+
+  int i = 0; 
+  for(auto lvec: gamma) {
+    bool passCuts = true;
+    if (fabs(lvec.Eta()) > stats.dmap.at("EtaCut")) passCuts = passCuts && false;
+    else if(fabs(lvec.Eta()) > 1.442 && fabs(lvec.Eta()) < 1.566) passCuts = passCuts && false;
+    else if (lvec.Pt() < stats.pmap.at("PtCut").first || lvec.Pt() > stats.pmap.at("PtCut").second) passCuts = passCuts && false;
+    if((gamma.pstats.at("Smear").bfind("MatchToGen")) && (!isData)) {   /////check
+      if(matchLeptonToGen(lvec, gamma.pstats.at("Smear") ,eGenPos) == TLorentzVector(0,0,0,0)){ 
+        i++;
+        continue;
+      }
+    }
+
+    for( auto cut: stats.bset) {
+
+      if(!passCuts) break;
+      else if(cut == "DoDiscrByIsolation") {
+        double firstIso = (stats.pmap.find("IsoSumPtCutValue") != stats.pmap.end()) ? stats.pmap.at("IsoSumPtCutValue").first : ival(ePos) - ival(CUTS::eRTau1) + 1;
+        double secondIso = (stats.pmap.find("IsoSumPtCutValue") != stats.pmap.end()) ? stats.pmap.at("IsoSumPtCutValue").second : stats.bfind("FlipIsolationRequirement");
+        passCuts = passCuts && gamma.get_Iso(i, firstIso, secondIso);
+      }
+      else if(cut == "DiscrByMetDphi") passCuts = passCuts && passCutRange(absnormPhi(lvec.Phi() - _MET->phi()), stats.pmap.at("MetDphiCut"));
+      else if(cut == "DiscrByMetMt") passCuts = passCuts && passCutRange(calculateLeptonMetMt(lvec), stats.pmap.at("MetMtCut"));
+      else if(cut == "DoDiscrByCBID"){
+        std::bitset<8> idvariable(_Photon->cutBasedID[i]);
+
+        if(ival(ePos) - ival(CUTS::eRPhot2)){ //test if it is photon1
+          passCuts = passCuts && (_Photon->cbIDphot1 &idvariable).count();
+        }else{
+          passCuts = passCuts && (_Photon->cbIDphot2&idvariable).count();
+        }
+      }
+      else if(stats.bfind("DiscrBymvaWP80")) passCuts = passCuts && _Photon->mvaID_WP80[i];
+      else if(stats.bfind("DiscrBymvaWP90")) passCuts = passCuts && _Photon->mvaID_WP90[i];
+      // ----anti-overlap requirements
+      else if(cut == "DoDiscrByElectronVeto") passCuts = passCuts && (_Photon->eleVeto[i] == 1);
+      else if(cut == "DoDiscrByPixelSeedVeto") passCuts = passCuts && (_Photon->hasPixelSeed[i] == 0);
+
+      else std::cout << "cut: " << cut << " not listed" << std::endl;
+    }
+
+    if(passCuts) active_part->at(ePos)->push_back(i);
+    i++;
+  }
+
+  return;
+}
+
 
 bool Analyzer::passJetVetoEEnoise2017(int jet_index){
    // Get the jet pT and raw factors to calculate the raw jet pt:
