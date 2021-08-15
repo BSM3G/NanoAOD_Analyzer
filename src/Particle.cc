@@ -206,7 +206,7 @@ Photon::Photon(TTree* _BOOM, std::string filename, std::vector<std::string> syst
   SetBranch("Photon_pfRelIso03_chg", pfIso_chg);
   SetBranch("Photon_electronVeto", eleVeto);
   SetBranch("Photon_pixelSeed", hasPixelSeed);
-  SetBranch("Photon_cutBased", cutBasedID);
+  SetBranch("Photon_cutBased", cutBasedID); // Photon_cutBasedBitmap = NanoAODv6, Photon_cutBased = NanoAODv7
   SetBranch("Photon_mvaID_WP80", mvaID_WP80);
   SetBranch("Photon_mvaID_WP90", mvaID_WP90);
 }
