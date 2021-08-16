@@ -40,7 +40,7 @@ struct PartStats {
 
 enum class PType { Electron, Muon, Tau, Jet, FatJet, Photon, None};
 
-const Int_t MAXINDEX = 500;
+const Int_t MAXINDEX = 1000;
 
 class Particle {
 
