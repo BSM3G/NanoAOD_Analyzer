@@ -418,7 +418,23 @@ Tau1PtVsTau2Pt                  100     0   500     100     0   500
 
 //------------------------------------------------//
 
-FillMuon1Tau1 1
+FillDiPhoton 1
+
+DiPhotonDeltaR           200   0    10.
+DiPhotonDeltaEta         200   0    10.
+DiPhotonDeltaPhi          72   0    +3.15
+DiPhotonMass            1000   0  5000
+DiPhotonPt              1000   0  5000
+
+LargestDiPhotonMass        1000   0  5000
+LargestDiPhotonPt          1000   0  5000
+LargestDiPhotonEtaProduct     4  -2     2
+LargestDiPhotonDeltaR       200   0    10.
+LargestMassDiPhotonDeltaEta     200   0    10.
+
+//------------------------------------------------//
+
+FillMuon1Tau1 0
 
 Muon1Tau1_Tau1DiJetDeltaPhi           72     0       +3.15
 Muon1Tau1_Muon1DiJetDeltaPhi          72     0       +3.15

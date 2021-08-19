@@ -66,6 +66,7 @@ const std::unordered_map<std::string, CUTS> Analyzer::cut_num = {
   {"NRecoFirstLeadingJet", CUTS::eR1stJet},             {"NRecoSecondLeadingJet", CUTS::eR2ndJet},
   {"NDiMuonCombinations", CUTS::eDiMuon},               {"NDiElectronCombinations", CUTS::eDiElec},
   {"NDiTauCombinations", CUTS::eDiTau},                 {"NDiJetCombinations", CUTS::eDiJet},
+  {"NDiPhotonCombinations", CUTS::eDiPhoton},
   {"NMuon1Tau1Combinations", CUTS::eMuon1Tau1},         {"NMuon1Tau2Combinations", CUTS::eMuon1Tau2},
   {"NMuon2Tau1Combinations", CUTS::eMuon2Tau1},         {"NMuon2Tau2Combinations", CUTS::eMuon2Tau2},
   {"NElectron1Tau1Combinations", CUTS::eElec1Tau1},     {"NElectron1Tau2Combinations", CUTS::eElec1Tau2},
@@ -356,6 +357,7 @@ void Analyzer::create_fillInfo() {
   fillInfo["FillDiElectron"] = new FillVals(CUTS::eDiElec, FILLER::Dipart, _Electron, _Electron);
   fillInfo["FillDiMuon"] =     new FillVals(CUTS::eDiMuon, FILLER::Dipart, _Muon, _Muon);
   fillInfo["FillDiTau"] =      new FillVals(CUTS::eDiTau, FILLER::Dipart, _Tau, _Tau);
+  fillInfo["FillDiPhoton"] =      new FillVals(CUTS::eDiPhoton, FILLER::Dipart, _Photon, _Photon);
   fillInfo["FillMetCuts"] =    new FillVals();
   fillInfo["FillDiJet"] =      new FillVals(CUTS::eDiJet, FILLER::Dipart, _Jet, _Jet);
 
@@ -1076,6 +1078,8 @@ void Analyzer::getGoodParticles(int syst){
   getGoodLeptonCombos(*_Tau, *_Tau, CUTS::eRTau1, CUTS::eRTau2, CUTS::eDiTau, distats["DiTau"],syst);
   getGoodLeptonCombos(*_Electron, *_Electron, CUTS::eRElec1, CUTS::eRElec2, CUTS::eDiElec, distats["DiElectron"],syst);
   getGoodLeptonCombos(*_Muon, *_Muon, CUTS::eRMuon1, CUTS::eRMuon2, CUTS::eDiMuon, distats["DiMuon"],syst);
+
+  getGoodPhotonCombos(distats["DiPhoton"],syst);
 
   //
   getGoodLeptonJetCombos(*_Electron, *_Jet, CUTS::eRElec1, CUTS::eRJet1, CUTS::eElec1Jet1, distats["Electron1Jet1"],syst);
@@ -4378,6 +4382,45 @@ double Analyzer::CalculateDiLepMassDeltaPt(const TLorentzVector& part1, const TL
 }
 // ---------------------------------------- //
 
+
+void Analyzer::getGoodPhotonCombos(const PartStats& stats, const int syst) {
+  if(! neededCuts.isPresent(CUTS::eDiPhoton)) return;
+  std::string systname = syst_names.at(syst);
+  if(systname!="orig"){
+    //save time to not rerun stuff
+    if( systname.find("Photon")==std::string::npos){
+      active_part->at(CUTS::eDiPhoton)=goodParts[CUTS::eDiPhoton];
+      return;
+    }
+  }
+  TLorentzVector photon1(0,0,0,0), photon2(0,0,0,0);
+  // ----Separation cut between photons (remove overlaps)
+  for(auto ij2 : *active_part->at(CUTS::eRPhot2)) {
+    photon2 = _Photon->p4(ij2);
+    for(auto ij1 : *active_part->at(CUTS::eRPhot1)) {
+      if(ij1 == ij2) continue;
+      photon1 = _Photon->p4(ij1);
+
+      bool passCuts = true;
+      for(auto cut : stats.bset) {
+        if(!passCuts) break;
+        else if(cut == "DiscrByDeltaR") passCuts = passCuts && (photon1.DeltaR(photon2) >= stats.dmap.at("DeltaRCut"));
+        else if(cut == "DiscrByDeltaEta") passCuts = passCuts && passCutRange(abs(photon1.Eta() - photon2.Eta()), stats.pmap.at("DeltaEtaCut"));
+        else if(cut == "DiscrByDeltaPhi") passCuts = passCuts && passCutRange(absnormPhi(photon1.Phi() - photon2.Phi()), stats.pmap.at("DeltaPhiCut"));
+        else if(cut == "DiscrByMassReco") passCuts = passCuts && passCutRange((photon1+photon2).M(), stats.pmap.at("MassCut"));
+        else if(cut == "DiscrByCosDphi") passCuts = passCuts && passCutRange(cos(absnormPhi(photon1.Phi() - photon2.Phi())), stats.pmap.at("CosDphiCut"));
+
+        else std::cout << "cut: " << cut << " not listed" << std::endl;
+      }
+      ///Particlesp that lead to good combo are totjet * part1 + part2
+      /// final / totjet = part1 (make sure is integer)
+      /// final % totjet = part2
+      if(passCuts) active_part->at(CUTS::eDiPhoton)->push_back(ij1*_Photon->size() + ij2);
+    }
+  }
+}
+
+//  --------------------------------------- //
 /////abs for values
 ///Find the number of lepton combos that pass the dilepton cuts
 void Analyzer::getGoodLeptonJetCombos(Lepton& lep1, Jet& jet1, CUTS ePos1, CUTS ePos2, CUTS ePosFin, const PartStats& stats, const int syst) {
@@ -5565,6 +5608,44 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(dphi2, "Dphi2");
     histAddVal2(dphi1,dphi2, "Dphi1VsDphi2");
     histAddVal(alpha, "Alpha");
+
+  } else if(group == "FillDiPhoton"){ // Diphoton combinations
+    float leaddiphotonmass = 0;
+    float leaddiphotonpt = 0;
+    float leaddiphotondeltaR = 0;
+    float leaddiphotondeltaEta = 0;
+    float etaproduct = 0;
+    float largestMassDeltaEta = 0; // added by Kyungmin
+
+    for(auto it : *active_part->at(CUTS::eDiPhoton)) {
+      int p1 = (it) / _Photon->size();
+      int p2 = (it) % _Photon->size();
+      TLorentzVector photon1 = _Photon->p4(p1);
+      TLorentzVector photon2 = _Photon->p4(p2);
+      TLorentzVector DiPhoton = photon1 + photon2;
+
+      if(DiPhoton.M() > leaddiphotonmass) {
+        leaddiphotonmass = DiPhoton.M();
+        etaproduct = (photon1.Eta() * photon2.Eta() > 0) ? 1 : -1;
+        largestMassDeltaEta = fabs(photon1.Eta() - photon2.Eta());
+      }
+      if(DiPhoton.Pt() > leaddiphotonpt) leaddiphotonpt = DiPhoton.Pt();
+      if(fabs(photon1.Eta() - photon2.Eta()) > leaddiphotondeltaEta) leaddiphotondeltaEta = fabs(photon1.Eta() - photon2.Eta());
+      if(photon1.DeltaR(photon2) > leaddiphotondeltaR) leaddiphotondeltaR = photon1.DeltaR(photon2);
+
+      histAddVal(DiPhoton.M(), "Mass");
+      histAddVal(DiPhoton.Pt(), "Pt");
+      histAddVal(fabs(photon1.Eta() - photon2.Eta()), "DeltaEta");
+      histAddVal(absnormPhi(photon1.Phi() - photon2.Phi()), "DeltaPhi");
+      histAddVal(photon1.DeltaR(photon2), "DeltaR");
+    }
+
+    histAddVal(leaddiphotonmass, "LargestMass");
+    histAddVal(leaddiphotonpt, "LargestPt");
+    histAddVal(leaddiphotondeltaEta, "LargestDeltaEta");
+    histAddVal(leaddiphotondeltaR, "LargestDeltaR");
+    histAddVal(etaproduct, "LargestMassEtaProduct");
+    histAddVal(largestMassDeltaEta, "LargestMassDeltaEta");
 
   } else if(group == "FillDiJet"){ // Dijet combinations
     float leaddijetmass = 0;
