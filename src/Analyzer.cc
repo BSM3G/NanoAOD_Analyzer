@@ -3197,6 +3197,8 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
       else if(lep.type == PType::Muon){
         if(cut == "DoDiscrByTightID") passCuts = passCuts && _Muon->tight[i];
         else if(cut == "DoDiscrBySoftID") passCuts = passCuts && _Muon->soft[i];
+        else if(cut == "DoDiscrByLooseID") passCuts = passCuts && _Muon->loose[i];
+        else if(cut == "DoDiscrByMediumID") passCuts = passCuts && _Muon->medium[i];
       }
       ////electron cuts
       else if(lep.type == PType::Electron){
@@ -4455,7 +4457,7 @@ void Analyzer::writeParticleDecayList(int event){  //01.16.19
 
   if (file.is_open()){
   for (unsigned p=0; p < _Gen->size(); p++){
-    file << std::setw(2) << p << std::setw(2) << " " << std::setw(8) << "pdg_id: " << std::setw(4) << abs(_Gen->pdg_id[p]) << std::setw(2) << "  " << std::setw(5) << "p_T: " << std::setw(10) << _Gen->pt(p) << std::setw(2) << "  " << std::setw(5) << "phi: " << std::setw(10) << _Gen->phi(p) << std::setw(10) << "status: " << std::setw(3) << _Gen->status[p] << std::setw(2) << "  " << std::setw(7) << "mind:" << std::setw(1) << " " << std::setw(2) << _Gen->genPartIdxMother[p] << "\n";
+    file << std::setw(2) << "index:" << std::setw(2) << p << std::setw(2) << " " << std::setw(8) << "pdg_id: " << std::setw(4) << abs(_Gen->pdg_id[p]) << std::setw(2) << "  " << std::setw(5) << "p_T: " << std::setw(10) << _Gen->pt(p) << std::setw(2) << "  " << std::setw(5) << "phi: " << std::setw(10) << _Gen->phi(p) << std::setw(2)  << "  " << std::setw(5) << "mass: " << std::setw(10) << _Gen->mass(p) << std::setw(10) << "status: " << std::setw(3) << _Gen->status[p] << std::setw(2) << "  " << std::setw(7) << "mother_index: " << std::setw(1) << " " << std::setw(2) << _Gen->genPartIdxMother[p] << "\n";
   }
   file.close();}
   else std::cout << "Unable to open file." << std::endl;
