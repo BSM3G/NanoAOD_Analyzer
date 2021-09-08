@@ -2,7 +2,7 @@
          Muon1Tau1
 #############################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No
@@ -48,7 +48,7 @@ DiLeadMassDeltaPtCut   0.0   9000.0
            Muon1Tau2
 ##############################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No
@@ -94,7 +94,7 @@ DiLeadMassDeltaPtCut   0.0   9000.0
               Muon2Tau1
 ###################################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No
@@ -140,7 +140,7 @@ DiLeadMassDeltaPtCut   0.0   9000.0
         Muon2Tau2
 ########################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No

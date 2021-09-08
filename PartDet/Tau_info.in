@@ -34,7 +34,7 @@ TauIDAlgorithm Tau_idDeepTau2017v2p1
 //RECO CUTS///
 
 EtaCut 2.1
-PtCut 20.0 40.0
+PtCut 10.0 9999.0
 
 DoDzCut false
 DzCutThreshold 0.2
@@ -42,24 +42,24 @@ DzCutThreshold 0.2
 DoDiscrByLeadTrack false
 LeadTrackThreshold 5.0
 
-DoDiscrByIsolation true
+DoDiscrByIsolation false
 // MVA: 1 = VVLoose, 2 = VLoose, 4 = Loose, 8 = Medium, 16 = Tight, 32 = VTight, 64 = VVTight
 // DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
 DiscrByMinIsolation 32
 DiscrByMaxIsolation 2
 FlipIsolationRequirement false
-DiscrByProngType true
+DiscrByProngType false
 ProngType  1or3hps
-decayModeFindingNewDMs true
+decayModeFindingNewDMs false
 decayModeFinding false
 
-DoDiscrAgainstElectron true
+DoDiscrAgainstElectron false
 // MVA: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight, 16 = VTight
 // DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
 DiscrAgainstElectron 32
 SelectTausThatAreElectrons false
 
-DoDiscrAgainstMuon true
+DoDiscrAgainstMuon false
 // MVA: 1 = Loose, 2 = Tight
 // DeepTau: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight
 DiscrAgainstMuon 8
@@ -67,13 +67,13 @@ SelectTausThatAreMuons false
 
 DoDiscrByCrackCut false
 
-RemoveOverlapWithMuon1s true
-RemoveOverlapWithMuon2s true
+RemoveOverlapWithMuon1s false
+RemoveOverlapWithMuon2s false
 Muon1MatchingDeltaR 0.3
 Muon2MatchingDeltaR 0.3
 
-RemoveOverlapWithElectron1s true
-RemoveOverlapWithElectron2s true
+RemoveOverlapWithElectron1s false
+RemoveOverlapWithElectron2s false
 Electron1MatchingDeltaR 0.3
 Electron2MatchingDeltaR 0.3
 
@@ -95,7 +95,7 @@ GenMatchingStatusRange 3  5
 //----RECO CUTS----////
 
 EtaCut 2.1
-PtCut 20.0 40.0
+PtCut 10.0 9999.0
 
 DoDzCut false
 DzCutThreshold 0.2
@@ -103,24 +103,24 @@ DzCutThreshold 0.2
 DoDiscrByLeadTrack false
 LeadTrackThreshold 5.0
 
-DoDiscrByIsolation true
+DoDiscrByIsolation false
 // MVA: 1 = VVLoose, 2 = VLoose, 4 = Loose, 8 = Medium, 16 = Tight, 32 = VTight, 64 = VVTight
 // DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
 DiscrByMinIsolation 32
 DiscrByMaxIsolation 2
 FlipIsolationRequirement false
-DiscrByProngType true
+DiscrByProngType false
 ProngType  1or3hps
-decayModeFindingNewDMs true
+decayModeFindingNewDMs false
 decayModeFinding false
 
-DoDiscrAgainstElectron true
+DoDiscrAgainstElectron false
 // MVA: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight, 16 = VTight
 // DeepTau: 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
 DiscrAgainstElectron 32
 SelectTausThatAreElectrons false
 
-DoDiscrAgainstMuon true
+DoDiscrAgainstMuon false
 // MVA: 1 = Loose, 2 = Tight
 // DeepTau: 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight
 DiscrAgainstMuon 8
@@ -128,13 +128,13 @@ SelectTausThatAreMuons false
 
 DoDiscrByCrackCut 0
 
-RemoveOverlapWithMuon1s true
-RemoveOverlapWithMuon2s true
+RemoveOverlapWithMuon1s false
+RemoveOverlapWithMuon2s false
 Muon1MatchingDeltaR 0.3
 Muon2MatchingDeltaR 0.3
 
-RemoveOverlapWithElectron1s true
-RemoveOverlapWithElectron2s true
+RemoveOverlapWithElectron1s false
+RemoveOverlapWithElectron2s false
 Electron1MatchingDeltaR 0.3
 Electron2MatchingDeltaR 0.3
 

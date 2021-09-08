@@ -30,20 +30,23 @@ NVertices   100   0.  100.
 
 FillGen 1
 
-NGenTau            20   0.       20.
-NGenHadTau         20   0.       20.
-GenTauEnergy      5000   0.     5000.
-GenTauPt          5000   0.     5000.
-GenTauEta          72  -3.6      +3.6
-GenTauPhi          36  -3.15     +3.15
-GenHadTauPt       5000   0.     5000.
-GenHadTauEta       72  -3.6      +3.6
-//NGenMuon           20   0.       20.
-//GenMuonEnergy     200   0.      500.
-//GenMuonPt         200   0.      500.
-//GenMuonEta         72  -3.6      +3.6
-//GenMuonPhi         36  -3.15     +3.15
-GenDiTauMass      10000   0.    10000.
+//NGenTau            20   0.       20.
+//NGenHadTau         20   0.       20.
+//GenTauEnergy      5000   0.     5000.
+//GenTauPt          5000   0.     5000.
+//GenTauEta          72  -3.6      +3.6
+//GenTauPhi          36  -3.15     +3.15
+//GenHadTauPt       5000   0.     5000.
+//GenHadTauEta       72  -3.6      +3.6
+NGenMuon           20   0.       20.
+GenMuonEnergy     200   0.      500.
+GenMuonPt         200   0.      500.
+GenMuonEta         72  -3.6      +3.6
+GenMuonPhi         36  -3.15     +3.15
+GenDiMuonMass      250   0.     250.
+GenDiMuonPt        250   0.     250.
+//GenDiTauMass      10000   0.    10000.
+GenDiLeptonPt	    200     0.	  1000.
 
 //////GenZprimeMass    100 0. 10000.      NOT IMPLIMENTED
 //////GenZprimeStatusCode     100 0. 100.
@@ -83,7 +86,7 @@ Tau2Charge               10  -5.       5.
 
 //------------------------------------------------//
 
-FillElectron1 1
+FillElectron1 0
 
 NElectron1                   20   0.      20.
 Electron1Energy            2000   0.    5000.
@@ -118,7 +121,7 @@ FirstLeadingMuon1Eta    144  -7.2     +7.2
 Muon1Phi                 36  -3.15    +3.15
 Muon1MetMt              100   0      500
 
-FillMuon2 0
+FillMuon2 1
 
 NMuon2                   20   0.      20.
 Muon2Energy            2000   0.    5000.
@@ -147,7 +150,7 @@ Jet2Pt       200   0.   500.
 Jet2Eta      100  -5.0   +5.0
 Jet2Phi      144  -6.3   +6.3
 
-FillBJet 1
+FillBJet 0
 
 NBJet         20   0.     20.
 BJetEnergy   200   0.    500.
@@ -175,7 +178,7 @@ WJettau2Overtau1   100  0   1
 
 //------------------------------------------------//
 
-FillMetCuts 1
+FillMetCuts 0
 
 Met                1000  0  1000
 MHT                500  0  5000
@@ -228,7 +231,7 @@ LargestMassDiJetDeltaEta     200   0    10.
 
 //------------------------------------------------//
 
-FillDiMuon 0
+FillDiMuon 1
 
 DiMuon_Muon1DiJetDeltaPhi       72     0       +3.15
 DiMuon_Muon2DiJetDeltaPhi       72     0       +3.15
@@ -491,7 +494,7 @@ Electron2MetDeltaPhiVsElectron2Tau2CosDphi    72     0       +3.15   220    -1.1
 
 //------------------------------------------------//
 
-FillMuon1Electron1 1
+FillMuon1Electron1 0
 
 Muon1Electron1_Electron1DiJetDeltaPhi           72     0       +3.15
 Muon1Electron1_Muon1DiJetDeltaPhi          72     0       +3.15

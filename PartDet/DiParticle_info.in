@@ -2,7 +2,7 @@
               DiTau
 #######################################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.4
 
 DiscrByOSLSType  No		#### OS or LS
@@ -49,7 +49,7 @@ DiLeadMassDeltaPtCut   0.0   9000.0
                DiMuon
 #####################################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.4 
 
 DiscrByOSLSType  No
@@ -96,7 +96,7 @@ DiLeadMassDeltaPtCut   0.0   9000.0
                DiElectron
 #######################################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.4 
 
 DiscrByOSLSType  No
@@ -143,22 +143,22 @@ DiLeadMassDeltaPtCut   0.0   9000.0
                DiJet
 #####################################
 
-DiscrByDeltaR true
+DiscrByDeltaR false
 DeltaRCut 0.4
 
-DiscrByDeltaEta      true
+DiscrByDeltaEta      false
 DeltaEtaCut         3.8  9999.0
 
 DiscrByDeltaPhi      false
 DeltaPhiCut         0    9999.0
 
-DiscrByOSEta true
+DiscrByOSEta false
 
 DiscrByCosDphi false
 CosDphiCut  -1.00 -0.80
 
-DiscrByMassReco true
+DiscrByMassReco false
 MassCut 500.0 9999.0
 
-RejectForwardDiJetPairs true
+RejectForwardDiJetPairs false
 ForwardEtaRange 3.0 5.0

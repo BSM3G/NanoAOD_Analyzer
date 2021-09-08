@@ -2,7 +2,7 @@
          Muon1Electron1
 #############################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  OS
@@ -48,7 +48,7 @@ DiLeadMassDeltaPtCut   0.0   9000.0
            Muon1Electron2
 ##############################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No
@@ -93,7 +93,7 @@ DiLeadMassDeltaPtCut   0.0   9000.0
               Muon2Electron1
 ###################################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No
@@ -139,7 +139,7 @@ DiLeadMassDeltaPtCut   0.0   9000.0
         Muon2Electron2
 ########################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No

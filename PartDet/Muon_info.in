@@ -12,7 +12,7 @@ PhiSigmaOffset 1.
 EnergyScaleOffset 1.
 EnergySigmaOffset 1.
 
-MatchToGen 0
+MatchToGen 1
 GenMatchingDeltaR 0.3
 UseMotherID 0
 MotherID 23.0
@@ -24,13 +24,13 @@ doEfficiencyPlots true
 
 //----RECO CUTS----//
 
-EtaCut 2.5
-PtCut 8.0 9999.9
+EtaCut 2.1
+PtCut 3.0 9999.9
 
 DoDiscrByTightID 1
 DoDiscrBySoftID 0
 
-DoDiscrByIsolation 1
+DoDiscrByIsolation 0
 IsoSumPtCutValue 0.0 0.15
 
 //----MET TOPOLOGY CUTS----//
@@ -49,13 +49,13 @@ MetMtCut 0. 100.
 
 //----RECO CUTS----//
 
-EtaCut 2.5
-PtCut 8.0 9999.9
+EtaCut 2.1
+PtCut 3.0 9999.9
 
 DoDiscrByTightID 1
 DoDiscrBySoftID 0
 
-DoDiscrByIsolation 1
+DoDiscrByIsolation 0
 IsoSumPtCutValue 0.0 0.15
 
 //----MET TOPOLOGY CUTS----//

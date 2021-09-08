@@ -464,11 +464,13 @@ Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
   }
   if(mu1.bfind("DoDiscrByIsolation") || mu2.bfind("DoDiscrByIsolation")) {
     SetBranch("Muon_miniPFRelIso_all", miniPFRelIso_all);
-    SetBranch("Muon_miniPFRelIso_chg", miniPFRelIso_chg);
-    SetBranch("Muon_pfRelIso03_all"  , pfRelIso03_all);
-    SetBranch("Muon_pfRelIso03_chg"  , pfRelIso03_chg);
-    SetBranch("Muon_pfRelIso04_all"  , pfRelIso04_all);
+    SetBranch("Muon_miniPFRelIso_chg", miniPFRelIso_chg); 
   }
+
+   SetBranch("Muon_pfRelIso03_all"  , pfRelIso03_all);
+   SetBranch("Muon_pfRelIso03_chg"  , pfRelIso03_chg);
+   SetBranch("Muon_pfRelIso04_all"  , pfRelIso04_all);
+   SetBranch("Muon_tkRelIso", tkRelIso);
 
    SetBranch("Muon_isGlobal", isGlobal);
    SetBranch("Muon_isPFcand", isPFCand);

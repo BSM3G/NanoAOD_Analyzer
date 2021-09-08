@@ -26,15 +26,15 @@ ApplyISRZBoostSF false # Z-boost weight corrections derived for ISR+stau analysi
 ApplySUSYZBoostSF false # Official Z-boost weight corrections derived by the SUSY PAG.
 ApplyVBFSusyZBoostSF false # Weights derived by the VBF SUSY team - Run II
 
-isData true
+isData false
 ApplyGenWeight  false
 
 ApplyL1PrefiringWeight false
 ApplyHEMVeto2018 false
 
 /// ------ Data-specific cuts ------///
-FilterDataByGoldenJSON true
-ApplyEEnoiseVeto2017EF true
+FilterDataByGoldenJSON false
+ApplyEEnoiseVeto2017EF false
 
 /// ------ MC Gen-level cuts ------///
 /// --- HT filter --- ///
@@ -62,10 +62,10 @@ TreatOnlyOneMuonAsNeutrino 0
 TreatMuonsAsTaus 0
 
 ///-----MET cuts------///
-ApplyMetFilters true
-ApplyMETxyShiftCorrections true
+ApplyMetFilters false
+ApplyMETxyShiftCorrections false
 MT2Mass 0.
-DiscrByMet true
+DiscrByMet false
 MetCut 125.0 175.0
 
 DiscrByMHT false
@@ -76,4 +76,4 @@ HtCut 30.0
 JetPtForMhtAndHt 30.0
 JetEtaForMhtAndHt 4.7
 ApplyJetLooseIDforMhtAndHt false
-ApplyJetTightIDforMhtAndHt true
+ApplyJetTightIDforMhtAndHt false

@@ -48,7 +48,7 @@ JMatchingDeltaR 0.8
 RemoveOverlapWithBs 0
 BJMatchingDeltaR 0.4
 
-Apply2017EEnoiseVeto true
+Apply2017EEnoiseVeto false
 
 DiscrByDPhiMet 0
 DPhiMetCut 0.5 999.9
@@ -90,7 +90,7 @@ JMatchingDeltaR 0.8
 RemoveOverlapWithBs 0
 BJMatchingDeltaR 0.4
 
-Apply2017EEnoiseVeto true
+Apply2017EEnoiseVeto false
 
 DiscrByDPhiMet 0
 DPhiMetCut 0.0 0.5
@@ -131,7 +131,7 @@ Apply2017EEnoiseVeto true
 	 FirstLeadingJet
 ###################################
 
-DoDiscrByThisJet 1
+DoDiscrByThisJet 0
 
 EtaCut 0.0 4.7
 PtCut 30.0
@@ -166,7 +166,7 @@ Apply2017EEnoiseVeto true
 	 SecondLeadingJet
 ###################################
 
-DoDiscrByThisJet 1
+DoDiscrByThisJet 0
 
 EtaCut 0.0 4.7
 PtCut 30.0

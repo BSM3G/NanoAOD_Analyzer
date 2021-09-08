@@ -82,6 +82,7 @@ public:
   std::multimap<int,int> jsonlinedict;
   /*----------------------------------------------------*/
   void writeParticleDecayList(int); //01.16.19
+  void outputParticleDecayList(int); //08.09.21
   void getGoodGenBJet(); //01.16.19
   std::vector<int>* getList(CUTS ePos) {return goodParts[ePos];}
   double getMet() {return _MET->pt();}
@@ -124,7 +125,8 @@ public:
   bool passJetVetoEEnoise2017(int);
 
   bool skimSignalMC(int);
-  std::string inputSignalModel="", inputSignalMassParam="";
+  std::string inputSignalModel="", inputSignalMassParam="", inputC1Mass="", inputN2Mass="", inputN1Mass="";
+  std::string inputC1_pdgID="", inputN2_pdgID="", inputN1_pdgID="";
   bool finalInputSignal = false;
 
   void smearLepton(Lepton&, CUTS, const PartStats&, const PartStats&, int syst=0);
@@ -149,6 +151,9 @@ public:
   TLorentzVector getGenVisibleTau4Vector(int, int);
   void getGoodGen(const PartStats&);
   std::unordered_map<int, int> genMotherPartIndex;
+  std::unordered_map<int, int> genGrandMotherPartIndex;
+  std::vector<int> genSUSYPartIndex;
+
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
   void getGoodRecoLeadJets(CUTS, const PartStats&, const int);

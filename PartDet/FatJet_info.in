@@ -16,7 +16,7 @@ TauMatchingDeltaR  0.3
 EtaCut 0.0 3.5
 PtCut 150.0
 
-RemoveOverlapWithMuon1s 1
+RemoveOverlapWithMuon1s 0
 RemoveOverlapWithMuon2s 0
 Muon1MatchingDeltaR 0.8
 Muon2MatchingDeltaR 0.3
@@ -31,6 +31,6 @@ RemoveOverlapWithTau2s 0
 Tau1MatchingDeltaR 0.3
 Tau2MatchingDeltaR 0.3
 
-ApplyJetWTagging 1
+ApplyJetWTagging 0
 JetWmassCut 65 105
 JetTau2Tau1Ratio 0 0.55

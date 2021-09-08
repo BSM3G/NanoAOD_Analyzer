@@ -828,22 +828,70 @@ bool Analyzer::skimSignalMC(int event){
   // Check if we should use this function at all... to be called only for signal samples
   if(! isSignalMC ) return true;
 
+  finalInputSignal = true;
+  double epsilon = 0.0001;
+
+  /*
+  std::cout << "SUSY vector particle index is: \n" << std::cout << "[";
+  for (std::vector<int>::const_iterator i = genSUSYPartIndex.begin(); i != genSUSYPartIndex.end(); ++i){
+    std::cout << *i;
+    if (i != genSUSYPartIndex.end()-1) std::cout << ", ";
+  }
+  std::cout << "]\n";
+  */
+
+  // std::cout << "Running over genSUSYParticles " << std::endl;
+  for (unsigned i=0; i < genSUSYPartIndex.size(); i++){
+
+    //std::cout << "particle index: " << genSUSYPartIndex[i] <<std::endl;
+    //std::cout << "pdg_id: " << _Gen->pdg_id[genSUSYPartIndex[i]] << std::endl;
+    //std::cout << "mass: " << _Gen->mass(genSUSYPartIndex[i]) << std::endl;
+    
+    if (abs(_Gen->pdg_id[genSUSYPartIndex[i]]) == std::stoi(inputN2_pdgID) && (abs(_Gen->mass(genSUSYPartIndex[i]) - std::stod(inputN2Mass)) > epsilon)){
+      //std::cout << "Got here1 " << std::endl;
+      //std::cout << "Compared: " << abs(_Gen->pdg_id[genSUSYPartIndex[i]]) << ", to: " << std::stoi(inputN2_pdgID) << std::endl;
+      //std::cout << "Compared: " << _Gen->mass(genSUSYPartIndex[i]) << ", to: " << std::stod(inputN2Mass) << std::endl; 
+      finalInputSignal = false;
+      break;
+    }
+
+    if (abs(_Gen->pdg_id[genSUSYPartIndex[i]]) == std::stoi(inputC1_pdgID) && (abs(_Gen->mass(genSUSYPartIndex[i]) - std::stod(inputC1Mass)) > epsilon)){
+      //std::cout << "Got here2 "<< std::endl;
+      //std::cout << "Compared: "<< abs(_Gen->pdg_id[genSUSYPartIndex[i]]) << ", to: " << std::stoi(inputC1_pdgID) << std::endl;
+      //std::cout << "Compared: "<< _Gen->mass(genSUSYPartIndex[i]) << ", to: " << std::stod(inputC1Mass) << std::endl;
+      finalInputSignal = false;
+      break;
+    }
+
+    if (abs(_Gen->pdg_id[genSUSYPartIndex[i]]) == std::stoi(inputN1_pdgID) && (abs(_Gen->mass(genSUSYPartIndex[i]) - std::stod(inputN1Mass)) > epsilon)){
+      //std::cout << "Got here3 "<< std::endl;
+      //std::cout << "Compared: "<< abs(_Gen->pdg_id[genSUSYPartIndex[i]]) << ", to: " << std::stoi(inputN1_pdgID) << std::endl;
+      //std::cout << "Compared: "<< _Gen->mass(genSUSYPartIndex[i]) << ", to: " << std::stod(inputN1Mass) << std::endl;
+      finalInputSignal = false;
+      break;
+    }
+
+  }
+
   // Construct the name of the branch:
-  std::string signalBranchName = ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str();
+  //std::string signalBranchName = ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str();
 
   // std::cout << "Name of the branch: " << signalBranchName << std::endl;
-  bool isInputSignal = false;
+  //bool isInputSignal = false;
 
-  TBranch *signalBranch = BOOM->GetBranch(signalBranchName.c_str());
-  signalBranch->SetStatus(1);
-  signalBranch->SetAddress(&isInputSignal);
+  //TBranch *signalBranch = BOOM->GetBranch(signalBranchName.c_str());
+  //signalBranch->SetStatus(1);
+  //signalBranch->SetAddress(&isInputSignal);
 
-  BOOM->GetEntry(event);
+  //BOOM->GetEntry(event);
 
-  finalInputSignal = isInputSignal;
+  //finalInputSignal = isInputSignal;
 
-  signalBranch->ResetAddress();
-  // std::cout << "Input signal: " << signalBranchName << ", isInputSignal? " << finalInputSignal << std::endl;
+  //if (finalInputSignal) std::cout << "finalInputSignal is: " << finalInputSignal << std::endl;
+  //signalBranch->ResetAddress();
+  //std::cout << "Input signal: " << signalBranchName << ", isInputSignal? " << finalInputSignal << std::endl;
+  
+  //std::cout << "finalInputSignal is: " << finalInputSignal << std::endl;
   return finalInputSignal;
 }
 
@@ -891,6 +939,8 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     _GenJet->setOrigReco();
 
     genMotherPartIndex.clear();
+    genGrandMotherPartIndex.clear();
+    genSUSYPartIndex.clear();
 
     getGoodGen(_Gen->pstats["Gen"]);
     getGoodGenHadronicTaus(_GenHadTau->pstats["Gen"]);
@@ -920,6 +970,7 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
      // -- For signal samples -- //
      if(isSignalMC){
       if(skimSignalMC(event) == false){
+	//std::cout << "event was skipped" << std::endl;
         clear_values();
         return;
       }
@@ -1734,17 +1785,52 @@ void Analyzer::setupGeneral(std::string year) {
 
   // Check if it is a signal MC sample:
   // isSignalMC = distats["SignalMC"].bfind("isSignalMC");
+  
+  /*
+  if(1){                                                                             
+    isSignalMC = true;                                                                                                            
+    std::cout << "This is a signal MC sample!" << std::endl;                                                                               
+    std::cout << "" << std::endl;                                                                                                                     
+  }                                                                                                                                                  
+ 
+  std::cout << " ---------------------------------------------------------------------- " << std::endl; 
+  */
 
+  isSignalMC = false;
+  TObjArray *nameArray = BOOM->GetListOfBranches();
+  std::string prefix = ("GenModel_"+inputSignalModel).c_str();
+  for (int i = 0; i < nameArray->GetEntries(); ++i) {
+    std::string name = nameArray->At(i)->GetName();
+    //std::cout << prefix << std::endl;
+    std::string namePrefix = name.substr(0, prefix.length());
+    if (prefix == namePrefix) {
+      isSignalMC = true;
+      std::cout << "This is a signal MC sample!" << std::endl;
+      std::cout << "" << std::endl;
+      break;
+    } 
+  }
+  if(!isSignalMC){
+    std::cout << "This is not a signal MC sample." << std::endl; 
+  }
+
+  std::cout << " ---------------------------------------------------------------------- " << std::endl;
+
+  /*
   // double check
-  if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) == 0){
+  //if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) == 0){
+  if(BOOM->FindBranch( ("GenModel_"+inputSignalModel).c_str()) == 0){
    isSignalMC = false;
    std::cout << "This is not a signal MC sample." << std::endl;
   }
-  else if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) != 0){
+  else if(BOOM->FindBranch( ("GenModel_"+inputSignalModel).c_str()) != 0){
    isSignalMC = true;
    std::cout << "This is a signal MC sample!" << std::endl;
+   std::cout << "" << std::endl;
   }
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
+  */
+
 }
 
 
@@ -1858,6 +1944,60 @@ void Analyzer::read_info(std::string filename) {
         for(auto massparam: stemp){
           if(massparam.find("MassParameters") == std::string::npos and "=" != massparam){
             inputSignalMassParam = massparam;
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("C1Mass") != std::string::npos){
+        for(auto c1mass: stemp){
+          if(c1mass.find("C1Mass") == std::string::npos and "=" != c1mass){
+            inputC1Mass = c1mass;
+	    std::cout << "C1Mass is: " << c1mass << std::endl;
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("C1_pdgID") != std::string::npos){
+        for(auto c1_pdgID: stemp){
+          if(c1_pdgID.find("C1_pdgID") == std::string::npos and "=" != c1_pdgID){
+            inputC1_pdgID = c1_pdgID;
+	    std::cout << "C1_pdgID is: " << c1_pdgID << std::endl;
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("N2Mass") != std::string::npos){
+        for(auto n2mass: stemp){
+          if(n2mass.find("N2Mass") == std::string::npos and "=" != n2mass){
+            inputN2Mass = n2mass;
+	    std::cout << "N2Mass is: " << n2mass << std::endl;
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("N2_pdgID") != std::string::npos){
+        for(auto n2_pdgID: stemp){
+          if(n2_pdgID.find("N2_pdgID") == std::string::npos and "=" != n2_pdgID){
+            inputN2_pdgID = n2_pdgID;
+	    std::cout << "N2_pdgID is: " << n2_pdgID << std::endl;
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("N1Mass") != std::string::npos){
+        for(auto n1mass: stemp){
+          if(n1mass.find("N1Mass") == std::string::npos and "=" != n1mass){
+            inputN1Mass = n1mass;
+	    std::cout << "N1Mass is: " << n1mass << std::endl;
+          }
+        }
+        continue;
+      }
+      if(stemp.at(0).find("N1_pdgID") != std::string::npos){
+        for(auto n1_pdgID: stemp){
+          if(n1_pdgID.find("N1_pdgID") == std::string::npos and "=" != n1_pdgID){
+            inputN1_pdgID = n1_pdgID;
+	    std::cout << "N1_pdgID is: " << n1_pdgID << std::endl;
           }
         }
         continue;
@@ -2938,13 +3078,20 @@ void Analyzer::getGoodGen(const PartStats& stats) {
 
   if(! neededCuts.isPresent(CUTS::eGen)) return;
 
-  int particle_id = 0;
-
+   int particle_id = 0;
+   
   std::vector<int> intermiedateP4CorrPart;
 
   for(size_t j = 0; j < _Gen->size(); j++) {
 
+    //std::cout << j << std::setw(2) << " " << std::setw(8) << "pdg_id: " << std::setw(4) << abs(_Gen->pdg_id[j]) << std::setw(2) << "  " << std::setw(5) << "mass: " << std::setw(10) << _Gen->mass(j) << std::setw(2) << "  " << std::setw(10) << "status: " << std::setw(3) << _Gen->status[j] << std::setw(2) << "  " << std::setw(7) << "mind:" << std::setw(1) << " " << std::setw(2) << _Gen->genPartIdxMother[j] << std::endl;
+    
+    int SUSY_pdg_ID = 0;
+
     particle_id = abs(_Gen->pdg_id[j]);
+    SUSY_pdg_ID = abs(_Gen->pdg_id[j]);
+
+    if (SUSY_pdg_ID == std::stoi(inputN2_pdgID) || SUSY_pdg_ID == std::stoi(inputC1_pdgID) || SUSY_pdg_ID == std::stoi(inputN1_pdgID)) genSUSYPartIndex.push_back(j);
 
     if( (particle_id < 5 || particle_id == 9 || particle_id == 21) && genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(5)->status){
       active_part->at(genMaper.at(5)->ePos)->push_back(j);
@@ -2968,6 +3115,27 @@ void Analyzer::getGoodGen(const PartStats& stats) {
         mother_pid = mother_pid_tmp;
       }
 
+      
+      //find Grandmother particle index & ID
+      int grandmotherpart_idx = _Gen->genPartIdxMother[motherpart_idx] ;
+      int grandmother_pid = abs(_Gen->pdg_id[grandmotherpart_idx]);
+
+      if(grandmother_pid == mother_pid){
+
+        int grandmotherpart_idx_tmp = grandmotherpart_idx;
+        int grandmother_pid_tmp = grandmother_pid;
+
+        while(grandmother_pid_tmp == mother_pid){
+          grandmotherpart_idx = _Gen->genPartIdxMother[grandmotherpart_idx_tmp];
+          grandmother_pid_tmp = abs(_Gen->pdg_id[grandmotherpart_idx]);
+          grandmotherpart_idx_tmp = grandmotherpart_idx;
+	  
+        }
+	
+	grandmother_pid = grandmother_pid_tmp;
+      }
+     
+
       // Look for particles that are coming from pileup
       int particle_idx_tmp = motherpart_idx;
       int firstmother_idx_tmp = _Gen->genPartIdxMother[particle_idx_tmp];
@@ -2978,7 +3146,7 @@ void Analyzer::getGoodGen(const PartStats& stats) {
       }
 
       int og_motherpart_idx = particle_idx_tmp;
-
+      
       if(particle_id == 15){
 
         if(stats.bfind("DiscrTauByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
@@ -2995,12 +3163,16 @@ void Analyzer::getGoodGen(const PartStats& stats) {
 
          if(stats.bfind("DiscrMuonByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("MuonPtCut").first || _Gen->pt(j) > stats.pmap.at("MuonPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("MuonEtaCut"))) continue;
          if(stats.bfind("DiscrMuonByNotFromPileup") && (og_motherpart_idx != 0) && (og_motherpart_idx != 1) ) continue;
-         if(stats.bfind("DiscrMuonByMotherID") && (mother_pid != stats.pmap.at("MuonMotherIDs").first) && (mother_pid != stats.pmap.at("MuonMotherIDs").second) ) continue;
+         if(stats.bfind("DiscrMuonByMotherID") && (mother_pid != stats.pmap.at("MuonMotherIDs").first) && (mother_pid != stats.pmap.at("MuonMotherIDs").second)) continue;
+      if(stats.bfind("RejectMuonByMotherID") && ((mother_pid == stats.pmap.at("MuonMotherID_ToBeRejected").first) || (mother_pid == stats.pmap.at("MuonMotherID_ToBeRejected").second)) )continue;
       }
-
+      //std::cout << "Mother id is: " << mother_pid << std::endl;
+      //std::cout << "GrandMother id is: " << grandmother_pid << std::endl;
       active_part->at(genMaper.at(particle_id)->ePos)->push_back(j);
       genMotherPartIndex[j] = motherpart_idx;
+      genGrandMotherPartIndex[j] = grandmotherpart_idx;
     }
+
 
   }
 }
@@ -4462,6 +4634,30 @@ void Analyzer::writeParticleDecayList(int event){  //01.16.19
   return;
 }
 
+/*
+void analyzer::checkGenModelBranch(int event){ //08.31.21
+  BOOM->GetEntry(event);
+
+
+}
+*/
+
+void Analyzer::outputParticleDecayList(int event){  //08.09.21
+  BOOM->GetEntry(event);
+ 
+  if(isSignalMC && !finalInputSignal) {
+     return;
+   }
+
+  std::cout << " ----- Event #" << event << " ----- " << std::endl;
+
+  for (unsigned p=0; p < _Gen->size(); p++){
+    std::cout << p << std::setw(2) << " " << std::setw(8) << "pdg_id: " << std::setw(4) << abs(_Gen->pdg_id[p]) << std::setw(2) << "  " << std::setw(5) << "mass: " << std::setw(10) << _Gen->mass(p) << std::setw(2) << "  " << std::setw(10) << "status: " << std::setw(3) << _Gen->status[p] << std::setw(2) << "  " << std::setw(7) << "mind:" << std::setw(1) << " " << std::setw(2) << _Gen->genPartIdxMother[p] << std::endl;
+  }
+  return;
+}
+
+
 std::multimap<int,int> Analyzer::readinJSON(std::string year){ //NEW:  function for reading in the JSON file in the format that I established.  This happens once before events start entering preprocess.
   // Newer: this function will take the year as an input to set the JSON file to be read.
   // The naming convention is json201X.txt, make sure your JSON files match this convention.
@@ -5019,6 +5215,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(l1prefiringwgt, "L1PrefiringWeight");
 
     std::vector<int> goodGenLeptons;
+    std::vector<int> goodGenMuons;
 
     int nhadtau = 0;
     TLorentzVector genVec(0,0,0,0);
@@ -5087,11 +5284,16 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
     for(auto it : *active_part->at(CUTS::eGMuon)) {
       goodGenLeptons.push_back(it);
+      goodGenMuons.push_back(it);
       histAddVal(_Gen->energy(it), "MuonEnergy");
       histAddVal(_Gen->pt(it), "MuonPt");
       histAddVal(_Gen->eta(it), "MuonEta");
       histAddVal(_Gen->phi(it), "MuonPhi");
       histAddVal(_Gen->pdg_id[genMotherPartIndex.at(it)], "MuonMotherPID");
+      histAddVal(_Gen->pdg_id[genGrandMotherPartIndex.at(it)], "MuonGrandMotherPID_SMParticles");
+      histAddVal(_Gen->pdg_id[genGrandMotherPartIndex.at(it)], "MuonGrandMotherPID_SUSYParticles");
+      histAddVal(_Gen->mass(genMotherPartIndex.at(it)), "MuonMother_Mass");
+      histAddVal(_Gen->mass(genGrandMotherPartIndex.at(it)), "MuonGrandMother_Mass");
     }
     histAddVal(active_part->at(CUTS::eGMuon)->size(), "NMuon");
 
@@ -5108,21 +5310,162 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
 
     histAddVal(gendilepmass, "ZDiLepMass");
+    
 
-    double mass=0, sf_mass=0; // sf_mass == mass of same flavor dilepton pairs
+    for(size_t j = 0; j < _Gen->size(); j++) {
+
+      if (abs(_Gen->pdg_id[j]) == 1000022){ 	
+      histAddVal(abs(_Gen->mass(j)), "Neutralino1Mass");
+      //std::cout << "Neutralino1Mass: " << abs(_Gen->mass(j)) << std::endl;
+      }
+      if (abs(_Gen->pdg_id[j]) == 1000023){
+      histAddVal(abs(_Gen->mass(j)), "Neutralino2Mass");
+      //std::cout << "Neutralino2Mass: " << abs(_Gen->mass(j)) << std::endl;
+      }
+      if (abs(_Gen->pdg_id[j]) == 1000024){
+      histAddVal(abs(_Gen->mass(j)), "Chargino1Mass");
+      //std::cout << "Chargino1Mass: " << abs(_Gen->mass(j)) << std::endl;
+      }
+      //std::cout << j << std::setw(2) << " " << std::setw(8) << "pdg_id: " << std::setw(4) << abs(_Gen->pdg_id[j]) << std::setw(2) << "  " << std::setw(5) << "mass: " << std::setw(10) << _Gen->mass(j) << std::setw(2) << "  " << std::setw(10) << "status: " << std::setw(3) << _Gen->status[j] << std::setw(2) << "  " << std::setw(7) << "mind:" << std::setw(1) << " " << std::setw(2) << _Gen->genPartIdxMother[j] << std::endl;       
+
+    }
+
+    /*
+    //Find dM value of sample. (08/11/2021) Dale Julson
+    //Loop over gen particles and find a stable muon; get its mother ID and GrandMotherID.
+    //Loop over particles again and find other daughter particles of GrandmotherParticle. Take the mass difference.
+    bool continueLoop1 = true;
+    bool startLoop2 = false;
+    double_t DeltaMValue = 0;
+    //std::cout << " ----- New Event ----- " << "\n";
+    for (size_t p=0; p < _Gen->size(); p++){
+    
+      //std::cout << p << std::setw(2) << " " << std::setw(8) << "pdg_id: " << std::setw(4) << abs(_Gen->pdg_id[p]) << std::setw(2) << "  " << std::setw(6) << "mass: " << std::setw(10) << _Gen->p4(p).M() << std::setw(2) << "  " << std::setw(5) << "phi: " << std::setw(10) << _Gen->phi(p) << std::setw(10) << "status: " << std::setw(3) << _Gen->status[p]<< std::setw(2) << "  " << std::setw(7) << "mind:" << std::setw(1) << " " << std::setw(2) << _Gen->genPartIdxMother[p] << std::endl;
+
+      int motherpart_idx;
+      int mother_pid;
+      int grandmotherpart_idx;
+      int grandmother_pid;
+      int particle_id = abs(_Gen->pdg_id[p]);
+
+      if (particle_id == 13 && _Gen->status[p] == 1 && continueLoop1 == 1){ //Find a stable muon in the sample, get its motherID and then GrandMotherID:
+      
+	motherpart_idx = _Gen->genPartIdxMother[p];
+	mother_pid = abs(_Gen->pdg_id[motherpart_idx]);
+
+	if(mother_pid == particle_id){
+
+	  int motherpart_idx_tmp = motherpart_idx;
+	  int mother_pid_tmp = mother_pid;
+
+	  while(mother_pid_tmp == particle_id){
+	    motherpart_idx = _Gen->genPartIdxMother[motherpart_idx_tmp];
+	    mother_pid_tmp = abs(_Gen->pdg_id[motherpart_idx]);
+	    motherpart_idx_tmp = motherpart_idx;
+	  }
+
+	  mother_pid = mother_pid_tmp;
+
+      }
+
+	//find Grandmother particle index & ID   
+	grandmotherpart_idx = _Gen->genPartIdxMother[motherpart_idx] ;
+	grandmother_pid = abs(_Gen->pdg_id[grandmotherpart_idx]);
+
+	if(grandmother_pid == mother_pid){
+
+	  int grandmotherpart_idx_tmp = grandmotherpart_idx;
+	  int grandmother_pid_tmp = grandmother_pid;
+
+	  while(grandmother_pid_tmp == mother_pid){
+	    grandmotherpart_idx = _Gen->genPartIdxMother[grandmotherpart_idx_tmp];
+	    grandmother_pid_tmp = abs(_Gen->pdg_id[grandmotherpart_idx]);
+	    grandmotherpart_idx_tmp = grandmotherpart_idx;
+
+	  }
+
+	  grandmother_pid = grandmother_pid_tmp;
+	}
+	continueLoop1 = false;
+	startLoop2 = true;
+
+	//std::cout << "particle index is: " << p << std::endl;
+	//std::cout << "Mother index is: " << motherpart_idx << std::endl;
+	//std::cout << "GrandMother index is: " << grandmotherpart_idx << std::endl;
+
+      }
+
+      if (startLoop2 == true){
+	int indx = 0;
+	for (size_t q=0; q < _Gen->size(); q++, indx++){
+	  
+	  int secondPartMother_idx = _Gen->genPartIdxMother[q];
+	  
+	  if ((secondPartMother_idx == grandmotherpart_idx) && (indx != motherpart_idx) && (grandmotherpart_idx != -1)){
+	    std::cout << "Neutralino index is: " << q << std::endl;
+	    std::cout << "Neutralino pdg_ID is: " << abs(_Gen->pdg_id[q]) << std::endl;
+	    std::cout << "Neutralino mass is: " << _Gen->mass(q) << std::endl;
+	    std::cout << "secondPartMother_idx is: " << secondPartMother_idx << std::endl;
+	    std::cout << "grandmother_idx is: " << grandmotherpart_idx << std::endl;
+	    std::cout << "Grandmother mass is: " << _Gen->mass(grandmotherpart_idx) << std::endl;
+	    DeltaMValue = abs(_Gen->mass(grandmotherpart_idx)) - abs(_Gen->mass(q));
+	    std::cout << "DeltaM is: " << DeltaMValue << std::endl;
+	    histAddVal(DeltaMValue, "DeltaMValue");
+	    histAddVal(abs(_Gen->mass(q)), "NeutralinoMass");
+	    histAddVal(abs(_Gen->pdg_id[q]), "GenNeutralinoPID");
+	    break;
+	  }
+
+	}
+	
+	startLoop2 = false;
+      }
+
+
+
+    }
+    */
+
+    for (size_t i=0; i<goodGenMuons.size(); i++){
+      //std::cout << "goodGenMuon size is: " << goodGenMuons.size() << std::endl;
+      TLorentzVector genMuon1 = _Gen->p4(goodGenMuons.at(i));
+      //std::cout << "i is: " << i << std::endl;
+
+      for (size_t j=i+1; j<goodGenMuons.size(); j++){
+	//std::cout << "j is: " << j << std::endl;
+	TLorentzVector genMuon2 = _Gen->p4(goodGenMuons.at(j));
+	
+	double genDiMuonMass = (genMuon1+genMuon2).M();
+	double genDiMuonPt = (genMuon1+genMuon2).Pt();
+	//double genDiMuonMass_Cut = 0.5;
+
+	//std::cout << "GenDiMuonMass is: " << genDiMuonMass << std::endl;
+	//if (genDiMuonMass <= genDiMuonMass_Cut) continue;
+	histAddVal(genDiMuonMass, "DiMuonMass");
+	histAddVal(genDiMuonPt, "DiMuonPt");
+      }
+    }
+
+    double mass=0, sf_mass=0, dilepton_pt=0; // sf_mass == mass of same flavor dilepton pairs, Added Dale 06/09/21
     TLorentzVector lep1(0,0,0,0), lep2(0,0,0,0);
+    //int checkpoint = 0;
 
     for(size_t i=0; i<goodGenLeptons.size(); i++){
       int igen = goodGenLeptons.at(i);
       int lep1_pdgid = 0;
-      // std::cout << "Gen pdg_id = " << (abs(_Gen->pdg_id[igen])) << ", status = " << _Gen->status[igen] << std::endl;
 
+      // std::cout << "Gen pdg_id = " << (abs(_Gen->pdg_id[igen])) << ", status = " << _Gen->status[igen] << std::endl;
+      // if (i==0){ std::cout << "Size of goodGenLepton vector is: " << goodGenLeptons.size() << std::endl;}
       if(lep1!=TLorentzVector(0,0,0,0)){
         lep2= _Gen->p4(igen);
         mass=(lep1+lep2).M();
-
+        dilepton_pt=(lep1+lep2).Pt(); //Added Dale 06/09/21
+	//	std::cout << "This is the " << checkpoint << " checkpoint" << std::endl;
+	//checkpoint++;
+	//std::cout << "lep1_pdgid is: " << lep1_pdgid << std::endl;
+	//std::cout << "lep2_pdgid is: " << abs(_Gen->pdg_id[igen]) << std::endl;
         if( abs(_Gen->pdg_id[igen]) == lep1_pdgid) sf_mass = (lep1+lep2).M();
-        break;
+        continue;
       }else{
         lep1= _Gen->p4(igen);
         lep1_pdgid = abs(_Gen->pdg_id[igen]);
@@ -5139,6 +5482,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(mass, "DiLeptonMass");
     histAddVal(sf_mass, "SFDiLeptonMass");
     histAddVal(goodGenLeptons.size(), "NLepton");
+    histAddVal(dilepton_pt, "DiLeptonPt"); //Added Dale 06/09/21
 
     for(size_t i_genjet=0; i_genjet < _GenJet->size(); i_genjet++){
       histAddVal(_GenJet->pt(i_genjet), "JetPt");
@@ -5238,6 +5582,13 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(part->p4(it).Eta(), "Eta");
       histAddVal(part->p4(it).Phi(), "Phi");
       histAddVal(part->p4(it).DeltaPhi(_MET->p4()), "MetDphi");
+
+      if(part->type == PType::Muon) {
+	histAddVal(_Muon->pfRelIso03_all[it], "pfRelIso03_all");
+	histAddVal(_Muon->pfRelIso03_chg[it], "pfRelIso03_chg");
+	histAddVal(_Muon->pfRelIso04_all[it], "pfRelIso04_all");
+	histAddVal(_Muon->tkRelIso[it], "tkRelIso");
+      }
       if(part->type == PType::Tau) {
         histAddVal(_Tau->charge(it), "Charge");
         int tauiso = static_cast<int>(_Tau->TauIdDiscr[it]);

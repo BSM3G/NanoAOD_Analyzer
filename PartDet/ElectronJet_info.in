@@ -2,7 +2,7 @@
           Electron1Jet1
 #####################################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No
@@ -12,7 +12,7 @@ CosDphiCut 	 -1.00   -0.95
 DiscrByCosDphi_DeltaPtAndMet   false
 CosDphi_DeltaPtMetCut  0.8  1.0
 
-DiscrByMassReco  1
+DiscrByMassReco  0
 HowCalculateMassReco None     ###VectorSumOfVisProductsAndMet   or    CollinearApprox 
 MassCut          0.0   999999.
 
@@ -30,7 +30,7 @@ DeltaPtCutValue 	   30.0   1000.0
              Electron1Jet2
 #########################################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No
@@ -58,7 +58,7 @@ DeltaPtCutValue 	   30.0   1000.0
              Electron2Jet1
 #########################################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No
@@ -86,7 +86,7 @@ DeltaPtCutValue 	   30.0   1000.0
             Electron2Jet2
 #########################################
 
-DiscrByDeltaR  1
+DiscrByDeltaR  0
 DeltaRCut      0.3 
 
 DiscrByOSLSType  No

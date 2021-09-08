@@ -283,6 +283,7 @@ public:
   float pfRelIso03_all[MAXINDEX];
   float pfRelIso03_chg[MAXINDEX];
   float pfRelIso04_all[MAXINDEX];
+  float tkRelIso[MAXINDEX];
   bool isGlobal[MAXINDEX];
   bool isPFCand[MAXINDEX];
   bool isTracker[MAXINDEX];
