@@ -2967,8 +2967,6 @@ void Analyzer::getGoodGen(const PartStats& stats) {
 
   int particle_id = 0;
 
-  std::vector<int> intermiedateP4CorrPart;
-
   for(size_t j = 0; j < _Gen->size(); j++) {
 
     particle_id = abs(_Gen->pdg_id[j]);
@@ -5360,6 +5358,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(part->p4(it).Energy(), "Energy");
       histAddVal(part->p4(it).Pt(), "Pt");
       histAddVal(part->p4(it).Eta(), "Eta");
+      histAddVal(abs(part->p4(it).Eta()), "AbsEta");
       histAddVal(part->p4(it).Phi(), "Phi");
       histAddVal(part->p4(it).DeltaPhi(_MET->p4()), "MetDphi");
       if(part->type == PType::Tau) {
@@ -5515,6 +5514,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       if(ptIndexVector.size()>0){
         histAddVal(part->pt(ptIndexVector.back().second), "FirstLeadingPt");
         histAddVal(part->eta(ptIndexVector.back().second), "FirstLeadingEta");
+        histAddVal(abs(part->eta(ptIndexVector.back().second)), "FirstLeadingAbsEta");
       	if((part->type == PType::Muon )){
       		Float_t  leadingmu_pt = (part->pt(ptIndexVector.back().second));
       		Float_t hnandfatjets = leadingmu_pt;
@@ -5527,6 +5527,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       if(ptIndexVector.size()>1){
         histAddVal(part->pt(ptIndexVector.at(ptIndexVector.size()-2).second), "SecondLeadingPt");
         histAddVal(part->eta(ptIndexVector.at(ptIndexVector.size()-2).second), "SecondLeadingEta");
+        histAddVal(abs(part->eta(ptIndexVector.at(ptIndexVector.size()-2).second)), "SecondLeadingAbsEta");
       }
     }
 
@@ -5555,6 +5556,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       // std::cout << "First leading jet index (fill) = " << active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size()-1) << ", pt = " << _Jet->p4(active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size()-1)).Pt() << std::endl;
       histAddVal(_Jet->p4(active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size()-1)).Pt(), "FirstPt");
       histAddVal(_Jet->p4(active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size()-1)).Eta(), "FirstEta");
+      histAddVal(abs(_Jet->p4(active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size()-1)).Eta()), "FirstAbsEta");
       Double_t dphi1new = normPhi(_Jet->p4(active_part->at(CUTS::eR1stJet)->at(active_part->at(CUTS::eR1stJet)->size()-1)).Phi() - _MET->phi());
       histAddVal(dphi1new,"Dphi1");
     }
@@ -5562,6 +5564,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       // std::cout << "Second leading jet index (fill) = " << active_part->at(CUTS::eR2ndJet)->at(active_part->at(CUTS::eR2ndJet)->size()-1) << ", pt = " << _Jet->p4(active_part->at(CUTS::eR2ndJet)->at(active_part->at(CUTS::eR2ndJet)->size()-1)).Pt() << std::endl;
       histAddVal(_Jet->p4(active_part->at(CUTS::eR2ndJet)->at(active_part->at(CUTS::eR2ndJet)->size()-1)).Pt(), "SecondPt");
       histAddVal(_Jet->p4(active_part->at(CUTS::eR2ndJet)->at(active_part->at(CUTS::eR2ndJet)->size()-1)).Eta(), "SecondEta");
+      histAddVal(abs(_Jet->p4(active_part->at(CUTS::eR2ndJet)->at(active_part->at(CUTS::eR2ndJet)->size()-1)).Eta()), "SecondAbsEta");
     }
 
   } else if(group == "FillLeadingJet" && active_part->at(CUTS::eSusyCom)->size() != 0) {
@@ -5581,6 +5584,8 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
     histAddVal(first.Eta(), "FirstEta");
     histAddVal(second.Eta(), "SecondEta");
+    histAddVal(abs(first.Eta()), "FirstAbsEta");
+    histAddVal(abs(second.Eta()), "SecondAbsEta");
 
     TLorentzVector LeadDiJet = first + second;
 
