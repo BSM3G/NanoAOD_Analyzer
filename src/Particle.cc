@@ -478,6 +478,12 @@ Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
   if(mu1.bfind("DoDiscrBySoftID") || mu2.bfind("DoDiscrBySoftID")) {
     SetBranch("Muon_softId", soft);
   }
+  if(mu1.bfind("DoDiscrByLooseID") || mu2.bfind("DoDiscrByLooseID")) {
+    SetBranch("Muon_looseId", tight);
+     }
+  if(mu1.bfind("DoDiscrByMediumID") || mu2.bfind("DoDiscrByMediumID")) {
+    SetBranch("Muon_mediumId", soft);
+  }
   if(mu1.bfind("DoDiscrByIsolation") || mu2.bfind("DoDiscrByIsolation")) {
     SetBranch("Muon_miniPFRelIso_all", miniPFRelIso_all);
     SetBranch("Muon_miniPFRelIso_chg", miniPFRelIso_chg);
