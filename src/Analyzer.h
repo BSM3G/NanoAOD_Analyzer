@@ -162,7 +162,7 @@ public:
 
   void VBFTopologyCut(const PartStats&, const int);
   void fastTriggerCuts(CUTS);
-  void TriggerCuts(CUTS);
+  void TriggerCuts(CUTS, int);
 
   inline bool passCutRangeAbs(std::string, double, const PartStats&);
   bool passCutRangeAbs(double, const std::pair<double, double>&);
@@ -291,7 +291,7 @@ public:
   std::vector<std::string> trigger1BranchesList, trigger2BranchesList;
   bool triggerDecision = false;
   std::vector<std::string> inputTrigger1Names, inputTrigger2Names; // Brenda: This will take the triggers from the configuration file Run_info.in
-  std::vector<bool> trigger1namedecisions, trigger2namedecisions; // Brenda
+  std::vector<bool*> trigger1namedecisions, trigger2namedecisions; // Brenda
   std::vector<int> cuts_per, cuts_cumul;
 
   std::vector<std::pair<double, int> > jetPtIndexVector;
