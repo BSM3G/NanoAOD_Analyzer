@@ -283,8 +283,10 @@ public:
 
   bool get_Iso(int, double, double) const;
 
-  bool tight[MAXINDEX];
   bool soft[MAXINDEX];
+  bool loose[MAXINDEX];
+  bool medium[MAXINDEX];
+  bool tight[MAXINDEX];
   float miniPFRelIso_all[MAXINDEX];
   float miniPFRelIso_chg[MAXINDEX];
   float pfRelIso03_all[MAXINDEX];
