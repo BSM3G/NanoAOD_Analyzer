@@ -121,8 +121,9 @@ public:
   bool additionalEENoiseEventVeto(const PartStats&, std::string, std::string);
   bool passJetVetoEEnoise2017(int);
 
-  bool skimSignalMC(int);
-  std::string inputSignalModel="", inputSignalMassParam="";
+  bool skimSignalMC();
+  std::string inputSignalModel="", inputSignalMassParam="", inputC1Mass="", inputN2Mass="", inputN1Mass="", inputStauMass="";
+  std::string inputC1_pdgID="", inputN2_pdgID="", inputN1_pdgID="", inputStau_pdgID="";
   bool finalInputSignal = false;
 
   void smearLepton(Lepton&, CUTS, const PartStats&, const PartStats&, int syst=0);
@@ -148,6 +149,7 @@ public:
   TLorentzVector getGenVisibleTau4Vector(int, int);
   void getGoodGen(const PartStats&);
   std::unordered_map<int, int> genMotherPartIndex;
+  std::vector<int> genSUSYPartIndex, genSUSYPartIndexStau;
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoPhotons(const Photon&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
