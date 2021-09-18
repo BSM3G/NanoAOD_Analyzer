@@ -218,6 +218,7 @@ Jet1Energy   200   0.   500.
 Jet1Pt       200   0.   500.
 Jet1Eta      100  -5.0   +5.0
 Jet1Phi      144  -6.3   +6.3
+Jet1AbsEta    50   0.0   -5.0
 
 FillJet2 1
 
@@ -226,6 +227,7 @@ Jet2Energy   200   0.   500.
 Jet2Pt       200   0.   500.
 Jet2Eta      100  -5.0   +5.0
 Jet2Phi      144  -6.3   +6.3
+Jet2AbsEta    50   0.0   -5.0
 
 FillBJet 1
 
@@ -235,12 +237,14 @@ BJetPt       200   0.    500.
 BJetEta       72  -3.6    +3.6
 BJetPhi       36  -3.15   +3.15
 BJetPtVsEta   100 -2.5 +2.5 500 0. 1000.
+BJetAbsEta    50   0.0   -5.0
 
 FillCentralJet 1
 
 NCentralJet      20   0.    20.
 CentralJetPt    200   0.   500.
 CentralJetEta   100  -5.0   +5.0
+CentralJetAbsEta    50   0.0   -5.0
 
 
 FillWJet 0
@@ -277,6 +281,8 @@ FirstLeadingJetPt     200   0.   1000.
 SecondLeadingJetPt    200   0.   1000.
 FirstLeadingJetEta    100  -5.      5.
 SecondLeadingJetEta   100  -5.      5.
+FirstLeadingJetAbsEta    50  0.      5.
+SecondLeadingJetAbsEta   50  0.      5.
 LeadingJetMass       1000   0    5000
 LeadSublDijetDphi      72   0      +3.15
 LeadingJetPt         1000   0    5000

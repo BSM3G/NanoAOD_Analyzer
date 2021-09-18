@@ -23,8 +23,8 @@ doEfficiencyPlots true
 
 //---RECO CUTS---///
 
-EtaCut 2.5
-PtCut 30.0 9999.9
+EtaCut 2.1
+PtCut 25.0 9999.9
 
 DoDiscrByIsolation 0
 IsoSumPtCutValue 0.0 0.15
@@ -53,8 +53,8 @@ MetMtCut 0. 40.
 
 //---RECO CUTS---///
 
-EtaCut 2.5
-PtCut 30.0 9999.9
+EtaCut 2.1
+PtCut 40.0 9999.9
 
 DoDiscrByIsolation 0
 IsoSumPtCutValue 0.1 0.2
