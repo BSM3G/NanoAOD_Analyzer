@@ -109,7 +109,6 @@ public:
 
   void read_info(std::string);
   void setupGeneral(std::string);
-  void setupEventGeneral(int);
   void getTriggerBranchesList(CUTS, std::string, bool);
   bool passGenHTFilter(float);
   bool passGenMassFilterZ(float mass_lowbound, float mass_upbound);
@@ -293,7 +292,7 @@ public:
   std::vector<std::string> trigger1BranchesList, trigger2BranchesList;
   bool triggerDecision = false;
   std::vector<std::string> inputTrigger1Names, inputTrigger2Names; // Brenda: This will take the triggers from the configuration file Run_info.in
-  std::vector<bool> trigger1namedecisions, trigger2namedecisions; // Brenda
+  std::vector<bool*> trigger1namedecisions, trigger2namedecisions; // Brenda
   std::vector<int> cuts_per, cuts_cumul;
 
   std::vector<std::pair<double, int> > jetPtIndexVector;

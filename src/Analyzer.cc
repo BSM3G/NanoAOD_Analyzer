@@ -477,105 +477,6 @@ void Analyzer::clear_values() {
   maxCut = 0;
 }
 
-// New function: this sets up parameters that only need to be called once per event.
-void Analyzer::setupEventGeneral(int nevent){
-
-  // This function is an intermediate step called from preprocess that will set up all the variables that are common to the event and not particle specific.
-  // We want to set those branches first here and then call BOOM->GetEntry(nevent) so that the variables change properly for each event.
-
-  // For MC samples, set number of true pileup interactions, gen-HT and gen-weights.
-  if(!isData){
-
-    SetBranch("Pileup_nTrueInt",nTruePU);
-    SetBranch("genWeight",gen_weight);
-
-    if(BOOM->FindBranch("L1PreFiringWeight_Nom") != 0){
-      SetBranch("L1PreFiringWeight_Nom", l1prefiringwgt);
-
-      if(distats["Systematics"].bfind("useSystematics")){
-        SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);
-        SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
-      }
-    }
-
-    if (BOOM->FindBranch("LHE_HT") != 0){
-      SetBranch("LHE_HT",generatorht);
-    }
-
-    if(BOOM->FindBranch("GenMET_pt") != 0){
-      SetBranch("GenMET_pt", genmet_pt);
-      SetBranch("GenMET_phi", genmet_phi);
-    }
-
-  }
-  // Get the number of primary vertices, applies to both data and MC
-  SetBranch("PV_npvs", totalVertices);
-  SetBranch("PV_npvsGood", bestVertices);
-
-  // Get the offset energy density for jet energy corrections: https://twiki.cern.ch/twiki/bin/view/CMS/IntroToJEC
-  SetBranch("fixedGridRhoFastjetAll", jec_rho);
-
-  // Finally, call get entry so all the branches assigned here are filled with the proper values for each event.
-  BOOM->GetEntry(nevent);
-
-  // Check that the sample does not have crazy values of nTruePU
-  if(nTruePU < 100.0){
-       // std::cout << "pileupntrueint = " << pileupntrueint << std::endl;
-  }
-  else{
-    // std::cout << "event with abnormal pileup = " << pileupntrueint << std::endl;
-    clear_values();
-    return;
-  }
-
-  // Calculate the pu_weight for this event.
-  pu_weight = (!isData && CalculatePUSystematics) ? hist_pu_wgt->GetBinContent(hist_pu_wgt->FindBin(nTruePU)) : 1.0;
-
-  // Get the trigger decision vector.
-  triggerDecision = false; // Reset the decision flag for each event.
-
-  if(trigger1BranchesList.size() > 0){
-    for(std::string triggname : trigger1BranchesList){
-      // std::cout << "Trigger name: " << triggname << std::endl;
-
-      TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
-      triggerBranch->SetStatus(1);
-      triggerBranch->SetAddress(&triggerDecision);
-
-      // SetBranch(triggname.c_str(), triggerDecision);
-      BOOM->GetEntry(nevent);
-
-      // std::cout << "Decision = " << triggerDecision << std::endl;
-      trigger1namedecisions.push_back(triggerDecision);
-      triggerBranch->ResetAddress();
-    }
-  }
-
-  if(trigger2BranchesList.size() > 0){
-    for(std::string triggname : trigger2BranchesList){
-      // std::cout << "Trigger name: " << triggname << std::endl;
-
-      TBranch *triggerBranch = BOOM->GetBranch(triggname.c_str());
-      triggerBranch->SetStatus(1);
-      triggerBranch->SetAddress(&triggerDecision);
-
-      // SetBranch(triggname.c_str(), triggerDecision);
-      BOOM->GetEntry(nevent);
-
-      // std::cout << "Decision = " << triggerDecision << std::endl;
-      trigger2namedecisions.push_back(triggerDecision);
-      triggerBranch->ResetAddress();
-    }
-  }
-
-  /*
-  for(size_t i=0; i < triggernamedecisions.size(); i++){
-    std::cout << "Trigger decision #" << i << " = " << triggernamedecisions.at(i) << std::endl;
-  }
-  */
-
-}
-
 bool Analyzer::passGenHTFilter(float genhtvalue){
 
   if(genhtvalue >= distats["Run"].dmap.at("LowerGenHtCut") && genhtvalue <= distats["Run"].dmap.at("UpperGenHtCut")){
@@ -865,25 +766,6 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
 
   active_part = &goodParts;
 
-  // Commented by Brenda FE, Aug 18, 2020 - 12:48 pm
-  /*
-  if(!select_mc_background()){
-    //we will put nothing in good particles
-    clear_values();
-    return;
-  }
-  */
-
-  // Call the new function setupEventGeneral: this will set generatorht, pu weight and genweight
-  setupEventGeneral(event);
-
-  // Call the L1 weight producer here, only for 2016 or 2017
-  //if(distats["Run"].bfind("ApplyL1PrefiringWeight") && (year == "2016" || year == "2017")){
-
-    // Reset weights for each event before producing them
-    // prefiringwgtprod.resetWeights();
-    // prefiringwgtprod.produceWeights(*_Photon, *_Jet);
-  //}
 
   if(!isData){ // Do everything that corresponds only to MC
 
@@ -973,7 +855,14 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     }
   }
 
-  // std::cout << "------------" << std::endl;
+  // Check that the sample does not have crazy values of nTruePU
+  if(nTruePU > 100.0){
+    clear_values();
+    return;
+  }
+
+  // Calculate the pu_weight for this event.
+  pu_weight = (!isData && CalculatePUSystematics) ? hist_pu_wgt->GetBinContent(hist_pu_wgt->FindBin(nTruePU)) : 1.0;
 
   // ------- Number of primary vertices requirement -------- //
   active_part->at(CUTS::eRVertex)->resize(bestVertices);
@@ -1680,6 +1569,46 @@ void Analyzer::setupGeneral(std::string year) {
     isData=false;
   }
 
+  if(!isData){
+     SetBranch("Pileup_nTrueInt", nTruePU);
+     SetBranch("genWeight", gen_weight);
+
+     if(BOOM->FindBranch("L1PreFiringWeight_Nom") != 0){
+       SetBranch("L1PreFiringWeight_Nom", l1prefiringwgt);
+
+       if(distats["Systematics"].bfind("useSystematics")){
+         SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);
+         SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
+       }
+     }
+
+     if (BOOM->FindBranch("LHE_HT") != 0){
+       SetBranch("LHE_HT",generatorht);
+     }
+
+     if(BOOM->FindBranch("GenMET_pt") != 0){
+       SetBranch("GenMET_pt", genmet_pt);
+       SetBranch("GenMET_phi", genmet_phi);
+     }
+
+   } else {
+     nTruePU = 0;
+     gen_weight = 1;
+     l1prefiringwgt = 1.0;
+     l1prefiringwgt_up = 1.0;
+     l1prefiringwgt_dn = 1.0;
+     generatorht = 0.0;
+     genmet_pt = 0.0;
+     genmet_phi = 0.0;
+   }
+
+    // Get the number of primary vertices, applies to both data and MC
+   SetBranch("PV_npvs", totalVertices);
+   SetBranch("PV_npvsGood", bestVertices);
+
+   // Get the offset energy density for jet energy corrections: https://twiki.cern.ch/twiki/bin/view/CMS/IntroToJEC
+   SetBranch("fixedGridRhoFastjetAll", jec_rho);
+
   read_info(filespace + "ElectronTau_info.in");
   read_info(filespace + "MuonTau_info.in");
   read_info(filespace + "MuonElectron_info.in");
@@ -1737,10 +1666,34 @@ void Analyzer::setupGeneral(std::string year) {
       std::cout << name << std::endl;
     }
   }
-  std::cout << " ---------------------------------------------------------------------- " << std::endl;
 
-  // Check if it is a signal MC sample:
-  // isSignalMC = distats["SignalMC"].bfind("isSignalMC");
+  for(std::string trigger : trigger1BranchesList){
+     bool decision1 = false;
+
+     try{
+       branchException(trigger.c_str());
+     } catch (const char* msg){
+       std::cout << "ERROR! Trigger " << trigger << ": "  << msg << std::endl;
+     }
+
+     SetBranch(trigger.c_str(), decision1);       
+     trigger1namedecisions.push_back(&decision1);
+   }
+
+   for(std::string trigger : trigger2BranchesList){
+     bool decision2 = false;
+
+     try{
+       branchException(trigger.c_str());
+     } catch (const char* msg){
+       std::cout << "ERROR! Trigger " << trigger << ": "  << msg << std::endl;
+     }
+
+     SetBranch(trigger.c_str(), decision2);       
+     trigger2namedecisions.push_back(&decision2);
+   }
+
+  std::cout << " ---------------------------------------------------------------------- " << std::endl;
 
   // double check
   if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) == 0){
@@ -4090,39 +4043,24 @@ void Analyzer::TriggerCuts(CUTS ePos) {
 	if(! neededCuts.isPresent(ePos)) return;
 
   if(ePos == CUTS::eRTrig1){
-  	// Loop over all elements of the trigger decisions vector
-  	for(bool decision : trigger1namedecisions){
-  		if(decision){
-  			// If one element is true (1), then store back the event in the triggers vector
-  			active_part->at(ePos)->push_back(0);
-  			// Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
-  			trigger1namedecisions.clear();
-        trigger1namedecisions.shrink_to_fit();
-  			// End of the function
-  			return;
-  		}
-  	}
-  	// If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
-  	trigger1namedecisions.clear();
-    trigger1namedecisions.shrink_to_fit();
+    for(bool* trigger : trigger1namedecisions){
+       // std::cout<< "trig_decision: "<< *trigger << std::endl;
+       if(*trigger){
+         active_part->at(ePos)->push_back(0);
+         return;
+       }
+     }
   }
 
   if(ePos == CUTS::eRTrig2){
     // Loop over all elements of the trigger decisions vector
-    for(bool decision : trigger2namedecisions){
-      if(decision){
-        // If one element is true (1), then store back the event in the triggers vector
-        active_part->at(ePos)->push_back(0);
-        // Clean up the trigger decisions vector to reduce memory usage and have an empty vector for the next event
-        trigger2namedecisions.clear();
-        trigger2namedecisions.shrink_to_fit();
-        // End of the function
-        return;
-      }
-    }
-    // If all the elements of the trigger decisions vector are false, then just clean up the trigger decisions vector to reduce memory usage.
-    trigger2namedecisions.clear();
-    trigger2namedecisions.shrink_to_fit();
+    for(bool* trigger : trigger2namedecisions){
+       // std::cout<< "trig_decision: "<< *trigger << std::endl;
+       if(*trigger){
+         active_part->at(ePos)->push_back(0);
+         return;
+       }
+     }
   }
 
 }
