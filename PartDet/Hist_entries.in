@@ -104,7 +104,10 @@ GenVisHadTauDecayMode		16	  0.	  16.
 NGenVisHadTau				20   0.       20.
 
 GenZDiLepMass     1000  0.   5000.
-
+GenNeutralino2Mass 400  0. 400.
+GenNeutralino1Mass 400  0. 400.
+GenChargino1Mass   400  0. 400.
+GenStauMass        400  0. 400.
 //------------------------------------------------//
 
 FillTau1 1

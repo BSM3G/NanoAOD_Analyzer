@@ -3,5 +3,19 @@
 ####################################
 
 ModelTag VBF_EWKino_StauDominated
+
+C1_pdgID 1000024 #Chargino1
+C1Mass 300
+
+N2_pdgID 1000023 #Neuralino2
+N2Mass 300
+
+N1_pdgID 1000022 #Neutralino1
+N1Mass 250
+
+Stau_pdgID 1000015 #Stau
+StauMass 275
+
+FilterByBranchName true
 # MassParameters 300_275p00_250p00
 MassParameters 300_262p50_225p00
