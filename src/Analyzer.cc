@@ -1695,15 +1695,24 @@ void Analyzer::setupGeneral(std::string year) {
 
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
 
-  // double check
-  if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) == 0){
-   isSignalMC = false;
-   std::cout << "This is not a signal MC sample." << std::endl;
+  isSignalMC = false;
+  TObjArray *nameArray = BOOM->GetListOfBranches();
+  std::string prefix = ("GenModel_"+inputSignalModel).c_str();
+  for (int i = 0; i < nameArray->GetEntries(); ++i) {
+    std::string name = nameArray->At(i)->GetName();
+    //std::cout << prefix << std::endl;
+    std::string namePrefix = name.substr(0, prefix.length());
+    if (prefix == namePrefix) {
+      isSignalMC = true;
+      std::cout << "This is a signal MC sample!" << std::endl;
+      std::cout << "" << std::endl;
+      break;
+    } 
   }
-  else if(BOOM->FindBranch( ("GenModel_"+inputSignalModel+"_"+inputSignalMassParam).c_str()) != 0){
-   isSignalMC = true;
-   std::cout << "This is a signal MC sample!" << std::endl;
+  if(!isSignalMC){
+    std::cout << "This is not a signal MC sample." << std::endl; 
   }
+
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
 }
 
