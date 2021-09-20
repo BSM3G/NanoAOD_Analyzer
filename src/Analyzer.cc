@@ -3117,6 +3117,7 @@ void Analyzer::getGoodGen(const PartStats& stats) {
 
       
       //find Grandmother particle index & ID
+      /*
       int grandmotherpart_idx = _Gen->genPartIdxMother[motherpart_idx] ;
       int grandmother_pid = abs(_Gen->pdg_id[grandmotherpart_idx]);
 
@@ -3134,8 +3135,8 @@ void Analyzer::getGoodGen(const PartStats& stats) {
 	
 	grandmother_pid = grandmother_pid_tmp;
       }
-     
-
+      */
+      
       // Look for particles that are coming from pileup
       int particle_idx_tmp = motherpart_idx;
       int firstmother_idx_tmp = _Gen->genPartIdxMother[particle_idx_tmp];
@@ -3164,13 +3165,13 @@ void Analyzer::getGoodGen(const PartStats& stats) {
          if(stats.bfind("DiscrMuonByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("MuonPtCut").first || _Gen->pt(j) > stats.pmap.at("MuonPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("MuonEtaCut"))) continue;
          if(stats.bfind("DiscrMuonByNotFromPileup") && (og_motherpart_idx != 0) && (og_motherpart_idx != 1) ) continue;
          if(stats.bfind("DiscrMuonByMotherID") && (mother_pid != stats.pmap.at("MuonMotherIDs").first) && (mother_pid != stats.pmap.at("MuonMotherIDs").second)) continue;
-      if(stats.bfind("RejectMuonByMotherID") && ((mother_pid == stats.pmap.at("MuonMotherID_ToBeRejected").first) || (mother_pid == stats.pmap.at("MuonMotherID_ToBeRejected").second)) )continue;
+	 //if(stats.bfind("RejectMuonByMotherID") && ((mother_pid == stats.pmap.at("MuonMotherID_ToBeRejected").first) || (mother_pid == stats.pmap.at("MuonMotherID_ToBeRejected").second)) )continue;
       }
       //std::cout << "Mother id is: " << mother_pid << std::endl;
       //std::cout << "GrandMother id is: " << grandmother_pid << std::endl;
       active_part->at(genMaper.at(particle_id)->ePos)->push_back(j);
       genMotherPartIndex[j] = motherpart_idx;
-      genGrandMotherPartIndex[j] = grandmotherpart_idx;
+      //genGrandMotherPartIndex[j] = grandmotherpart_idx;
     }
 
 
@@ -5290,10 +5291,10 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(_Gen->eta(it), "MuonEta");
       histAddVal(_Gen->phi(it), "MuonPhi");
       histAddVal(_Gen->pdg_id[genMotherPartIndex.at(it)], "MuonMotherPID");
-      histAddVal(_Gen->pdg_id[genGrandMotherPartIndex.at(it)], "MuonGrandMotherPID_SMParticles");
-      histAddVal(_Gen->pdg_id[genGrandMotherPartIndex.at(it)], "MuonGrandMotherPID_SUSYParticles");
+      //histAddVal(_Gen->pdg_id[genGrandMotherPartIndex.at(it)], "MuonGrandMotherPID_SMParticles");
+      //histAddVal(_Gen->pdg_id[genGrandMotherPartIndex.at(it)], "MuonGrandMotherPID_SUSYParticles");
       histAddVal(_Gen->mass(genMotherPartIndex.at(it)), "MuonMother_Mass");
-      histAddVal(_Gen->mass(genGrandMotherPartIndex.at(it)), "MuonGrandMother_Mass");
+      //histAddVal(_Gen->mass(genGrandMotherPartIndex.at(it)), "MuonGrandMother_Mass");
     }
     histAddVal(active_part->at(CUTS::eGMuon)->size(), "NMuon");
 

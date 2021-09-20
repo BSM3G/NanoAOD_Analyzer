@@ -3,7 +3,7 @@
 ####################################
 
 ModelTag VBF_EWKino_WZ
-MassParameters 100_95p00
+MassParameters 100_25p00
 
 C1_pdgID 1000024 #Chargino1
 C1Mass 100
@@ -12,4 +12,4 @@ N2_pdgID 1000023 #Neuralino2
 N2Mass 100
 
 N1_pdgID 1000022 #Neutralino1
-N1Mass 99.5
+N1Mass 25
