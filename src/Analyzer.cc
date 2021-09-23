@@ -2918,7 +2918,7 @@ TLorentzVector Analyzer::matchLeptonToGen(const TLorentzVector& recoLepton4Vecto
       }
      }
    }
-
+  
   if(minDeltaR <= stats.dmap.at("GenMatchingDeltaR")) return _Gen->p4(pidx);
    
   return TLorentzVector(0,0,0,0);
@@ -3046,7 +3046,7 @@ void Analyzer::getGoodGen(const PartStats& stats) {
       active_part->at(genMaper.at(5)->ePos)->push_back(j);
     }
     else if(genMaper.find(particle_id) != genMaper.end() && _Gen->status[j] == genMaper.at(particle_id)->status) {
-
+      
       int motherpart_idx = _Gen->genPartIdxMother[j];
       int mother_pid = abs(_Gen->pdg_id[motherpart_idx]);   
 
@@ -3068,13 +3068,15 @@ void Analyzer::getGoodGen(const PartStats& stats) {
       int particle_idx_tmp = motherpart_idx;
       int firstmother_idx_tmp = _Gen->genPartIdxMother[particle_idx_tmp];
 
-      while(firstmother_idx_tmp != -1){
-        particle_idx_tmp = firstmother_idx_tmp;
-        firstmother_idx_tmp = _Gen->genPartIdxMother[particle_idx_tmp];
+      if(stats.bfind("DiscrTauByNotFromPileup") || stats.bfind("DiscrElecByNotFromPileup") || stats.bfind("DiscrMuonByNotFromPileup")){
+          while(firstmother_idx_tmp != -1){
+            particle_idx_tmp = firstmother_idx_tmp;
+            firstmother_idx_tmp = _Gen->genPartIdxMother[particle_idx_tmp];
+          }
       }
 
       int og_motherpart_idx = particle_idx_tmp;
-
+      
       if(particle_id == 15){
 
         if(stats.bfind("DiscrTauByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("TauPtCut").first || _Gen->pt(j) > stats.pmap.at("TauPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("TauEtaCut"))) continue;
