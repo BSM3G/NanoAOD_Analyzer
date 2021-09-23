@@ -16,6 +16,3 @@ N1Mass 250
 Stau_pdgID 1000015 #Stau
 StauMass 275
 
-FilterByBranchName false
-# MassParameters 300_275p00_250p00
-MassParameters 300_262p50_225p00
