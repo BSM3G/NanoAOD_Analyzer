@@ -1684,9 +1684,21 @@ void Analyzer::setupGeneral(std::string year) {
       std::cout << name << std::endl;
     }
   }
+ 
+  // Create a new vector of booleans with the same size of the triggers to be probed.
 
-  for(std::string trigger : trigger1BranchesList){
-     bool decision1 = false;
+  const int ntriggers1 = trigger1BranchesList.size();
+  const int ntriggers2 = trigger2BranchesList.size();
+
+  bool triggers1[ntriggers1] = { };
+  bool triggers2[ntriggers2] = { };
+
+  // for(int i=0; i<ntriggers1; i++){
+  //    std::cout << "Address of " << i << "th element is " << &triggers1[i] << std::endl;
+  // }
+
+  int trig1 = 0;
+  for(std::string trigger : trigger1BranchesList){ 
 
      try{
        branchException(trigger.c_str());
@@ -1694,12 +1706,13 @@ void Analyzer::setupGeneral(std::string year) {
        std::cout << "ERROR! Trigger " << trigger << ": "  << msg << std::endl;
      }
 
-     SetBranch(trigger.c_str(), decision1);       
-     trigger1namedecisions.push_back(&decision1);
+     SetBranch(trigger.c_str(), triggers1[trig1]);
+     trigger1namedecisions.push_back(&triggers1[trig1]);
+     trig1++;
    }
 
+   int trig2 = 0;
    for(std::string trigger : trigger2BranchesList){
-     bool decision2 = false;
 
      try{
        branchException(trigger.c_str());
@@ -1707,8 +1720,9 @@ void Analyzer::setupGeneral(std::string year) {
        std::cout << "ERROR! Trigger " << trigger << ": "  << msg << std::endl;
      }
 
-     SetBranch(trigger.c_str(), decision2);       
-     trigger2namedecisions.push_back(&decision2);
+     SetBranch(trigger.c_str(), triggers2[trig2]);       
+     trigger2namedecisions.push_back(&triggers2[trig2]);
+     trig2++;
    }
 
   std::cout << " ---------------------------------------------------------------------- " << std::endl;
@@ -4165,16 +4179,17 @@ bool Analyzer::isInTheCracks(float etaValue){
 ///sees if the event passed one of the two cuts provided
 void Analyzer::TriggerCuts(CUTS ePos) {
 
-	if(! neededCuts.isPresent(ePos)) return;
+  if(! neededCuts.isPresent(ePos)) return;
 
   if(ePos == CUTS::eRTrig1){
+    
     for(bool* trigger : trigger1namedecisions){
-       // std::cout<< "trig_decision: "<< *trigger << std::endl;
-       if(*trigger){
-         active_part->at(ePos)->push_back(0);
-         return;
-       }
-     }
+       //std::cout<< "trig_decision: "<< *trigger << std::endl;
+       if(*trigger){  
+          active_part->at(ePos)->push_back(0);
+          return;
+       }  
+    }  
   }
 
   if(ePos == CUTS::eRTrig2){
