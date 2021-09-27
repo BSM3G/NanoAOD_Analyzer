@@ -819,6 +819,8 @@ Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
     SetBranch("Muon_dxy", mudxy);
     SetBranch("Muon_dz", mudz);
     SetBranch("Muon_jetIdx", associatedJetIndex);
+    SetBranch("Muon_looseId", loose);
+    SetBranch("Muon_softId", soft);
   }
 
 }
