@@ -24,11 +24,15 @@ doEfficiencyPlots true
 
 //----RECO CUTS----//
 
-EtaCut 2.5
-PtCut 8.0 9999.9
+EtaCut 2.1
+PtCut 8.0 40.0
 
-DoDiscrByTightID 1
+DoDiscrByTightID 0
 DoDiscrBySoftID 0
+
+DoDiscrBySUSYSoftID 1
+ApplyLooseNotTightID 0
+ApplyTightID 1
 
 DoDiscrByIsolation 1
 IsoSumPtCutValue 0.0 0.15
@@ -50,10 +54,14 @@ MetMtCut 0. 9999.9
 //----RECO CUTS----//
 
 EtaCut 2.5
-PtCut 8.0 9999.9
+PtCut 40.0 9999.9
 
-DoDiscrByTightID 1
+DoDiscrByTightID 0
 DoDiscrBySoftID 0
+
+DoDiscrBySUSYSoftID 1
+ApplyLooseNotTightID 1
+ApplyTightID 0
 
 DoDiscrByIsolation 1
 IsoSumPtCutValue 0.0 0.15

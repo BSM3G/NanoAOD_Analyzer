@@ -30,7 +30,7 @@ DoDiscrByIsolation 0
 IsoSumPtCutValue 0.0 0.15
 
 //(0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
-DoDiscrByCBID true
+DoDiscrByCBID false
 DiscrByCBID 3
 
 DoDiscrBymvaID false
@@ -39,6 +39,10 @@ DiscrBymvaWP90 1
 DiscrBymvaWPL  0
 
 DoDiscrByHEEPID false
+
+DoDiscrBySUSYSoftID 1
+ApplyLooseNotTightID 1
+ApplyTightID 0
 
 ///---MET TOPOLOGY CUTS---///
 
@@ -63,7 +67,7 @@ DoDiscrByIsolation 0
 IsoSumPtCutValue 0.1 0.2
 
 //(0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
-DoDiscrByCBID true
+DoDiscrByCBID false
 DiscrByCBID 3
 
 DoDiscrBymvaID false
@@ -72,6 +76,10 @@ DiscrBymvaWP90 1
 DiscrBymvaWPL  0
 
 DoDiscrByHEEPID false
+
+DoDiscrBySUSYSoftID 1
+ApplyLooseNotTight 1
+ApplyTightID 0
 
 ///---MET TOPOLOGY CUTS---///
 

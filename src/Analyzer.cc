@@ -104,6 +104,7 @@ Analyzer::Analyzer(std::vector<std::string> infiles, std::string outfile, bool s
     BOOM->AddFile(infile.c_str());
   }
 
+  runyear = year;
 
   nentries = (int) BOOM->GetEntries();
   BOOM->SetBranchStatus("*", 0);
@@ -3311,6 +3312,16 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
         else if(cut == "DoDiscrBySoftID") passCuts = passCuts && _Muon->soft[i];
         else if(cut == "DoDiscrByLooseID") passCuts = passCuts && _Muon->loose[i];
         else if(cut == "DoDiscrByMediumID") passCuts = passCuts && _Muon->medium[i];
+        else if(cut == "DoDiscrBySUSYSoftID"){
+          if(stats.bfind("ApplyLooseNotTightID")){
+            passCuts = passCuts && _Muon->softSUSYMuonIDLooseNotTight(i, lvec.Pt(), lvec.Eta());
+          } else if(stats.bfind("ApplyTightID")){
+            passCuts = passCuts && (_Muon->softSUSYMuonIDTight(i, lvec.Pt(), lvec.Eta() )); 
+            // Additional b-jet veto
+            int mujetidx = _Muon->associatedJetIndex[i];
+            if(mujetidx != -1) passCuts = passCuts && (_Jet->passAddBJetVetoSoftSusyLeptonID(mujetidx, _Jet->pt(mujetidx), _Jet->eta(mujetidx), runyear));
+          }
+        }
       }
       ////electron cuts
       else if(lep.type == PType::Electron){
@@ -3329,8 +3340,19 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
 
           else if(stats.bfind("DiscrBymvaWPL")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WPL[i];
         }
-        else if(cut == "DoDiscrByHEEPID")
-         passCuts = passCuts && _Electron->isPassHEEPId[i];
+        else if(cut == "DoDiscrByHEEPID"){
+          passCuts = passCuts && _Electron->isPassHEEPId[i];
+        } 
+        else if(cut == "DoDiscrBySUSYSoftID"){
+          if(stats.bfind("ApplyLooseNotTightID")){
+            passCuts = passCuts && _Electron->softSUSYElectronIDLooseNotTight(i, lvec.Pt(), lvec.Eta(), runyear);
+          } else if(stats.bfind("ApplyTightID")){
+            passCuts = passCuts && (_Electron->softSUSYElectronIDTight(i, lvec.Pt(), lvec.Eta(), runyear) ); 
+            // Additional b-jet veto
+            int elejetidx = _Electron->associatedJetIndex[i];
+            if(elejetidx != -1) passCuts = passCuts && (_Jet->passAddBJetVetoSoftSusyLeptonID(elejetidx, _Jet->pt(elejetidx), _Jet->eta(elejetidx), runyear));
+          }
+        }
       }
       else if(lep.type == PType::Tau){
         if(cut == "DoDiscrByCrackCut") passCuts = passCuts && !isInTheCracks(lvec.Eta());

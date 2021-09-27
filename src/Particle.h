@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <iostream>
 #include <regex>
+#include <cmath>
 
 #include <TTree.h>
 #include <TBranch.h>
@@ -188,6 +189,7 @@ public:
   bool passedTightJetID(int);
   bool passedTightLepVetoJetID(int);
   bool getPileupJetID(int, int);
+  bool passAddBJetVetoSoftSusyLeptonID(int, float, float, std::string);
 
   float area[MAXINDEX];
   // float bDiscriminator[MAXINDEX];
@@ -249,6 +251,11 @@ public:
   Electron(TTree*, std::string, std::vector<std::string>, std::string);
 
   bool get_Iso(int, double, double) const;
+  bool customSoftLooseEleMVAId(int, double, double, std::string) const;
+  bool customSoftTightEleMVAId(int, double, double, std::string) const;
+  bool softSUSYElectronIDLooseNotTight(int, float, float, std::string);
+  bool softSUSYElectronIDTight(int, float, float, std::string);
+
 
   std::bitset<8> cbIDele1;
   std::bitset<8> cbIDele2;
@@ -258,6 +265,7 @@ public:
   // Electron MVA ID fall 2017
   float miniPFRelIso_all[MAXINDEX];
   float miniPFRelIso_chg[MAXINDEX];
+  float mvaFall17V1noIso[MAXINDEX];
   float mvaFall17V2Iso[MAXINDEX];
   float mvaFall17V2Iso_WP80[MAXINDEX];
   float mvaFall17V2Iso_WP90[MAXINDEX];
@@ -272,6 +280,14 @@ public:
   int cutBased[MAXINDEX];
   bool isPassHEEPId[MAXINDEX];
 
+  bool conversionVeto[MAXINDEX];
+  int associatedJetIndex[MAXINDEX];
+  UChar_t lostHits[MAXINDEX];
+  float eleip3d[MAXINDEX];
+  float elesip3d[MAXINDEX];
+  float eledxy[MAXINDEX];
+  float eledz[MAXINDEX];
+
 };
 
 
@@ -282,6 +298,8 @@ public:
   Muon(TTree*, std::string, std::vector<std::string>, std::string);
 
   bool get_Iso(int, double, double) const;
+  bool softSUSYMuonIDLooseNotTight(int, float, float);
+  bool softSUSYMuonIDTight(int, float, float);
 
   bool soft[MAXINDEX];
   bool loose[MAXINDEX];
@@ -295,6 +313,13 @@ public:
   bool isGlobal[MAXINDEX];
   bool isPFCand[MAXINDEX];
   bool isTracker[MAXINDEX];
+  int associatedJetIndex[MAXINDEX];
+
+  float muip3d[MAXINDEX];
+  float musip3d[MAXINDEX];
+  float mudxy[MAXINDEX];
+  float mudz[MAXINDEX];
+
 };
 
 class Taus : public Lepton {

@@ -1,6 +1,7 @@
 #include "Particle.h"
 #include <bitset>
 #include <signal.h>
+#include <cmath>
 
 #define SetBranch(name, variable) BOOM->SetBranchStatus(name, 1);  BOOM->SetBranchAddress(name, &variable);
 
@@ -345,6 +346,27 @@ bool Jet::getPileupJetID(int nobj, int bit_id) {
    return bit_jet[bit_id];
  }
 
+bool Jet::passAddBJetVetoSoftSusyLeptonID(int lepjetidx, float lepjetpt, float lepjeteta, std::string year){
+
+    // Apply a veto to this jet to which we further apply pt and eta cuts and b-tagging cuts (Loose WPs from DeepCSV in all years, custom in 2016):
+    if(lepjetidx == -1){
+      return true;
+    }
+
+    bool associatedBJet = ( lepjetpt > pstats["BJet"].dmap.at("PtCut") ) && (fabs(lepjeteta) > pstats["BJet"].pmap.at("EtaCut").first ) && ( fabs(lepjeteta) < pstats["BJet"].pmap.at("EtaCut").second);
+    // apply b-jet discriminator cut (Loose WPs from DeepCSV in all years)
+    if(year.compare("2016") == 0){
+      associatedBJet = associatedBJet && bDiscriminatorDeepCSV[lepjetidx] > 0.4;
+    } else if (year.compare("2017") == 0){
+      associatedBJet = associatedBJet && bDiscriminatorDeepCSV[lepjetidx] > 0.1522;
+    } else if (year.compare("2018") == 0){
+      associatedBJet = associatedBJet && bDiscriminatorDeepCSV[lepjetidx] > 0.1241;
+    }
+
+    return !associatedBJet;
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////    FATJET   ////////////////////////////////////////
@@ -458,11 +480,300 @@ Electron::Electron(TTree* _BOOM, std::string filename, std::vector<std::string> 
   if(elec1.bfind("DoDiscrByHEEPID") || elec2.bfind("DoDiscrByHEEPID")) {
     SetBranch("Electron_cutBased_HEEP", isPassHEEPId);
   }
+
+  if(elec1.bfind("DoDiscrBySUSYSoftID") || elec2.bfind("DoDiscrBySUSYSoftID")){
+    SetBranch("Electron_pfRelIso03_all", pfRelIso03_all);
+    SetBranch("Electron_mvaFall17V2noIso", mvaFall17V2noIso);
+    SetBranch("Electron_mvaFall17V1noIso", mvaFall17V1noIso);
+    SetBranch("Electron_ip3d", eleip3d);
+    SetBranch("Electron_sip3d", elesip3d);
+    SetBranch("Electron_dxy", eledxy);
+    SetBranch("Electron_dz", eledz);
+    SetBranch("Electron_lostHits", lostHits);
+    SetBranch("Electron_convVeto", conversionVeto);
+    SetBranch("Electron_jetIdx", associatedJetIndex);
+  }
+
+
 }
 
 bool Electron::get_Iso(int index, double min, double max) const {
   //std::cout << pfRelIso03_all[index] << std::endl;
   return (miniPFRelIso_all[index] >= min && miniPFRelIso_all[index] < max);
+}
+
+bool Electron::customSoftLooseEleMVAId(int index, double electronpt, double electroneta, std::string year) const{
+
+  bool passCutId = true;
+
+  // std::cout << "Electron custom MVA id year = " << year << std::endl;
+  // std::cout << "mvaFall17V2noIso = " << mvaFall17V2noIso[index] << std::endl;
+
+  if(year.compare("2016") == 0){
+
+    if(electronpt > 5.0 && electronpt <= 10.0){
+      if(abs(electroneta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.97;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+    }
+    else if(electronpt > 10.0 && electronpt < 20.0){
+      if(abs(electroneta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.97;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.80;
+      }
+    }
+    else if(electronpt >= 20.0){
+      if(abs(electroneta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.85;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.20;
+      }
+    }
+  }
+
+  if(year.compare("2017") == 0){    
+
+    if(electronpt > 5.0 && electronpt <= 10.0){
+      if(abs(electroneta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.80;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.75;
+      }
+    }
+    else if(electronpt > 10.0 && electronpt < 20.0){
+      if(abs(electroneta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.20;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.20;
+      }
+    }
+    else if(electronpt >= 20.0){
+      if(abs(electroneta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.40;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.40;
+      }
+    }
+  }
+
+  if(year.compare("2018") == 0){  
+    if(electronpt > 5.0 && electronpt <= 10.0){
+      if(abs(electroneta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+    }
+    else if(electronpt > 10.0 && electronpt < 20.0){
+      if(abs(electroneta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.98;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.90;
+      }
+    }
+    else if(electronpt >= 20.0){
+      if(abs(electroneta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.80;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.00;
+      }
+    }
+  }
+
+  return passCutId;
+
+}
+
+bool Electron::customSoftTightEleMVAId(int index, double electronpt, double electroneta, std::string year) const{
+
+  bool passCutId = true;
+  double rawMvaIdScore = 0.0;
+  double normMvaIdScore = (double) mvaFall17V2noIso[index];
+
+  // std::cout << "Electron custom MVA id year = " << year << std::endl;
+  // std::cout << "mvaFall17V2noIso = " << normMvaIdScore << std::endl;
+
+  if(year.compare("2016") == 0){
+
+    if(normMvaIdScore > -1.0 && normMvaIdScore < 1.0){
+      // std::cout << "score between -1 and 1" << std::endl;
+      rawMvaIdScore = -0.5 * log( (1.0 - normMvaIdScore) / (1.0 + normMvaIdScore) );
+    }
+    else{
+      // std::cout << "score equal to -1 or 1" << std::endl;
+      rawMvaIdScore = normMvaIdScore * 99999.9;
+    }
+
+    // std::cout << "mvaFall17V2noIso (raw) = " << rawMvaIdScore << std::endl;
+
+    if(electronpt > 5.0 && electronpt <= 10.0){
+      passCutId = passCutId && mvaFall17V2noIso_WP80[index];
+    }
+    else if(electronpt > 10.0 && electronpt < 40.0){
+      if(abs(electroneta) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 3.447 + 0.063*(electronpt - 25.0);
+      }
+      else if(abs(electroneta) >= 0.8 && abs(electroneta) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 2.552 + 0.058*(electronpt - 25.0);
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 1.555 + 0.075*(electronpt - 25.0);
+      }
+    }
+    else if(electronpt >= 40.0){
+      if(abs(electroneta) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 4.392;
+      }
+      else if(abs(electroneta) >= 0.8 && abs(electroneta) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 3.392;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 2.680;
+      }
+      
+    }
+  }
+
+  if(year.compare("2017") == 0){    
+    if(electronpt > 5.0 && electronpt <= 10.0){
+      passCutId = passCutId && mvaFall17V2noIso_WP90[index];
+    }
+    else if(electronpt > 10.0 && electronpt < 40.0){
+      if(abs(electroneta) < 0.8){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.2 + 0.032*(electronpt - 10.0);
+      }
+      else if(abs(electroneta) >= 0.8 && abs(electroneta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.1 + 0.025*(electronpt - 10.0);
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > -0.1 + 0.028*(electronpt - 10.0);
+      }
+    }
+    else if(electronpt >= 40.0){
+      if(abs(electroneta) < 0.8){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.68;
+      }
+      else if(abs(electroneta) >= 0.8 && abs(electroneta) < 1.479){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.475;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && mvaFall17V2noIso[index] > 0.32;
+      }
+      
+    }
+  }
+
+  if(year.compare("2018") == 0){  
+
+    if(normMvaIdScore > -1.0 && normMvaIdScore < 1.0){
+      // std::cout << "score between -1 and 1" << std::endl;
+      rawMvaIdScore = -0.5 * log( (1.0 - normMvaIdScore) / (1.0 + normMvaIdScore) );
+    }
+    else{
+      // std::cout << "score equal to -1 or 1" << std::endl;
+      rawMvaIdScore = normMvaIdScore * 99999.9;
+    }
+
+    // std::cout << "mvaFall17V2noIso (raw) = " << rawMvaIdScore << std::endl;
+
+    if(electronpt > 5.0 && electronpt <= 10.0){
+      passCutId = passCutId && mvaFall17V2noIso_WP80[index];
+    }
+    else if(electronpt > 10.0 && electronpt < 40.0){
+      if(abs(electroneta) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 4.277 + 0.112*(electronpt - 25.0);
+      }
+      else if(abs(electroneta) >= 0.8 && abs(electroneta) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 3.152 + 0.060*(electronpt - 25.0);
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 2.359 + 0.087*(electronpt - 25.0);
+      }
+    }
+    else if(electronpt >= 40.0){
+      if(abs(electroneta) < 0.8){
+        passCutId = passCutId && rawMvaIdScore > 4.277;
+      }
+      else if(abs(electroneta) >= 0.8 && abs(electroneta) < 1.479){
+        passCutId = passCutId && rawMvaIdScore > 3.152;
+      }
+      else if(abs(electroneta) >= 1.479 && abs(electroneta) < 2.5){
+        passCutId = passCutId && rawMvaIdScore > 2.359;
+      }
+      
+    }
+  }
+
+  return passCutId;
+
+}
+
+
+bool Electron::softSUSYElectronIDLooseNotTight(int index, float pt, float eta, std::string year){
+
+  bool passedCuts = true;
+
+  // Kinematic cuts
+  passedCuts = passedCuts && (pt >= 5.0) && (fabs(eta) <= 2.5);
+  passedCuts = passedCuts && ( fabs(eledxy[index]) < 0.05 ) && ( fabs(eledz[index]) < 0.1 );
+
+  // Selection: 3D impact parameter
+  passedCuts = passedCuts && ( eleip3d[index] < 0.0175 ) && ( elesip3d[index] < 2.5);
+
+  // Isolation requirements
+  passedCuts = passedCuts && (pfRelIso03_all[index] * pt < ( 20.0 + (300.0 / pt ) ) ); // absolute isolation
+  passedCuts = passedCuts && (pfRelIso03_all[index] < 1.0);
+
+  // Electron MVA custom ID
+  passedCuts = passedCuts && customSoftLooseEleMVAId(index, pt, eta, year);
+  
+  // Missing pixel hits
+  int missingPixelHits = static_cast<unsigned>(lostHits[index]);
+
+  passedCuts = passedCuts && (missingPixelHits == 0) && conversionVeto[index];
+
+  return passedCuts;
+
+} 
+
+bool Electron::softSUSYElectronIDTight(int index, float pt, float eta, std::string year){
+
+  bool passedCuts = true;
+
+  // Kinematic cuts
+  passedCuts = passedCuts && (pt >= 5.0) && (fabs(eta) <= 2.5);
+  passedCuts = passedCuts && ( fabs(eledxy[index]) < 0.05 ) && ( fabs(eledz[index]) < 0.1 );
+
+  // Selection: 3D impact parameter
+  passedCuts = passedCuts && ( eleip3d[index] < 0.01 ) && ( elesip3d[index] < 2.0);
+
+  // Isolation requirements
+  passedCuts = passedCuts && ( (pfRelIso03_all[index] * pt) < 5.0 ); // absolute isolation
+  passedCuts = passedCuts && ( pfRelIso03_all[index] < 0.5 ); // relative isolation
+
+  // Electron MVA custom ID
+
+  passedCuts = passedCuts && customSoftTightEleMVAId(index, pt, eta, year);
+
+  // Missing pixel hits
+  int missingPixelHits = static_cast<unsigned>(lostHits[index]);
+
+  passedCuts = passedCuts && (missingPixelHits == 0) && conversionVeto[index];
+
+  return passedCuts;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -501,10 +812,63 @@ Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
    SetBranch("Muon_isPFcand", isPFCand);
    SetBranch("Muon_isTracker", isTracker);
 
+  if(mu1.bfind("DoDiscrBySUSYSoftID") || mu2.bfind("DoDiscrBySUSYSoftID")){
+    SetBranch("Muon_pfRelIso03_all"  , pfRelIso03_all);
+    SetBranch("Muon_ip3d", muip3d);
+    SetBranch("Muon_sip3d", musip3d);
+    SetBranch("Muon_dxy", mudxy);
+    SetBranch("Muon_dz", mudz);
+    SetBranch("Muon_jetIdx", associatedJetIndex);
+  }
+
 }
 
 bool Muon::get_Iso(int index, double min, double max) const {
   return (pfRelIso03_all[index] >= min && pfRelIso03_all[index] < max);
+}
+
+bool Muon::softSUSYMuonIDLooseNotTight(int index, float pt, float eta){
+
+  bool passedCuts = true;
+
+  // Kinematic cuts
+  passedCuts = passedCuts && (pt > 3.5) && ( fabs(eta) <= 2.4 );
+  passedCuts = passedCuts && ( fabs(mudxy[index]) < 0.05 ) && ( fabs(mudz[index]) < 0.1 );
+
+  // Selection: 3D impact parameter
+  passedCuts = passedCuts && ( muip3d[index] < 0.0175 ) && ( musip3d[index] < 2.5);
+
+  // Isolation requirements
+  passedCuts = passedCuts && (pfRelIso03_all[index] * pt < ( 20.0 + (300.0 / pt ) ) ); // absolute isolation
+  passedCuts = passedCuts && (pfRelIso03_all[index] < 1.0);
+
+  // Soft and loose ID muon POG requirements
+  passedCuts = passedCuts && (loose[index]) && (soft[index]);
+
+  return passedCuts;
+
+} 
+
+bool Muon::softSUSYMuonIDTight(int index, float pt, float eta){
+
+  bool passedCuts = true;
+
+  // Kinematic cuts
+  passedCuts = passedCuts && (pt > 3.5) && ( fabs(eta) <= 2.4 );
+  passedCuts = passedCuts && ( fabs(mudxy[index]) < 0.05 ) && ( fabs(mudz[index]) < 0.1 );
+
+  // Selection: 3D impact parameter
+  passedCuts = passedCuts && ( muip3d[index] < 0.01 ) && ( musip3d[index] < 2.0);
+
+  // Isolation requirements
+  passedCuts = passedCuts && ( (pfRelIso03_all[index] * pt) < 5.0 ); // absolute isolation
+  passedCuts = passedCuts && ( pfRelIso03_all[index] < 0.5 ); // relative isolation
+
+  // Soft and loose ID muon POG requirements
+  passedCuts = passedCuts && (loose[index]) && (soft[index]);
+
+  return passedCuts;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

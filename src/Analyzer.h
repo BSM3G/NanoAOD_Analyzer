@@ -304,6 +304,7 @@ public:
   double maxIso, minIso;
   int leadIndex, maxCut, crbins=1;
   bool isData, isSignalMC, CalculatePUSystematics, doSystematics;
+  std::string runyear = "2016";
 
   float nTruePU = 0;
   int totalVertices = 0;
