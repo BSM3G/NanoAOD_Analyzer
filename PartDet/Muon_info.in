@@ -27,8 +27,10 @@ doEfficiencyPlots true
 EtaCut 2.5
 PtCut 8.0 9999.9
 
-DoDiscrByTightID 1
 DoDiscrBySoftID 0
+DoDiscrByLooseID 0
+DoDiscrByMediumID 0
+DoDiscrByTightID 1
 
 DoDiscrByIsolation 1
 IsoSumPtCutValue 0.0 0.15
@@ -52,8 +54,10 @@ MetMtCut 0. 9999.9
 EtaCut 2.5
 PtCut 8.0 9999.9
 
-DoDiscrByTightID 1
 DoDiscrBySoftID 0
+DoDiscrByLooseID 0
+DoDiscrByMediumID 0
+DoDiscrByTightID 1
 
 DoDiscrByIsolation 1
 IsoSumPtCutValue 0.0 0.15
