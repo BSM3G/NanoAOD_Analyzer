@@ -1,11 +1,11 @@
 #######################
-Gen
+         Gen
 #######################
 
 DiscrTauByPtAndEta false
 TauPtCut -10.0  10000.0 
 TauEtaCut 10.0
-DiscrTauByMotherID  1
+DiscrTauByMotherID  0
 TauMotherIDs   1000015. 1000015.
 DiscrTauByNotFromPileup false
 

@@ -59,6 +59,11 @@ DepGraph::DepGraph() {
   add_edge(cutint(CUTS::eDiTau), cutint(CUTS::eR1stJet), g);
   add_edge(cutint(CUTS::eDiTau), cutint(CUTS::eR2ndJet), g);
 
+  add_edge(cutint(CUTS::eDiPhoton), cutint(CUTS::eRPhot1), g);
+  add_edge(cutint(CUTS::eDiPhoton), cutint(CUTS::eRPhot2), g);
+  add_edge(cutint(CUTS::eDiPhoton), cutint(CUTS::eR1stJet), g);
+  add_edge(cutint(CUTS::eDiPhoton), cutint(CUTS::eR2ndJet), g);
+
   add_edge(cutint(CUTS::eDiJet), cutint(CUTS::eRJet1), g);
   add_edge(cutint(CUTS::eDiJet), cutint(CUTS::eRJet2), g);
   

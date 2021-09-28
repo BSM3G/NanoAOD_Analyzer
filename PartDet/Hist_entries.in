@@ -30,7 +30,7 @@ NTotalVertices	  100   0.  100.
 
 //------------------------------------------------//
 
-FillGen 0
+FillGen 1
 
 PUNTrueInt         99        0.       99. // nTruePU - change the number of bins accordingly for each year's datatset
 GenHT            4000        0.     4000.
@@ -104,10 +104,13 @@ GenVisHadTauDecayMode		16	  0.	  16.
 NGenVisHadTau				20   0.       20.
 
 GenZDiLepMass     1000  0.   5000.
-
+GenNeutralino2Mass 400  0. 400.
+GenNeutralino1Mass 400  0. 400.
+GenChargino1Mass   400  0. 400.
+GenStauMass        400  0. 400.
 //------------------------------------------------//
 
-FillTau1 0
+FillTau1 1
 
 NTau1                    20   0.      20.
 Tau1Energy             2000   0.    5000.
@@ -121,7 +124,7 @@ Tau1SeedTrackPt        2000   0.    5000.
 Tau1Charge               10  -5.       5.
 Tau1MetMt		 200  0.       1000.
 
-FillTau2 1
+FillTau2 0
 
 NTau2                    20   0.      20.
 Tau2Energy             2000   0.    5000.
@@ -187,6 +190,30 @@ Muon2MetMt              100   0      500
 
 //------------------------------------------------//
 
+FillPhoton1 1
+
+NPhoton1                   20   0.      20.
+Photon1Energy            2000   0.    5000.
+Photon1Pt                2000   0.    5000.
+Photon1Eta                 72  -3.6     +3.6
+FirstLeadingPhoton1Pt     400   0.    1000.
+FirstLeadingPhoton1Eta    144  -7.2     +7.2
+Photon1Phi                 36  -3.15    +3.15
+Photon1MetMt              100   0      500
+
+FillPhoton2 1
+
+NPhoton2                   20   0.      20.
+Photon2Energy            2000   0.    5000.
+Photon2Pt                2000   0.    5000.
+Photon2Eta                 72  -3.6     +3.6
+FirstLeadingPhoton2Pt     400   0.    1000.
+FirstLeadingPhoton2Eta    144  -7.2     +7.2
+Photon2Phi                 36  -3.15    +3.15
+Photon2MetMt              100   0      500
+
+//------------------------------------------------//
+
 FillJet1 1
 
 NJet1         20   0.    20.
@@ -194,6 +221,7 @@ Jet1Energy   200   0.   500.
 Jet1Pt       200   0.   500.
 Jet1Eta      100  -5.0   +5.0
 Jet1Phi      144  -6.3   +6.3
+Jet1AbsEta    50   0.0   -5.0
 
 FillJet2 1
 
@@ -202,6 +230,7 @@ Jet2Energy   200   0.   500.
 Jet2Pt       200   0.   500.
 Jet2Eta      100  -5.0   +5.0
 Jet2Phi      144  -6.3   +6.3
+Jet2AbsEta    50   0.0   -5.0
 
 FillBJet 1
 
@@ -211,12 +240,14 @@ BJetPt       200   0.    500.
 BJetEta       72  -3.6    +3.6
 BJetPhi       36  -3.15   +3.15
 BJetPtVsEta   100 -2.5 +2.5 500 0. 1000.
+BJetAbsEta    50   0.0   -5.0
 
 FillCentralJet 1
 
 NCentralJet      20   0.    20.
 CentralJetPt    200   0.   500.
 CentralJetEta   100  -5.0   +5.0
+CentralJetAbsEta    50   0.0   -5.0
 
 
 FillWJet 0
@@ -253,6 +284,8 @@ FirstLeadingJetPt     200   0.   1000.
 SecondLeadingJetPt    200   0.   1000.
 FirstLeadingJetEta    100  -5.      5.
 SecondLeadingJetEta   100  -5.      5.
+FirstLeadingJetAbsEta    50  0.      5.
+SecondLeadingJetAbsEta   50  0.      5.
 LeadingJetMass       1000   0    5000
 LeadSublDijetDphi      72   0      +3.15
 LeadingJetPt         1000   0    5000
@@ -391,6 +424,22 @@ DiTauRecoAbsCosDphiPtLeadLepandMet_nonzeroMt 	220 	0. 	1.
 Tau1MetDeltaPhiVsDiTauCosDphi    72     0    +3.15  220    -1.1   1.1
 DiTauZeta2D                     100     0   100     200  -100   100
 Tau1PtVsTau2Pt                  100     0   500     100     0   500
+
+//------------------------------------------------//
+
+FillDiPhoton 1
+
+DiPhotonDeltaR           200   0    10.
+DiPhotonDeltaEta         200   0    10.
+DiPhotonDeltaPhi          72   0    +3.15
+DiPhotonMass            1000   0  5000
+DiPhotonPt              1000   0  5000
+
+LargestDiPhotonMass        1000   0  5000
+LargestDiPhotonPt          1000   0  5000
+LargestDiPhotonEtaProduct     4  -2     2
+LargestDiPhotonDeltaR       200   0    10.
+LargestMassDiPhotonDeltaEta     200   0    10.
 
 //------------------------------------------------//
 

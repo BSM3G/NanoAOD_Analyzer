@@ -190,6 +190,15 @@ void Particle::getPartStats(std::string filename) {
 
 
 Photon::Photon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_names, std::string year) : Particle(_BOOM, "Photon", filename, syst_names) {
+
+  auto& phot1 = pstats["Photon1"];
+  auto& phot2 = pstats["Photon2"];
+
+  std::bitset<8> tmp(phot1.dmap.at("DiscrByCBID"));
+  cbIDphot1=tmp;
+  tmp=phot2.dmap.at("DiscrByCBID");
+  cbIDphot2=tmp;
+
   SetBranch("Photon_hoe", hoverE);
   SetBranch("Photon_r9", phoR);
   SetBranch("Photon_sieie", sigmaIEtaIEta);
@@ -197,6 +206,18 @@ Photon::Photon(TTree* _BOOM, std::string filename, std::vector<std::string> syst
   SetBranch("Photon_pfRelIso03_chg", pfIso_chg);
   SetBranch("Photon_electronVeto", eleVeto);
   SetBranch("Photon_pixelSeed", hasPixelSeed);
+  if(_BOOM->FindBranch("Photon_cutBasedBitmap") != 0){
+      SetBranch("Photon_cutBasedBitmap", cutBasedID); // Photon_cutBasedBitmap = NanoAODv6, Photon_cutBased = NanoAODv7
+  }
+  if(_BOOM->FindBranch("Photon_cutBased") != 0){
+      SetBranch("Photon_cutBased", cutBasedID); // Photon_cutBasedBitmap = NanoAODv6, Photon_cutBased = NanoAODv7
+  }
+  SetBranch("Photon_mvaID_WP80", mvaID_WP80);
+  SetBranch("Photon_mvaID_WP90", mvaID_WP90);
+}
+
+bool Photon::get_Iso(int index, double min, double max) const {
+  return (pfIso_all[index] >= min && pfIso_all[index] < max);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -461,6 +482,12 @@ Muon::Muon(TTree* _BOOM, std::string filename, std::vector<std::string> syst_nam
      }
   if(mu1.bfind("DoDiscrBySoftID") || mu2.bfind("DoDiscrBySoftID")) {
     SetBranch("Muon_softId", soft);
+  }
+  if(mu1.bfind("DoDiscrByLooseID") || mu2.bfind("DoDiscrByLooseID")) {
+    SetBranch("Muon_looseId", loose);
+  }
+  if(mu1.bfind("DoDiscrByMediumID") || mu2.bfind("DoDiscrByMediumID")) {
+    SetBranch("Muon_mediumId", medium);
   }
   if(mu1.bfind("DoDiscrByIsolation") || mu2.bfind("DoDiscrByIsolation")) {
     SetBranch("Muon_miniPFRelIso_all", miniPFRelIso_all);

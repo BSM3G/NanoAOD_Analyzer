@@ -38,7 +38,6 @@ struct CRTester;
 #include "DepGraph.h"
 #include "JetScaleResolution.h"
 #include "JetRecalibrator.h"
-#include "L1ECALPrefiringWgtProd.h"
 #include "CondFormats/JetMETObjects/interface/JetResolution.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
@@ -110,7 +109,6 @@ public:
 
   void read_info(std::string);
   void setupGeneral(std::string);
-  void setupEventGeneral(int);
   void getTriggerBranchesList(CUTS, std::string, bool);
   bool passGenHTFilter(float);
   bool passGenMassFilterZ(float mass_lowbound, float mass_upbound);
@@ -123,12 +121,14 @@ public:
   bool additionalEENoiseEventVeto(const PartStats&, std::string, std::string);
   bool passJetVetoEEnoise2017(int);
 
-  bool skimSignalMC(int);
-  std::string inputSignalModel="", inputSignalMassParam="";
+  bool skimSignalMC();
+  std::string inputSignalModel="", inputSignalMassParam="", inputC1Mass="", inputN2Mass="", inputN1Mass="", inputStauMass="";
+  std::string inputC1_pdgID="", inputN2_pdgID="", inputN1_pdgID="", inputStau_pdgID="";
   bool finalInputSignal = false;
 
   void smearLepton(Lepton&, CUTS, const PartStats&, const PartStats&, int syst=0);
   void smearTaus(Lepton&, const PartStats&, const PartStats&, int syst=0);
+  void smearPhotons(Photon&, CUTS, const PartStats&, const PartStats&, int syst=0);
   //void smearJet(Particle&, CUTS, const PartStats&, int syst=0);
   void smearJetRes(Particle&, CUTS, const PartStats&, int syst=0);
 
@@ -149,13 +149,16 @@ public:
   TLorentzVector getGenVisibleTau4Vector(int, int);
   void getGoodGen(const PartStats&);
   std::unordered_map<int, int> genMotherPartIndex;
+  std::vector<int> genSUSYPartIndex, genSUSYPartIndexStau;
   void getGoodRecoLeptons(const Lepton&, const CUTS, const CUTS, const PartStats&, const int);
+  void getGoodRecoPhotons(const Photon&, const CUTS, const CUTS, const PartStats&, const int);
   void getGoodRecoJets(CUTS, const PartStats&, const int);
   void getGoodRecoLeadJets(CUTS, const PartStats&, const int);
   void getGoodRecoBJets(CUTS, const PartStats&, const int); //01.16.19
   void getGoodRecoFatJets(CUTS, const PartStats&, const int);
 
   void getGoodLeptonCombos(Lepton&, Lepton&, CUTS, CUTS, CUTS, const PartStats&, const int);
+  void getGoodPhotonCombos(const PartStats&, const int);
   double CalculateDiLepMassDeltaPt(const TLorentzVector&, const TLorentzVector&, const float, const float);
   void getGoodLeptonJetCombos(Lepton&, Jet&, CUTS, CUTS, CUTS, const PartStats&, const int);
   void getGoodDiJets(const PartStats&, const int);
@@ -291,7 +294,7 @@ public:
   std::vector<std::string> trigger1BranchesList, trigger2BranchesList;
   bool triggerDecision = false;
   std::vector<std::string> inputTrigger1Names, inputTrigger2Names; // Brenda: This will take the triggers from the configuration file Run_info.in
-  std::vector<bool> trigger1namedecisions, trigger2namedecisions; // Brenda
+  std::vector<bool*> trigger1namedecisions, trigger2namedecisions; // Brenda
   std::vector<int> cuts_per, cuts_cumul;
 
   std::vector<std::pair<double, int> > jetPtIndexVector;
