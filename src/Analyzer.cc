@@ -3461,7 +3461,6 @@ bool Analyzer::passJetVetoEEnoise2017(int jet_index){
 
    // Check if this jet is in the problematic pt-eta region: if yes, then jet does not pass the veto requirement
    if(jet_rawPt < 50.0 && (abs(jet_RecoP4.Eta()) > 2.65 && abs(jet_RecoP4.Eta()) < 3.139)){
-    //std::cout << "Jet in the EE noisy region, throwing it out." << std::endl;
     return false;
    }
    // Otherwise, return true (passes the veto)
@@ -3483,13 +3482,7 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
   int i=0;
 
   for(auto lvec: *_Jet) {
-    /*
-    if(ePos == CUTS::eR1stJet || ePos == CUTS::eR2ndJet){
-      if(ePos == CUTS::eR1stJet) std::cout << "I'm selecting leading jet" << std::endl;
-      else if(ePos == CUTS::eR2ndJet) std::cout << "I'm selecting the second leading jet" << std::endl;
-      break;
-    }
-    */
+
     bool passCuts = true;
     double dphi1rjets = normPhi(lvec.Phi() - _MET->phi());
     if(ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
@@ -3503,8 +3496,6 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
-      // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-      // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
       else if(cut == "ApplyLooseID"){
         if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
           if(!stats.bfind("FailPUJetID")){
@@ -3559,33 +3550,6 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
 
   }
 
-  //clean up for first and second jet
-  //note the leading jet has to be selected fist!
-  /*
-  if(ePos == CUTS::eR1stJet || ePos == CUTS::eR2ndJet) {
-
-    std::cout << "Number of selected good jets: " << active_part->at(CUTS::eRJet1).size() << std::endl;
-
-    std::vector<std::pair<double, int> > ptIndexVector;
-    for(auto it : *active_part->at(CUTS::eRJet1)) {
-      ptIndexVector.push_back(std::make_pair(_Jet->pt(it),it));
-      std::cout << "Filling ptIndexVector with jet #" << it << ", pt = " << _Jet->pt(it) << std::endl;
-    }
-    sort(ptIndexVector.begin(),ptIndexVector.end());
-    std::cout << " ----- Sorted ptIndexVector: " << std::endl;
-    for(size_t i = 0; i < ptIndexVector.size(); i++){
-      std::cout << "Jet #" << ptIndexVector.at(i).second << ", pt = " << ptIndexVector.at(i).first << std::endl;
-    }
-    if(ePos == CUTS::eR1stJet && ptIndexVector.size()>0){
-      std::cout << "Leading jet is #" << ptIndexVector.back().second << ", with pt = " << ptIndexVector.back().first << std::endl;
-      active_part->at(ePos)->push_back(ptIndexVector.back().second);
-    }
-    else if(ePos == CUTS::eR2ndJet && ptIndexVector.size()>1){
-      std::cout << "Second leading jet is #" << ptIndexVector.at(ptIndexVector.size()-2).second << ", with pt = " << ptIndexVector.at(ptIndexVector.size()-2).first << std::endl;
-      active_part->at(ePos)->push_back(ptIndexVector.at(ptIndexVector.size()-2).second);
-    }
-  }
-  */
 }
 
 void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int syst) {
