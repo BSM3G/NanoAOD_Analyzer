@@ -857,14 +857,14 @@ bool Muon::softSUSYMuonIDTight(int index, float pt, float eta){
 
   // Kinematic cuts
   passedCuts = passedCuts && (pt > 3.5) && ( fabs(eta) <= 2.4 );
-  passedCuts = passedCuts && ( fabs(mudxy[index]) < 0.05 ) && ( fabs(mudz[index]) < 0.1 );
+  // passedCuts = passedCuts && ( fabs(mudxy[index]) < 0.05 ) && ( fabs(mudz[index]) < 0.1 );
 
   // Selection: 3D impact parameter
-  passedCuts = passedCuts && ( muip3d[index] < 0.01 ) && ( musip3d[index] < 2.0);
+  // passedCuts = passedCuts && ( muip3d[index] < 0.01 ) && ( musip3d[index] < 2.0);
 
-  // Isolation requirements
-  passedCuts = passedCuts && ( (pfRelIso03_all[index] * pt) < 5.0 ); // absolute isolation
-  passedCuts = passedCuts && ( pfRelIso03_all[index] < 0.5 ); // relative isolation
+  // Isolation requirements -- commented on Nov 23, 2021 to do tests for mu+tauh channels.
+  // passedCuts = passedCuts && ( (pfRelIso03_all[index] * pt) < 5.0 ); // absolute isolation
+  // passedCuts = passedCuts && ( pfRelIso03_all[index] < 0.5 ); // relative isolation
 
   // Soft and loose ID muon POG requirements
   passedCuts = passedCuts && (loose[index]) && (soft[index]);

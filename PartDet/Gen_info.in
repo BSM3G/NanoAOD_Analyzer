@@ -5,9 +5,9 @@
 DiscrTauByPtAndEta false
 TauPtCut -10.0  10000.0 
 TauEtaCut 10.0
-DiscrTauByMotherID  0
-TauMotherIDs   1000015. 1000015.
-DiscrTauByNotFromPileup false
+DiscrTauByMotherID  1
+TauMotherIDs   23. 24.
+DiscrTauByNotFromPileup true
 
 DiscrElecByPtAndEta   false
 ElecPtCut  -10.0    100000.0
@@ -19,9 +19,9 @@ DiscrElecByNotFromPileup false
 DiscrMuonByPtAndEta   false
 MuonPtCut   -10.0   100000.0
 MuonEtaCut   10.0
-DiscrMuonByMotherID   0
-MuonMotherIDs    15.   15.
-DiscrMuonByNotFromPileup false
+DiscrMuonByMotherID   1
+MuonMotherIDs   15. 23. 24.
+DiscrMuonByNotFromPileup true
 
 DiscrHadTauByPtAndEta false
 HadTauPtCut   18.0  9999.9

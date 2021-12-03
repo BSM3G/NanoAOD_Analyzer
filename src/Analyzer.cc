@@ -3106,10 +3106,23 @@ void Analyzer::getGoodGen(const PartStats& stats) {
 
       } else if(particle_id == 13){
 
-         if(stats.bfind("DiscrMuonByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("MuonPtCut").first || _Gen->pt(j) > stats.pmap.at("MuonPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("MuonEtaCut"))) continue;
-         if(stats.bfind("DiscrMuonByNotFromPileup") && (og_motherpart_idx != 0) && (og_motherpart_idx != 1) ) continue;
-         if(stats.bfind("DiscrMuonByMotherID") && (mother_pid != stats.pmap.at("MuonMotherIDs").first) && (mother_pid != stats.pmap.at("MuonMotherIDs").second) ) continue;
-      }
+        if(stats.bfind("DiscrMuonByPtAndEta") &&  (_Gen->pt(j) < stats.pmap.at("MuonPtCut").first || _Gen->pt(j) > stats.pmap.at("MuonPtCut").second || abs(_Gen->eta(j)) > stats.dmap.at("MuonEtaCut"))) continue;
+        if(stats.bfind("DiscrMuonByNotFromPileup") && (og_motherpart_idx != 0) && (og_motherpart_idx != 1) ) continue;
+        // if(stats.bfind("DiscrMuonByMotherID") && (mother_pid != stats.pmap.at("MuonMotherIDs").first) && (mother_pid != stats.pmap.at("MuonMotherIDs").second) ) continue;
+        if(stats.bfind("DiscrMuonByMotherID")){
+            int passMotherIDreq = 0;
+            for(size_t j=0; j<stats.vmap.at("MuonMotherIDs").size(); j++){
+               // std::cout << "Mother ID reqirement #" << i << ": " << stats.vmap.at("MuonMotherIDs").at(i) << std::endl;
+               if( mother_pid != stats.vmap.at("MuonMotherIDs").at(j) ) continue;
+               passMotherIDreq++;
+            }
+            if(passMotherIDreq < 1) continue;
+        }
+      }/* else if(particle_id == 23){
+        if(stats.bfind("DiscrZByMotherID") && (mother_pid != stats.pmap.at("ZMotherIDs").first) && (mother_pid != stats.pmap.at("ZMotherIDs").second) ) continue;
+      }  else if(particle_id == 24){
+        if(stats.bfind("DiscrWByMotherID") && (mother_pid != stats.pmap.at("WMotherIDs").first) && (mother_pid != stats.pmap.at("WMotherIDs").second) ) continue;
+      }*/
 
       active_part->at(genMaper.at(particle_id)->ePos)->push_back(j);
       genMotherPartIndex[j] = motherpart_idx;
@@ -3316,7 +3329,7 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
           if(stats.bfind("ApplyLooseNotTightID")){
             passCuts = passCuts && _Muon->softSUSYMuonIDLooseNotTight(i, lvec.Pt(), lvec.Eta());
           } else if(stats.bfind("ApplyTightID")){
-            passCuts = passCuts && (_Muon->softSUSYMuonIDTight(i, lvec.Pt(), lvec.Eta() )); 
+            passCuts = passCuts && (_Muon->softSUSYMuonIDTight(i, lvec.Pt(), lvec.Eta())); 
             // Additional b-jet veto
             int mujetidx = _Muon->associatedJetIndex[i];
             if(mujetidx != -1) passCuts = passCuts && (_Jet->passAddBJetVetoSoftSusyLeptonID(mujetidx, _Jet->pt(mujetidx), _Jet->eta(mujetidx), runyear));
@@ -5218,9 +5231,16 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       }
       histAddVal(_Gen->energy(*it), "TauEnergy");
       histAddVal(_Gen->pt(*it), "TauPt");
+      histAddVal(_Gen->p4(*it).Pz(), "TauPz");
       histAddVal(_Gen->eta(*it), "TauEta");
       histAddVal(_Gen->phi(*it), "TauPhi");
       histAddVal(_Gen->pdg_id[genMotherPartIndex.at(*it)], "TauMotherPID");
+
+      // Decay length of the tau lepton c*t0 = 87.09 um = 87.09e-4 cm
+      histAddVal( ( (_Gen->p4(*it).Vect().Mag() * 87.09e-4 ) / 1.777), "TauIP3D");
+      histAddVal( ( (_Gen->p4(*it).Pt() * 87.09e-4) / 1.777 ), "TauDz");
+      histAddVal( ( (_Gen->p4(*it).Pz() * 87.09e-4) / 1.777), "TauDxy");
+
       for(vec_iter it2=it+1; it2!=active_part->at(CUTS::eGTau)->end(); it2++) {
         histAddVal(diParticleMass(_Gen->p4(*it),_Gen->p4(*it2), "none"), "DiTauMass");
       }
@@ -5277,6 +5297,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       histAddVal(_Gen->eta(it), "MuonEta");
       histAddVal(_Gen->phi(it), "MuonPhi");
       histAddVal(_Gen->pdg_id[genMotherPartIndex.at(it)], "MuonMotherPID");
+      histAddVal(_Gen->pdg_id[_Gen->genPartIdxMother[genMotherPartIndex.at(it)]], "MuonGrandMotherPID");
     }
     histAddVal(active_part->at(CUTS::eGMuon)->size(), "NMuon");
 
@@ -5479,6 +5500,14 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
           histAddVal(genPartonFlavor, "GenMatchingStatus")
         }
       }
+
+      if(part->type == PType::Muon){
+        histAddVal(_Muon->muip3d[it],  "ip3d");
+        histAddVal(_Muon->musip3d[it], "sip3d");
+        histAddVal(_Muon->mudxy[it],   "dxy");
+        histAddVal(_Muon->mudz[it],    "dz");
+      }
+
       if(part->type != PType::Jet) {
         histAddVal(calculateLeptonMetMt(part->p4(it)), "MetMt");
       }

@@ -5,7 +5,7 @@
 DiscrByDeltaR  1
 DeltaRCut      0.3 
 
-DiscrByOSLSType  LS
+DiscrByOSLSType  OS
 
 DiscrByCosDphi	 0				# dPhi is calculated between Muon1 and Tau1 
 CosDphiCut 	 -1.00   -0.95

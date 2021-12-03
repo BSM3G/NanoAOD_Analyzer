@@ -2,7 +2,9 @@
             SignalMC
 ####################################
 
-ModelTag VBF_EWKino_StauDominated
+# ModelTag VBF_EWKino_StauDominated
+ModelTag VBF_EWKino_WZ
+# ModelTag VBF_EWKino_DemocraticSlepton_mChargino
 
 C1_pdgID 1000024 #Chargino1
 C1Mass 300
@@ -16,3 +18,27 @@ N1Mass 250
 Stau_pdgID 1000015 #Stau
 StauMass 275
 
+FilterByBranchName true
+# MassParameters 300_297p50_295p00
+# MassParameters 300_295p00_290p00
+# MassParameters 300_290p00_280p00
+# MassParameters 300_285p00_270p00
+# MassParameters 300_275p00_250p00
+# MassParameters 300_270p00_240p00
+# MassParameters 300_262p50_225p00
+
+# MassParameters 300_299p50
+# MassParameters 300_299p00
+# MassParameters 300_295p00
+# MassParameters 300_290p00
+# MassParameters 300_280p00
+# MassParameters 300_270p00
+MassParameters 300_250p00
+
+# MassParameters 250to300_300_299p50
+# MassParameters 250to300_300_295p00
+# MassParameters 250to300_300_290p00
+# MassParameters 250to300_300_280p00
+# MassParameters 250to300_300_270p00
+# MassParameters 250to300_300_250p00
+# MassParameters 250to300_300_225p00

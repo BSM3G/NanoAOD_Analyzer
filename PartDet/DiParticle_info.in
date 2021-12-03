@@ -139,25 +139,6 @@ DiLeadMassDeltaPtCut   0.0   9000.0
 # DiscrByCosDphi_DeltaPtAndMet   false
 # CosDphi_DeltaPtMetCut  0.8  1.0
 
-########################################
-               DiPhoton
-#######################################
-
-DiscrByDeltaR true
-DeltaRCut 0.4
-
-DiscrByDeltaEta      false
-DeltaEtaCut         0.0  9999.0
-
-DiscrByDeltaPhi      false
-DeltaPhiCut         0    9999.0
-
-DiscrByCosDphi false
-CosDphiCut  -1.00 -0.80
-
-DiscrByMassReco false
-MassCut 0.0 9999.0
-
 #########################################
                DiJet
 #####################################
@@ -176,7 +157,7 @@ DiscrByOSEta true
 DiscrByCosDphi false
 CosDphiCut  -1.00 -0.80
 
-DiscrByMassReco false
+DiscrByMassReco true
 MassCut 500.0 9999.0
 
 RejectForwardDiJetPairs false

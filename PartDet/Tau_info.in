@@ -33,8 +33,8 @@ TauIDAlgorithm Tau_idDeepTau2017v2p1
 
 //RECO CUTS///
 
-EtaCut 2.5
-PtCut 20.0 9999.9
+EtaCut 2.1
+PtCut 20.0 70.0
 
 DoDzCut false
 DzCutThreshold 0.2
@@ -95,7 +95,7 @@ GenMatchingStatusRange 3  5
 //----RECO CUTS----////
 
 EtaCut 2.5
-PtCut 20.0 9999.9
+PtCut 70.0 9999.9
 
 DoDzCut false
 DzCutThreshold 0.2

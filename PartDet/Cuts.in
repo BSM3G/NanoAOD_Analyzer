@@ -29,25 +29,25 @@ NGenHiggs	0  -1
 NGenTau		0  -1
 
 ***NRecoVertex        1   -1  
-***NRecoTriggers1     1  -1 
-***NRecoPhoton1          2    -1
-***NRecoPhoton2          1    -1
-***METCut             1   -1
+***NRecoMuon1         1   -1
+***NRecoTau1          1    1
+***NMuon1Tau1Combinations        1   -1
 
-***NRecoMuon1         0    0
-***NRecoTau1          0    0
+
+***NRecoMuon2         0    0
+***NRecoTau2          0    0
 ***NRecoElectron1     0    0
+NRecoElectron2	      0    0
 ***NRecoBJet          0    0    
+
+***METCut             1   -1
 
 ***NRecoJet1	      1   -1   
 ***NRecoJet2	      2   -1   
 ***NDiJetCombinations 1   -1
 
-NRecoMuon2            0    -1
-NRecoTau2             0    -1
-NRecoElectron2	      0    -1
+***NRecoTriggers1     1   -1 
 
-NMuon1Tau1Combinations   0   -1
 NRecoCentralJet	      0   -1
 NRecoTriggers2	      0   -1           ///only 0 or 1
 NRecoSecondLeadingJet 0   -1    ///only 0 or 1
