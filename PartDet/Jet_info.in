@@ -95,6 +95,48 @@ Apply2017EEnoiseVeto false
 DiscrByDPhiMet 0
 DPhiMetCut 0.0 0.5
 
+########################################
+	        Jet3
+#######################################
+
+EtaCut 0. 4.7
+PtCut 30.0
+
+ApplyLooseID 1
+ApplyTightID 0
+ApplyTightLepVetoID 0
+
+ApplyPileupJetID 1
+# WPs: tight = 0, medium = 1, loose = 2 
+PUJetIDCut 0
+FailPUJetID 0
+
+RemoveOverlapWithMuon1s 1
+RemoveOverlapWithMuon2s 1
+Muon1MatchingDeltaR  0.4
+Muon2MatchingDeltaR  0.4
+
+RemoveOverlapWithElectron1s 1
+RemoveOverlapWithElectron2s 1
+Electron1MatchingDeltaR  0.4
+Electron2MatchingDeltaR  0.4
+
+RemoveOverlapWithTau1s 1
+RemoveOverlapWithTau2s 1
+Tau1MatchingDeltaR  0.4
+Tau2MatchingDeltaR 0.4
+
+RemoveOverlapWithJs 0
+JMatchingDeltaR 0.8
+
+RemoveOverlapWithBs 0
+BJMatchingDeltaR 0.4
+
+Apply2017EEnoiseVeto false
+
+DiscrByDPhiMet 0
+DPhiMetCut 0.0 0.5
+
 ####################################
           CentralJet
 ###################################

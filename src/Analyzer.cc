@@ -41,7 +41,7 @@ const std::vector<CUTS> Analyzer::genCuts = {
 };
 
 const std::vector<CUTS> Analyzer::jetCuts = {
-  CUTS::eRJet1,  CUTS::eRJet2,   CUTS::eRCenJet,
+  CUTS::eRJet1,  CUTS::eRJet2, CUTS::eRJet3,  CUTS::eRCenJet,
   CUTS::eR1stJet, CUTS::eR2ndJet, CUTS::eRBJet
 };
 
@@ -62,6 +62,7 @@ const std::unordered_map<std::string, CUTS> Analyzer::cut_num = {
   {"NRecoTau1", CUTS::eRTau1},                          {"NRecoTau2", CUTS::eRTau2},
   {"NRecoJet1", CUTS::eRJet1},                          {"NRecoJet2", CUTS::eRJet2},
   {"NRecoCentralJet", CUTS::eRCenJet},                  {"NRecoBJet", CUTS::eRBJet},
+  {"NRecoJet3", CUTS::eRJet3},                          {"QCDRejection", CUTS::eQCDRejection},
   {"NRecoTriggers1", CUTS::eRTrig1},                    {"NRecoTriggers2", CUTS::eRTrig2},
   {"NRecoFirstLeadingJet", CUTS::eR1stJet},             {"NRecoSecondLeadingJet", CUTS::eR2ndJet},
   {"NDiMuonCombinations", CUTS::eDiMuon},               {"NDiElectronCombinations", CUTS::eDiElec},
@@ -345,6 +346,7 @@ void Analyzer::create_fillInfo() {
 
   fillInfo["FillJet1"] =       new FillVals(CUTS::eRJet1, FILLER::Single, _Jet);
   fillInfo["FillJet2"] =       new FillVals(CUTS::eRJet2, FILLER::Single, _Jet);
+  fillInfo["FillJet3"] =       new FillVals(CUTS::eRJet3, FILLER::Single, _Jet);
   fillInfo["FillBJet"] =       new FillVals(CUTS::eRBJet, FILLER::Single, _Jet);
   fillInfo["FillCentralJet"] = new FillVals(CUTS::eRCenJet, FILLER::Single, _Jet);
   fillInfo["FillWJet"] =       new FillVals(CUTS::eRWjet, FILLER::Single, _FatJet);
@@ -730,15 +732,18 @@ bool Analyzer::skimSignalMC(){
   finalInputSignal = true;
   double epsilon = 0.0001;
 
-  for (unsigned i=0; i < genSUSYPartIndex.size(); i++){
-
-    if(inputSignalModel.find("Stau") != std::string::npos){
-      // This is an extra if in case we're analyzing stau dominated samples, which not always contain a chargino1/neutralino2 particle in the event
+  // This is an extra if in case we're analyzing stau dominated samples, which not always contain a chargino1/neutralino2 particle in the event
+  if(inputSignalModel.find("Stau") != std::string::npos){
+    for(unsigned i=0; i < genSUSYPartIndexStau.size(); i++){
       if (abs(_Gen->pdg_id[genSUSYPartIndexStau[i]]) == std::stoi(inputStau_pdgID) && (abs(_Gen->mass(genSUSYPartIndexStau[i]) - std::stod(inputStauMass)) > epsilon)){ 
         finalInputSignal = false;
         break;
       }
     }
+  }
+
+  for (unsigned i=0; i < genSUSYPartIndex.size(); i++){
+
     if (abs(_Gen->pdg_id[genSUSYPartIndex[i]]) == std::stoi(inputN2_pdgID) && (abs(_Gen->mass(genSUSYPartIndex[i]) - std::stod(inputN2Mass)) > epsilon)){ 
       finalInputSignal = false;
       break;
@@ -951,6 +956,7 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoBJets(CUTS::eRBJet, _Jet->pstats["BJet"],syst); //01.16.19
   getGoodRecoJets(CUTS::eRJet1, _Jet->pstats["Jet1"],syst);
   getGoodRecoJets(CUTS::eRJet2, _Jet->pstats["Jet2"],syst);
+  getGoodRecoJets(CUTS::eRJet3, _Jet->pstats["Jet3"],syst);
   getGoodRecoJets(CUTS::eRCenJet, _Jet->pstats["CentralJet"],syst);
   getGoodRecoLeadJets(CUTS::eR1stJet, _Jet->pstats["FirstLeadingJet"],syst);
   getGoodRecoLeadJets(CUTS::eR2ndJet, _Jet->pstats["SecondLeadingJet"],syst);
@@ -991,6 +997,9 @@ void Analyzer::getGoodParticles(int syst){
 
   ////Dijet cuts
   getGoodDiJets(distats["DiJet"],syst);
+
+  // QCD rejection by min(|deltaPhi(j,MET)|) cut
+  rejectQCDByMinAbsDeltaPhiJetMet(CUTS::eQCDRejection, CUTS::eRJet3, syst);
 
 }
 
@@ -3739,6 +3748,33 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
   }
 }
 
+void Analyzer::rejectQCDByMinAbsDeltaPhiJetMet(CUTS ePos, CUTS ejet, const int syst){
+  if(! neededCuts.isPresent(ePos)) return;
+  
+  if( !distats["Run"].bfind("DiscrByMinAbsDPhiQCD") ){
+    active_part->at(ePos)->push_back(1);
+    return;
+  }
+
+  float minAbsDPhi = 9999.9;
+  bool passCuts = true;
+
+  TLorentzVector jet4vector(0,0,0,0);
+  for(auto it: *active_part->at(ejet)){
+    jet4vector = _Jet->p4(it);
+    float absDeltaPhiJetMet = absnormPhi(jet4vector.Phi() - _MET->phi());
+    std::cout << "Jet #" << it << ": absDeltaPhiJetMet = " << absDeltaPhiJetMet << std::endl;
+    if(absDeltaPhiJetMet < minAbsDPhi){
+      minAbsDPhi = absDeltaPhiJetMet;
+    }
+  }
+
+  std::cout << "minimum deltaPhi(j,MET) = " << minAbsDPhi << std::endl;
+  passCuts = passCuts && passCutRange(minAbsDPhi, distats["Run"].pmap.at("MinAbsDPhiJetMetCut"));
+
+  if(passCuts) active_part->at(ePos)->push_back(1);
+
+}
 
 void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int syst) { //01.16.19
   if(! neededCuts.isPresent(ePos)) return;

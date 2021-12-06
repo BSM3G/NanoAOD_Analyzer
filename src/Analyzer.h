@@ -166,6 +166,7 @@ public:
   void VBFTopologyCut(const PartStats&, const int);
   void fastTriggerCuts(CUTS);
   void TriggerCuts(CUTS);
+  void rejectQCDByMinAbsDeltaPhiJetMet(CUTS, CUTS, const int);
 
   inline bool passCutRangeAbs(std::string, double, const PartStats&);
   bool passCutRangeAbs(double, const std::pair<double, double>&);
