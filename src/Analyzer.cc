@@ -57,6 +57,7 @@ const std::unordered_map<std::string, CUTS> Analyzer::cut_num = {
   {"NGenBJet", CUTS::eGBJet},                           {"NGenHadTau", CUTS::eGHadTau},
   {"NMatchedGenHadTau", CUTS::eGMatchedHadTau},         {"NGenPhoton", CUTS::eGPhoton},
   {"NRecoMuon1", CUTS::eRMuon1},                        {"NRecoMuon2", CUTS::eRMuon2},
+  {"NRecoMuon3", CUTS::eRMuon3},
   {"NRecoElectron1", CUTS::eRElec1},                    {"NRecoElectron2",CUTS::eRElec2},
   {"NRecoPhoton1", CUTS::eRPhot1},                      {"NRecoPhoton2",CUTS::eRPhot2},
   {"NRecoTau1", CUTS::eRTau1},                          {"NRecoTau2", CUTS::eRTau2},
@@ -339,6 +340,7 @@ void Analyzer::create_fillInfo() {
   fillInfo["FillTau2"] =       new FillVals(CUTS::eRTau2, FILLER::Single, _Tau);
   fillInfo["FillMuon1"] =      new FillVals(CUTS::eRMuon1, FILLER::Single, _Muon);
   fillInfo["FillMuon2"] =      new FillVals(CUTS::eRMuon2, FILLER::Single, _Muon);
+  fillInfo["FillMuon3"] =      new FillVals(CUTS::eRMuon3, FILLER::Single, _Muon);
   fillInfo["FillElectron1"] =  new FillVals(CUTS::eRElec1, FILLER::Single, _Electron);
   fillInfo["FillElectron2"] =  new FillVals(CUTS::eRElec2, FILLER::Single, _Electron);
   fillInfo["FillPhoton1"] =  new FillVals(CUTS::eRPhot1, FILLER::Single, _Photon);
@@ -386,6 +388,7 @@ void Analyzer::create_fillInfo() {
   fillInfo["FillTauEfficiency2"] =       new FillVals(CUTS::eRTau2, FILLER::Single, _Tau);
   fillInfo["FillMuonEfficiency1"] =      new FillVals(CUTS::eRMuon1, FILLER::Single, _Muon);
   fillInfo["FillMuonEfficiency2"] =      new FillVals(CUTS::eRMuon2, FILLER::Single, _Muon);
+  fillInfo["FillMuonEfficiency3"] =      new FillVals(CUTS::eRMuon3, FILLER::Single, _Muon);
   fillInfo["FillElectronEfficiency1"] =  new FillVals(CUTS::eRElec1, FILLER::Single, _Electron);
   fillInfo["FillElectronEfficiency2"] =  new FillVals(CUTS::eRElec2, FILLER::Single, _Electron);
   fillInfo["FillJetEfficiency1"] =       new FillVals(CUTS::eRJet1, FILLER::Single, _Jet);
@@ -949,6 +952,7 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoLeptons(*_Electron, CUTS::eRElec2, CUTS::eGElec, _Electron->pstats["Elec2"],syst);
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon1, CUTS::eGMuon, _Muon->pstats["Muon1"],syst);
   getGoodRecoLeptons(*_Muon, CUTS::eRMuon2, CUTS::eGMuon, _Muon->pstats["Muon2"],syst);
+  getGoodRecoLeptons(*_Muon, CUTS::eRMuon3, CUTS::eGMuon, _Muon->pstats["Muon3"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau1, CUTS::eGHadTau, _Tau->pstats["Tau1"],syst);
   getGoodRecoLeptons(*_Tau, CUTS::eRTau2, CUTS::eGHadTau, _Tau->pstats["Tau2"],syst);
   getGoodRecoPhotons(*_Photon, CUTS::eRPhot1, CUTS::eGPhoton, _Photon->pstats["Photon1"], syst);

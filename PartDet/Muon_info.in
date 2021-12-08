@@ -71,3 +71,30 @@ MetDphiCut 0.0 3.15
 
 DiscrByMetMt 0
 MetMtCut 0. 9999.9
+
+////////////////////////////////
+             Muon3
+///////////////////////////////
+
+//----RECO CUTS----//
+
+EtaCut 2.5
+PtCut 3.0 30.0
+
+DoDiscrBySoftID 0
+DoDiscrByLooseID 0
+DoDiscrByMediumID 0
+DoDiscrByTightID 1
+
+DoDiscrByIsolation 1
+IsoSumPtCutValue 0.0 0.15
+
+//----MET TOPOLOGY CUTS----//
+
+DiscrIfIsZdecay 0
+
+DiscrByMetDphi 0
+MetDphiCut 0.0 3.15
+
+DiscrByMetMt 0
+MetMtCut 0. 9999.9

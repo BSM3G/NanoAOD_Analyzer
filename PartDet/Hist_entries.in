@@ -190,6 +190,17 @@ FirstLeadingMuon2Eta    144  -7.2     +7.2
 Muon2Phi                 36  -3.15    +3.15
 Muon2MetMt              100   0      500
 
+FillMuon3 0 # introduced for extra muon veto in Z+Jets CR of 0l. muon pt in [3, 30] GeV
+
+NMuon3                   20   0.      20.
+Muon3Energy             220   0.     550. # pt=30 GeV & eta=3.6 -> E ~ 550 GeV
+Muon3Pt                  60   0.      30.
+Muon3Eta                 72  -3.6     +3.6
+FirstLeadingMuon3Pt      60   0.      30.
+FirstLeadingMuon3Eta    144  -7.2     +7.2
+Muon3Phi                 36  -3.15    +3.15
+Muon3MetMt              100   0      500
+
 //------------------------------------------------//
 
 FillJet1 1
