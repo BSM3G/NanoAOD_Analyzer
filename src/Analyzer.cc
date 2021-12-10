@@ -3763,13 +3763,13 @@ void Analyzer::rejectQCDByMinAbsDeltaPhiJetMet(CUTS ePos, CUTS ejet, const int s
   for(auto it: *active_part->at(ejet)){
     jet4vector = _Jet->p4(it);
     float absDeltaPhiJetMet = absnormPhi(jet4vector.Phi() - _MET->phi());
-    std::cout << "Jet #" << it << ": absDeltaPhiJetMet = " << absDeltaPhiJetMet << std::endl;
+    // std::cout << "Jet #" << it << ": absDeltaPhiJetMet = " << absDeltaPhiJetMet << std::endl;
     if(absDeltaPhiJetMet < minAbsDPhi){
       minAbsDPhi = absDeltaPhiJetMet;
     }
   }
 
-  std::cout << "minimum deltaPhi(j,MET) = " << minAbsDPhi << std::endl;
+  // std::cout << "minimum deltaPhi(j,MET) = " << minAbsDPhi << std::endl;
   passCuts = passCuts && passCutRange(minAbsDPhi, distats["Run"].pmap.at("MinAbsDPhiJetMetCut"));
 
   if(passCuts) active_part->at(ePos)->push_back(1);
