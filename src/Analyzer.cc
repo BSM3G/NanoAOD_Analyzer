@@ -5547,10 +5547,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(deltaPhiMet, "AbsDPhiMet");
         histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "DPhiMet");
 
-        if(deltaPhiMet < minDeltaPhiMet){
-          minDeltaPhiMet = deltaPhiMet;
-        }
-
         float cosDPhiJetMet = cos(normPhi(part->p4(it).Phi() - _MET->phi()));
         float jetptmetproj_plus = 0.0, jetptmetproj_minus = 0.0;
 
@@ -5589,7 +5585,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
     if(part->type == PType::Jet){
       // std::cout << "the minimum minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
-      histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
 
       if(index_minjmetdphi > -1){
         histAddVal(_Jet->pt(index_minjmetdphi), "MinAbsDPhiMetPt");
