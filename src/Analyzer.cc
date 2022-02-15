@@ -891,7 +891,9 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   active_part->at(CUTS::eRVertex)->resize(bestVertices);
 
   // ---------------- Trigger requirement ------------------ //
+  std::cout << "Before: Trigger requirement = " << active_part->at(CUTS::eRTrig1)->size() << std::endl;
   TriggerCuts(CUTS::eRTrig1);
+  std::cout << "After: Trigger requirement = " << active_part->at(CUTS::eRTrig1)->size() << std::endl;
   TriggerCuts(CUTS::eRTrig2);
 
   for(size_t i=0; i < syst_names.size(); i++) {
@@ -1699,8 +1701,8 @@ void Analyzer::setupGeneral(std::string year) {
   const int ntriggers1 = trigger1BranchesList.size();
   const int ntriggers2 = trigger2BranchesList.size();
 
-  bool triggers1[ntriggers1] = { };
-  bool triggers2[ntriggers2] = { };
+  bool triggers1[ntriggers1] = {false};
+  bool triggers2[ntriggers2] = {false};
 
   // for(int i=0; i<ntriggers1; i++){
   //    std::cout << "Address of " << i << "th element is " << &triggers1[i] << std::endl;
@@ -4218,26 +4220,45 @@ void Analyzer::TriggerCuts(CUTS ePos) {
   if(! neededCuts.isPresent(ePos)) return;
 
   if(ePos == CUTS::eRTrig1){
-    
+
     for(bool* trigger : trigger1namedecisions){
-       //std::cout<< "trig_decision: "<< *trigger << std::endl;
-       if(*trigger){  
-          active_part->at(ePos)->push_back(0);
-          return;
-       }  
-    }  
+      const bool trig1decision = *trigger;
+      std::cout << std::boolalpha << "(1) Initial trig1decisions = " << *trigger << ", address: " << trigger << ", " << trig1decision << std::endl;
+      std::cout << std::boolalpha << "(2) Initial trig1decisions = " << *trigger << ", address: " << trigger << ", " << trig1decision << std::endl;
+      if(trig1decision == true){  
+        std::cout << std::boolalpha << "check if trig1decisions = " << *trigger << ", address: " << trigger << ", " << trig1decision << std::endl;
+        active_part->at(ePos)->push_back(0);
+        std::cout << "Trigger Cuts 1: trigger requirement = " << active_part->at(ePos)->size() << std::endl;
+        return;
+      }  
+
+      std::cout << "Trigger Cuts 2: trigger requirement = " << active_part->at(ePos)->size() << std::endl;
+    }
+    // for(bool* trigger : trigger1namedecisions){
+    //   trig1sumdecisions = trig1sumdecisions || (*trigger);
+    //   std::cout << std::boolalpha << "\ttrig1sumdecisions = " << trig1sumdecisions << std::endl; 
+    // } 
+    // std::cout << std::boolalpha << "Final: trig1sumdecisions = " << trig1sumdecisions << std::endl;
+    // if(trig1sumdecisions == true){
+    //   active_part->at(ePos)->push_back(0);
+    //   return;
+    // }
   }
 
   if(ePos == CUTS::eRTrig2){
     // Loop over all elements of the trigger decisions vector
     for(bool* trigger : trigger2namedecisions){
+      const bool trig2decision = *trigger;
        // std::cout<< "trig_decision: "<< *trigger << std::endl;
-       if(*trigger){
+       if(trig2decision){
          active_part->at(ePos)->push_back(0);
          return;
        }
      }
   }
+  // std::cout << "Trigger Cuts end: trigger requirement = " << active_part->at(ePos)->size() << std::endl;
+  active_part->at(ePos)->resize(0);
+  return;
 
 }
 
