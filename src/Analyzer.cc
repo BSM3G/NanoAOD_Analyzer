@@ -884,6 +884,9 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     return;
   }
 
+  // std::cout << "Prefiring weight up = " << l1prefiringwgt_up << std::endl;
+  // std::cout << "Prefiring weight down = " << l1prefiringwgt_dn << std::endl;
+
   // Calculate the pu_weight for this event.
   pu_weight = (!isData && CalculatePUSystematics) ? hist_pu_wgt->GetBinContent(hist_pu_wgt->FindBin(nTruePU)) : 1.0;
 
@@ -1603,10 +1606,11 @@ void Analyzer::setupGeneral(std::string year) {
      if(BOOM->FindBranch("L1PreFiringWeight_Nom") != 0){
        SetBranch("L1PreFiringWeight_Nom", l1prefiringwgt);
 
-       if(distats["Systematics"].bfind("useSystematics")){
-         SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);
-         SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
-       }
+       // if(distats["Systematics"].bfind("useSystematics")){
+       //  std::cout << "I get here." << std::endl;
+       SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);
+       SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
+       // }
      }
 
      if (BOOM->FindBranch("LHE_HT") != 0){
@@ -5089,12 +5093,14 @@ void Analyzer::fill_histogram(std::string year) {
             wgt /= l1prefiringwgt;
             //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
             // wgt *= prefiringwgtprod.getPrefiringWeight("Up");
+            // std::cout << "prefiring wgt up = " << l1prefiringwgt_up << std::endl;
             wgt *= l1prefiringwgt_up;
           }
         } else if(syst_names[i]=="L1Prefiring_weight_Down"){
           if(distats["Run"].bfind("ApplyL1PrefiringWeight")){
             // wgt /= prefiringwgtprod.getPrefiringWeight("");
             wgt /= l1prefiringwgt;
+	    // std::cout << "prefiring wgt down = " << l1prefiringwgt_dn << std::endl;
             wgt *= l1prefiringwgt_dn;
           }
         }
