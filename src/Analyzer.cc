@@ -41,7 +41,7 @@ const std::vector<CUTS> Analyzer::genCuts = {
 };
 
 const std::vector<CUTS> Analyzer::jetCuts = {
-  CUTS::eRJet1,  CUTS::eRJet2,   CUTS::eRCenJet,
+  CUTS::eRJet1,  CUTS::eRJet2, CUTS::eRJet3,  CUTS::eRCenJet,
   CUTS::eR1stJet, CUTS::eR2ndJet, CUTS::eRBJet
 };
 
@@ -62,6 +62,7 @@ const std::unordered_map<std::string, CUTS> Analyzer::cut_num = {
   {"NRecoTau1", CUTS::eRTau1},                          {"NRecoTau2", CUTS::eRTau2},
   {"NRecoJet1", CUTS::eRJet1},                          {"NRecoJet2", CUTS::eRJet2},
   {"NRecoCentralJet", CUTS::eRCenJet},                  {"NRecoBJet", CUTS::eRBJet},
+  {"NRecoJet3", CUTS::eRJet3},                          {"QCDRejection", CUTS::eQCDRejection},
   {"NRecoTriggers1", CUTS::eRTrig1},                    {"NRecoTriggers2", CUTS::eRTrig2},
   {"NRecoFirstLeadingJet", CUTS::eR1stJet},             {"NRecoSecondLeadingJet", CUTS::eR2ndJet},
   {"NDiMuonCombinations", CUTS::eDiMuon},               {"NDiElectronCombinations", CUTS::eDiElec},
@@ -345,6 +346,7 @@ void Analyzer::create_fillInfo() {
 
   fillInfo["FillJet1"] =       new FillVals(CUTS::eRJet1, FILLER::Single, _Jet);
   fillInfo["FillJet2"] =       new FillVals(CUTS::eRJet2, FILLER::Single, _Jet);
+  fillInfo["FillJet3"] =       new FillVals(CUTS::eRJet3, FILLER::Single, _Jet);
   fillInfo["FillBJet"] =       new FillVals(CUTS::eRBJet, FILLER::Single, _Jet);
   fillInfo["FillCentralJet"] = new FillVals(CUTS::eRCenJet, FILLER::Single, _Jet);
   fillInfo["FillWJet"] =       new FillVals(CUTS::eRWjet, FILLER::Single, _FatJet);
@@ -730,15 +732,18 @@ bool Analyzer::skimSignalMC(){
   finalInputSignal = true;
   double epsilon = 0.0001;
 
-  for (unsigned i=0; i < genSUSYPartIndex.size(); i++){
-
-    if(inputSignalModel.find("Stau") != std::string::npos){
-      // This is an extra if in case we're analyzing stau dominated samples, which not always contain a chargino1/neutralino2 particle in the event
+  // This is an extra if in case we're analyzing stau dominated samples, which not always contain a chargino1/neutralino2 particle in the event
+  if(inputSignalModel.find("Stau") != std::string::npos){
+    for(unsigned i=0; i < genSUSYPartIndexStau.size(); i++){
       if (abs(_Gen->pdg_id[genSUSYPartIndexStau[i]]) == std::stoi(inputStau_pdgID) && (abs(_Gen->mass(genSUSYPartIndexStau[i]) - std::stod(inputStauMass)) > epsilon)){ 
         finalInputSignal = false;
         break;
       }
     }
+  }
+
+  for (unsigned i=0; i < genSUSYPartIndex.size(); i++){
+
     if (abs(_Gen->pdg_id[genSUSYPartIndex[i]]) == std::stoi(inputN2_pdgID) && (abs(_Gen->mass(genSUSYPartIndex[i]) - std::stod(inputN2Mass)) > epsilon)){ 
       finalInputSignal = false;
       break;
@@ -879,6 +884,9 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
     return;
   }
 
+  // std::cout << "Prefiring weight up = " << l1prefiringwgt_up << std::endl;
+  // std::cout << "Prefiring weight down = " << l1prefiringwgt_dn << std::endl;
+
   // Calculate the pu_weight for this event.
   pu_weight = (!isData && CalculatePUSystematics) ? hist_pu_wgt->GetBinContent(hist_pu_wgt->FindBin(nTruePU)) : 1.0;
 
@@ -886,7 +894,9 @@ void Analyzer::preprocess(int event, std::string year){ // This function no long
   active_part->at(CUTS::eRVertex)->resize(bestVertices);
 
   // ---------------- Trigger requirement ------------------ //
+  //std::cout << "Before: Trigger requirement = " << active_part->at(CUTS::eRTrig1)->size() << std::endl;
   TriggerCuts(CUTS::eRTrig1);
+  // std::cout << "After: Trigger requirement = " << active_part->at(CUTS::eRTrig1)->size() << std::endl;
   TriggerCuts(CUTS::eRTrig2);
 
   for(size_t i=0; i < syst_names.size(); i++) {
@@ -951,6 +961,7 @@ void Analyzer::getGoodParticles(int syst){
   getGoodRecoBJets(CUTS::eRBJet, _Jet->pstats["BJet"],syst); //01.16.19
   getGoodRecoJets(CUTS::eRJet1, _Jet->pstats["Jet1"],syst);
   getGoodRecoJets(CUTS::eRJet2, _Jet->pstats["Jet2"],syst);
+  getGoodRecoJets(CUTS::eRJet3, _Jet->pstats["Jet3"],syst);
   getGoodRecoJets(CUTS::eRCenJet, _Jet->pstats["CentralJet"],syst);
   getGoodRecoLeadJets(CUTS::eR1stJet, _Jet->pstats["FirstLeadingJet"],syst);
   getGoodRecoLeadJets(CUTS::eR2ndJet, _Jet->pstats["SecondLeadingJet"],syst);
@@ -991,6 +1002,9 @@ void Analyzer::getGoodParticles(int syst){
 
   ////Dijet cuts
   getGoodDiJets(distats["DiJet"],syst);
+
+  // QCD rejection by min(|deltaPhi(j,MET)|) cut
+  rejectQCDByMinAbsDeltaPhiJetMet(CUTS::eQCDRejection, CUTS::eRJet3, syst);
 
 }
 
@@ -1594,10 +1608,11 @@ void Analyzer::setupGeneral(std::string year) {
      if(BOOM->FindBranch("L1PreFiringWeight_Nom") != 0){
        SetBranch("L1PreFiringWeight_Nom", l1prefiringwgt);
 
-       if(distats["Systematics"].bfind("useSystematics")){
-         SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);
-         SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
-       }
+       // if(distats["Systematics"].bfind("useSystematics")){
+       //  std::cout << "I get here." << std::endl;
+       SetBranch("L1PreFiringWeight_Up", l1prefiringwgt_up);
+       SetBranch("L1PreFiringWeight_Dn", l1prefiringwgt_dn);
+       // }
      }
 
      if (BOOM->FindBranch("LHE_HT") != 0){
@@ -1690,8 +1705,8 @@ void Analyzer::setupGeneral(std::string year) {
   const int ntriggers1 = trigger1BranchesList.size();
   const int ntriggers2 = trigger2BranchesList.size();
 
-  bool triggers1[ntriggers1] = { };
-  bool triggers2[ntriggers2] = { };
+  bool triggers1[ntriggers1] = {false};
+  bool triggers2[ntriggers2] = {false};
 
   // for(int i=0; i<ntriggers1; i++){
   //    std::cout << "Address of " << i << "th element is " << &triggers1[i] << std::endl;
@@ -3739,6 +3754,33 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
   }
 }
 
+void Analyzer::rejectQCDByMinAbsDeltaPhiJetMet(CUTS ePos, CUTS ejet, const int syst){
+  if(! neededCuts.isPresent(ePos)) return;
+  
+  if( !distats["Run"].bfind("DiscrByMinAbsDPhiQCD") ){
+    active_part->at(ePos)->push_back(1);
+    return;
+  }
+
+  float minAbsDPhi = 9999.9;
+  bool passCuts = true;
+
+  TLorentzVector jet4vector(0,0,0,0);
+  for(auto it: *active_part->at(ejet)){
+    jet4vector = _Jet->p4(it);
+    float absDeltaPhiJetMet = absnormPhi(jet4vector.Phi() - _MET->phi());
+    // std::cout << "Jet #" << it << ": absDeltaPhiJetMet = " << absDeltaPhiJetMet << std::endl;
+    if(absDeltaPhiJetMet < minAbsDPhi){
+      minAbsDPhi = absDeltaPhiJetMet;
+    }
+  }
+
+  // std::cout << "minimum deltaPhi(j,MET) = " << minAbsDPhi << std::endl;
+  passCuts = passCuts && passCutRange(minAbsDPhi, distats["Run"].pmap.at("MinAbsDPhiJetMetCut"));
+
+  if(passCuts) active_part->at(ePos)->push_back(1);
+
+}
 
 void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int syst) { //01.16.19
   if(! neededCuts.isPresent(ePos)) return;
@@ -4182,26 +4224,45 @@ void Analyzer::TriggerCuts(CUTS ePos) {
   if(! neededCuts.isPresent(ePos)) return;
 
   if(ePos == CUTS::eRTrig1){
-    
+
     for(bool* trigger : trigger1namedecisions){
-       //std::cout<< "trig_decision: "<< *trigger << std::endl;
-       if(*trigger){  
-          active_part->at(ePos)->push_back(0);
-          return;
-       }  
-    }  
+      const bool trig1decision = *trigger;
+      //std::cout << std::boolalpha << "(1) Initial trig1decisions = " << *trigger << ", address: " << trigger << ", " << trig1decision << std::endl;
+      //std::cout << std::boolalpha << "(2) Initial trig1decisions = " << *trigger << ", address: " << trigger << ", " << trig1decision << std::endl;
+      if(trig1decision == true){  
+        //std::cout << std::boolalpha << "check if trig1decisions = " << *trigger << ", address: " << trigger << ", " << trig1decision << std::endl;
+        active_part->at(ePos)->push_back(0);
+        //std::cout << "Trigger Cuts 1: trigger requirement = " << active_part->at(ePos)->size() << std::endl;
+        return;
+      }  
+
+      //std::cout << "Trigger Cuts 2: trigger requirement = " << active_part->at(ePos)->size() << std::endl;
+    }
+    // for(bool* trigger : trigger1namedecisions){
+    //   trig1sumdecisions = trig1sumdecisions || (*trigger);
+    //   std::cout << std::boolalpha << "\ttrig1sumdecisions = " << trig1sumdecisions << std::endl; 
+    // } 
+    // std::cout << std::boolalpha << "Final: trig1sumdecisions = " << trig1sumdecisions << std::endl;
+    // if(trig1sumdecisions == true){
+    //   active_part->at(ePos)->push_back(0);
+    //   return;
+    // }
   }
 
   if(ePos == CUTS::eRTrig2){
     // Loop over all elements of the trigger decisions vector
     for(bool* trigger : trigger2namedecisions){
+      const bool trig2decision = *trigger;
        // std::cout<< "trig_decision: "<< *trigger << std::endl;
-       if(*trigger){
+       if(trig2decision){
          active_part->at(ePos)->push_back(0);
          return;
        }
      }
   }
+  // std::cout << "Trigger Cuts end: trigger requirement = " << active_part->at(ePos)->size() << std::endl;
+  active_part->at(ePos)->resize(0);
+  return;
 
 }
 
@@ -5053,12 +5114,14 @@ void Analyzer::fill_histogram(std::string year) {
             wgt /= l1prefiringwgt;
             //std::cout << "prefiring wgt up = " << prefiringwgtprod.getPrefiringWeight("Up") << std::endl;
             // wgt *= prefiringwgtprod.getPrefiringWeight("Up");
+            // std::cout << "prefiring wgt up = " << l1prefiringwgt_up << std::endl;
             wgt *= l1prefiringwgt_up;
           }
         } else if(syst_names[i]=="L1Prefiring_weight_Down"){
           if(distats["Run"].bfind("ApplyL1PrefiringWeight")){
             // wgt /= prefiringwgtprod.getPrefiringWeight("");
             wgt /= l1prefiringwgt;
+	    // std::cout << "prefiring wgt down = " << l1prefiringwgt_dn << std::endl;
             wgt *= l1prefiringwgt_dn;
           }
         }
@@ -5511,10 +5574,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         histAddVal(deltaPhiMet, "AbsDPhiMet");
         histAddVal(normPhi(part->p4(it).Phi() - _MET->phi()), "DPhiMet");
 
-        if(deltaPhiMet < minDeltaPhiMet){
-          minDeltaPhiMet = deltaPhiMet;
-        }
-
         float cosDPhiJetMet = cos(normPhi(part->p4(it).Phi() - _MET->phi()));
         float jetptmetproj_plus = 0.0, jetptmetproj_minus = 0.0;
 
@@ -5553,7 +5612,6 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
     if(part->type == PType::Jet){
       // std::cout << "the minimum minDeltaPhiMet = " << minDeltaPhiMet << std::endl;
-      histAddVal(minDeltaPhiMet, "MinAbsDPhiMet"); // minimum |deltaPhi(jet, MET)|
 
       if(index_minjmetdphi > -1){
         histAddVal(_Jet->pt(index_minjmetdphi), "MinAbsDPhiMetPt");
