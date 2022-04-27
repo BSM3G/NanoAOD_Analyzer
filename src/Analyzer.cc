@@ -3476,13 +3476,7 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
   int i=0;
 
   for(auto lvec: *_Jet) {
-    /*
-    if(ePos == CUTS::eR1stJet || ePos == CUTS::eR2ndJet){
-      if(ePos == CUTS::eR1stJet) std::cout << "I'm selecting leading jet" << std::endl;
-      else if(ePos == CUTS::eR2ndJet) std::cout << "I'm selecting the second leading jet" << std::endl;
-      break;
-    }
-    */
+
     bool passCuts = true;
     double dphi1rjets = normPhi(lvec.Phi() - _MET->phi());
     if(ePos == CUTS::eRCenJet) passCuts = passCuts && (fabs(lvec.Eta()) < 2.5);
@@ -3496,40 +3490,15 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
       else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
       else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
-      // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-      // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
-      else if(cut == "ApplyLooseID"){
-        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
+      else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
+      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+      else if(cut == "ApplyTightLepVetoID") passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
+      else if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
           if(!stats.bfind("FailPUJetID")){
             passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
           } else {
             passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
           }
-        } else {
-          passCuts = passCuts && _Jet->passedLooseJetID(i);
-        }
-      }
-      else if(cut == "ApplyTightID"){
-        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
-          if(!stats.bfind("FailPUJetID")){
-            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
-          } else {
-            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-          }
-        } else {
-          passCuts = passCuts && _Jet->passedTightJetID(i);
-        }
-      }
-      else if(cut == "ApplyTightLepVetoID"){
-        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
-          if(!stats.bfind("FailPUJetID")){
-            passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
-          } else {
-            passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-          }
-        } else {
-          passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
-        }
       }
       else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(lvec, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
       else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(lvec, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
@@ -3625,41 +3594,15 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[i] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[i] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[i] > stats.dmap.at("JetBTaggingCut"));
-        // else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
-        // else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
-        else if(cut == "ApplyLooseID"){
-         	if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){
-              if(!stats.bfind("FailPUJetID")){
-                  passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
-              } else {
-                  passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-              }
-          	}
-          else{
-              passCuts = passCuts && _Jet->passedLooseJetID(i);
-          	}
-      	}
-      	else if(cut == "ApplyTightID"){
-          	if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
-            	if(!stats.bfind("FailPUJetID")){
-                	passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
-              	} else {
-                	passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-              	}
-          	} else {
-              passCuts = passCuts && _Jet->passedTightJetID(i);
-          	}
-      	}
-        else if(cut == "ApplyTightLepVetoID"){
-          if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
+        else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
+        else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+        else if(cut == "ApplyTightLepVetoID") passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
+        else if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){
             if(!stats.bfind("FailPUJetID")){
               passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
             } else {
               passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
             }
-          } else {
-            passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
-          }
         }
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(leadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(leadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
@@ -3701,39 +3644,15 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
         else if(cut == "ApplyJetBTaggingCSVv2") passCuts = passCuts && (_Jet->bDiscriminatorCSVv2[j] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepCSV") passCuts = passCuts && (_Jet->bDiscriminatorDeepCSV[j] > stats.dmap.at("JetBTaggingCut"));
         else if(cut == "ApplyJetBTaggingDeepFlav") passCuts = passCuts && (_Jet->bDiscriminatorDeepFlav[j] > stats.dmap.at("JetBTaggingCut"));
-        else if(cut == "ApplyLooseID"){
-         	if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
-              if(!stats.bfind("FailPUJetID")){
-                  passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut"));
-              } else {
-                  passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
-              }
-          	}
-          else{
-              passCuts = passCuts && _Jet->passedLooseJetID(j);
-          	}
-      	}
-      	else if(cut == "ApplyTightID"){
-          	if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
-            	if(!stats.bfind("FailPUJetID")){
-                	passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
-              	} else {
-                	passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
-              	}
-          	} else {
-              passCuts = passCuts && _Jet->passedTightJetID(j);
-          	}
-      	}
-        else if(cut == "ApplyTightLepVetoID"){
-          if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
+        else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(j);
+        else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(j);
+        else if(cut == "ApplyTightLepVetoID") passCuts = passCuts && _Jet->passedTightLepVetoJetID(j);
+        else if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
             if(!stats.bfind("FailPUJetID")){
               passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut"));
             } else {
               passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
             }
-          } else {
-            passCuts = passCuts && _Jet->passedTightLepVetoJetID(j);
-          }
         }
         else if(cut == "RemoveOverlapWithJs") passCuts = passCuts && !isOverlapingC(subleadjetp4, *_FatJet, CUTS::eRWjet, stats.dmap.at("JMatchingDeltaR"));
         else if(cut == "RemoveOverlapWithBs") passCuts = passCuts && !isOverlapingB(subleadjetp4, *_Jet, CUTS::eRBJet, stats.dmap.at("BJMatchingDeltaR"));
@@ -3811,39 +3730,15 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
            int jetHadronFlavor = static_cast<unsigned>(_GenJet->genHadronFlavor[matchedGenJetIndex]);
  	         passCuts = passCuts && (jetPartonFlavor == 5 || abs(jetHadronFlavor) == 5);
       }
-      else if(cut == "ApplyLooseID"){
-        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
-            if(!stats.bfind("FailPUJetID")){
-                passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
-            } else {
-                passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-            }
-          }
-        else{
-            passCuts = passCuts && _Jet->passedLooseJetID(i);
-          }
-      }
-      else if(cut == "ApplyTightID"){
-          if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
-            if(!stats.bfind("FailPUJetID")){
-                passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
-              } else {
-                passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
-              }
-          } else {
-            passCuts = passCuts && _Jet->passedTightJetID(i);
-          }
-      }
-      else if(cut == "ApplyTightLepVetoID"){
-        if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
+      else if(cut == "ApplyLooseID") passCuts = passCuts && _Jet->passedLooseJetID(i);
+      else if(cut == "ApplyTightID") passCuts = passCuts && _Jet->passedTightJetID(i);
+      else if(cut == "ApplyTightLepVetoID") passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
+      else if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
           if(!stats.bfind("FailPUJetID")){
             passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
           } else {
             passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
           }
-        } else {
-          passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
-        }
       }
       // ----anti-overlap requirements
       else if(cut == "RemoveOverlapWithMuon1s") passCuts = passCuts && !isOverlaping(lvec, *_Muon, CUTS::eRMuon1, stats.dmap.at("Muon1MatchingDeltaR"));
@@ -4611,7 +4506,7 @@ void Analyzer::getGoodDiJets(const PartStats& stats, const int syst) {
   for(auto ij2 : *active_part->at(CUTS::eRJet2)) {
     jet2 = _Jet->p4(ij2);
     for(auto ij1 : *active_part->at(CUTS::eRJet1)) {
-      if(ij1 == ij2) continue;
+      if(ij1 <= ij2) continue;
       jet1 = _Jet->p4(ij1);
 
       bool passCuts = true;
