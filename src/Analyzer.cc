@@ -3319,7 +3319,7 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
       }
       else if(cut == "DiscrIfIsZdecay" && lep.type != PType::Tau ) passCuts = passCuts && isZdecay(lvec, lep);
       else if(cut == "DiscrByMetDphi") passCuts = passCuts && passCutRange(absnormPhi(lvec.Phi() - _MET->phi()), stats.pmap.at("MetDphiCut"));
-      else if(cut == "DiscrByMetMt") passCuts = passCuts && passCutRange(calculateLeptonMetMt(lvec), stats.pmap.at("MetMtCut"));
+      else if(cut == "DiscrByMetMt") passCuts = passCuts && passCutRange(calculateLeptonMetMt(lvec, _MET->p4()), stats.pmap.at("MetMtCut"));
       /////muon cuts
       else if(lep.type == PType::Muon){
         if(cut == "DoDiscrByTightID") passCuts = passCuts && _Muon->tight[i];
@@ -3418,7 +3418,7 @@ void Analyzer::getGoodRecoPhotons(const Photon& gamma, const CUTS ePos, const CU
         passCuts = passCuts && gamma.get_Iso(i, firstIso, secondIso);
       }
       else if(cut == "DiscrByMetDphi") passCuts = passCuts && passCutRange(absnormPhi(lvec.Phi() - _MET->phi()), stats.pmap.at("MetDphiCut"));
-      else if(cut == "DiscrByMetMt") passCuts = passCuts && passCutRange(calculateLeptonMetMt(lvec), stats.pmap.at("MetMtCut"));
+      else if(cut == "DiscrByMetMt") passCuts = passCuts && passCutRange(calculateLeptonMetMt(lvec, _MET->p4()), stats.pmap.at("MetMtCut"));
       else if(cut == "DoDiscrByCBID"){
         std::bitset<8> idvariable(_Photon->cutBasedID[i]);
 
@@ -4323,10 +4323,10 @@ bool Analyzer::passCutRangeAbs(double value, const std::pair<double, double>& cu
 }
 
 //-----Calculate lepton+met transverse mass
-double Analyzer::calculateLeptonMetMt(const TLorentzVector& Tobj) {
-  double px = Tobj.Px() + _MET->px();
-  double py = Tobj.Py() + _MET->py();
-  double et = Tobj.Et() + _MET->energy();
+double Analyzer::calculateLeptonMetMt(const TLorentzVector& Tobj, const TLorentzVector& met) {
+  double px = Tobj.Px() + met.Px();
+  double py = Tobj.Py() + met.Py();
+  double et = Tobj.Et() + met.E();
   double mt2 = et*et - (px*px + py*py);
   return (mt2 >= 0) ? sqrt(mt2) : -1;
 }
@@ -4457,7 +4457,7 @@ void Analyzer::getGoodLeptonCombos(Lepton& lep1, Lepton& lep2, CUTS ePos1, CUTS 
       	  else{
       	    llep = part2;
       	  }
-      	  double mTlead = calculateLeptonMetMt(llep);
+      	  double mTlead = calculateLeptonMetMt(llep, _MET->p4());
       	  passCuts = passCuts && passCutRange(mTlead, stats.pmap.at("MtLeadPtAndMetCut"));
       	}
       	else if(cut == "DiscrByDiLepMassDeltaPt"){
@@ -5557,7 +5557,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
         }
       }
       if(part->type != PType::Jet) {
-        histAddVal(calculateLeptonMetMt(part->p4(it)), "MetMt");
+        histAddVal(calculateLeptonMetMt(part->p4(it), _MET->JERCorrMet), "MetMt");
       }
       if(part->type == PType::FatJet ) {
         histAddVal(_FatJet->PrunedMass[it], "PrunedMass");
@@ -5865,10 +5865,10 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
     histAddVal(largestMassDeltaEta, "LargestMassDeltaEta");
 
     for(auto index : *(active_part->at(CUTS::eRTau1)) ) {
-      histAddVal2(calculateLeptonMetMt(_Tau->p4(index)), leaddijetmass, "mTvsLeadingMass");
-      histAddVal2(calculateLeptonMetMt(_Tau->p4(index)), leaddijetdeltaEta, "mTvsLeadingDeltaEta");
-      histAddVal2(calculateLeptonMetMt(_Tau->p4(index)), leaddijetdeltaR, "mTvsLeadingDeltaR");
-      histAddVal2(calculateLeptonMetMt(_Tau->p4(index)), leaddijetpt, "mTvsLeadingPt");
+      histAddVal2(calculateLeptonMetMt(_Tau->p4(index), _MET->JERCorrMet), leaddijetmass, "mTvsLeadingMass");
+      histAddVal2(calculateLeptonMetMt(_Tau->p4(index), _MET->JERCorrMet), leaddijetdeltaEta, "mTvsLeadingDeltaEta");
+      histAddVal2(calculateLeptonMetMt(_Tau->p4(index), _MET->JERCorrMet), leaddijetdeltaR, "mTvsLeadingDeltaR");
+      histAddVal2(calculateLeptonMetMt(_Tau->p4(index), _MET->JERCorrMet), leaddijetpt, "mTvsLeadingPt");
       histAddVal2((absnormPhi(_Tau->p4(index).Phi()-_MET->phi())), leaddijetmass, "MetDphiVSLeadingMass");
       histAddVal2((absnormPhi(_Tau->p4(index).Phi()-_MET->phi())), leaddijetdeltaEta, "MetDphiVSLeadingDeltaEta");
       histAddVal2((absnormPhi(_Tau->p4(index).Phi()-_MET->phi())), leaddijetdeltaR, "MetDphiVSLeadingDeltaR");
@@ -5915,8 +5915,8 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       }
       double PZeta = getPZeta(part1,part2).first;
       double PZetaVis = getPZeta(part1,part2).second;
-      histAddVal(calculateLeptonMetMt(part1), "Part1MetMt");
-      histAddVal(calculateLeptonMetMt(part2), "Part2MetMt");
+      histAddVal(calculateLeptonMetMt(part1, _MET->JERCorrMet), "Part1MetMt");
+      histAddVal(calculateLeptonMetMt(part2, _MET->JERCorrMet), "Part2MetMt");
       histAddVal(PZeta, "PZeta");
       histAddVal(PZetaVis, "PZetaVis");
       histAddVal2(PZetaVis,PZeta, "Zeta2D");
@@ -5993,7 +5993,7 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
       double AbscosDphiLeadLepMet = abs(cos(absnormPhi(llep.Phi() - _MET->phi())));
       histAddVal(AbscosDphiLeadLepMet, "RecoAbsCosDphiPtLeadLepandMet");
 
-  	  if(calculateLeptonMetMt(llep) > 0){
+  	  if(calculateLeptonMetMt(llep, _MET->JERCorrMet) > 0){
   	  	histAddVal(diMass1, "ReconstructableMassDeltaPt_nonzeroMt");
   	  	histAddVal(cosDphiLeadLepMet, "RecoCosDphiPtLeadLepandMet_nonzeroMt");
   	  	histAddVal(AbscosDphiLeadLepMet, "RecoAbsCosDphiPtLeadLepandMet_nonzeroMt");
@@ -6004,8 +6004,8 @@ void Analyzer::fill_Folder(std::string group, const int max, Histogramer &ihisto
 
       double PZeta = getPZeta(part1,part2).first;
       double PZetaVis = getPZeta(part1,part2).second;
-      histAddVal(calculateLeptonMetMt(part1), "Part1MetMt");
-      histAddVal(calculateLeptonMetMt(part2), "Part2MetMt");
+      histAddVal(calculateLeptonMetMt(part1, _MET->JERCorrMet), "Part1MetMt");
+      histAddVal(calculateLeptonMetMt(part2, _MET->JERCorrMet), "Part2MetMt");
       histAddVal(lep2->charge(p2) * lep1->charge(p1), "OSLS");
       histAddVal(PZeta, "PZeta");
       histAddVal(PZetaVis, "PZetaVis");
