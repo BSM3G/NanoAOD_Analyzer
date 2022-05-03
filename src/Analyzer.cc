@@ -626,8 +626,10 @@ bool Analyzer::additionalEENoiseEventVeto(const PartStats& stats, std::string ye
         if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
           if(!stats.bfind("FailPUJetID")){
             passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+	    passCuts = passCuts && _Jet->passedLooseJetID(i);
           } else {
             passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+	    passCuts = passCuts && _Jet->passedLooseJetID(i);
           }
         } else {
           passCuts = passCuts && _Jet->passedLooseJetID(i);
@@ -637,8 +639,10 @@ bool Analyzer::additionalEENoiseEventVeto(const PartStats& stats, std::string ye
         if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
           if(!stats.bfind("FailPUJetID")){
             passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+	    passCuts = passCuts && _Jet->passedTightJetID(i);
           } else {
             passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+	    passCuts = passCuts && _Jet->passedTightJetID(i);
           }
         } else {
           passCuts = passCuts && _Jet->passedTightJetID(i);
@@ -648,8 +652,10 @@ bool Analyzer::additionalEENoiseEventVeto(const PartStats& stats, std::string ye
         if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
           if(!stats.bfind("FailPUJetID")){
             passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+	    passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
           } else {
             passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+	    passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
           }
         } else {
           passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
@@ -3502,8 +3508,10 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
         if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
           if(!stats.bfind("FailPUJetID")){
             passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+	    passCuts = passCuts && _Jet->passedLooseJetID(i);
           } else {
             passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+	    passCuts = passCuts && _Jet->passedLooseJetID(i);
           }
         } else {
           passCuts = passCuts && _Jet->passedLooseJetID(i);
@@ -3513,8 +3521,10 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
         if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
           if(!stats.bfind("FailPUJetID")){
             passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+	    passCuts = passCuts && _Jet->passedTightJetID(i);
           } else {
             passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+	    passCuts = passCuts && _Jet->passedTightJetID(i);
           }
         } else {
           passCuts = passCuts && _Jet->passedTightJetID(i);
@@ -3524,8 +3534,10 @@ void Analyzer::getGoodRecoJets(CUTS ePos, const PartStats& stats, const int syst
         if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
           if(!stats.bfind("FailPUJetID")){
             passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+	    passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
           } else {
             passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+	    passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
           }
         } else {
           passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
@@ -3631,8 +3643,10 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
          	if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){
               if(!stats.bfind("FailPUJetID")){
                   passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+		  passCuts = passCuts && _Jet->passedLooseJetID(i);
               } else {
                   passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+		  passCuts = passCuts && _Jet->passedLooseJetID(i);
               }
           	}
           else{
@@ -3643,8 +3657,10 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
           	if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
             	if(!stats.bfind("FailPUJetID")){
                 	passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+			passCuts = passCuts && _Jet->passedTightJetID(i);
               	} else {
                 	passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+			passCuts = passCuts && _Jet->passedTightJetID(i);
               	}
           	} else {
               passCuts = passCuts && _Jet->passedTightJetID(i);
@@ -3654,8 +3670,10 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
           if(stats.bfind("ApplyPileupJetID") && leadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
             if(!stats.bfind("FailPUJetID")){
               passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+	      passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
             } else {
               passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+	      passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
             }
           } else {
             passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
@@ -3705,8 +3723,10 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
          	if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
               if(!stats.bfind("FailPUJetID")){
                   passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut"));
+		  passCuts = passCuts && _Jet->passedLooseJetID(j);
               } else {
                   passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
+		  passCuts = passCuts && _Jet->passedLooseJetID(j);
               }
           	}
           else{
@@ -3717,8 +3737,10 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
           	if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){
             	if(!stats.bfind("FailPUJetID")){
                 	passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+			passCuts = passCuts && _Jet->passedTightJetID(j);
               	} else {
                 	passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
+			passCuts = passCuts && _Jet->passedTightJetID(j);
               	}
           	} else {
               passCuts = passCuts && _Jet->passedTightJetID(j);
@@ -3728,8 +3750,10 @@ void Analyzer::getGoodRecoLeadJets(CUTS ePos, const PartStats& stats, const int 
           if(stats.bfind("ApplyPileupJetID") && subleadjetp4.Pt() <= 50.0){ // Only apply this cut to low pt jets
             if(!stats.bfind("FailPUJetID")){
               passCuts = passCuts && _Jet->getPileupJetID(j, stats.dmap.at("PUJetIDCut"));
+	      passCuts = passCuts && _Jet->passedTightLepVetoJetID(j);
             } else {
               passCuts = passCuts && (_Jet->getPileupJetID(j,0) == 0);
+	      passCuts = passCuts && _Jet->passedTightLepVetoJetID(j);
             }
           } else {
             passCuts = passCuts && _Jet->passedTightLepVetoJetID(j);
@@ -3815,8 +3839,10 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
         if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
             if(!stats.bfind("FailPUJetID")){
                 passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+		passCuts = passCuts && _Jet->passedLooseJetID(i);
             } else {
                 passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+		passCuts = passCuts && _Jet->passedLooseJetID(i);
             }
           }
         else{
@@ -3827,8 +3853,10 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
           if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){
             if(!stats.bfind("FailPUJetID")){
                 passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut")); // Only apply this cut to low pt jets
+		passCuts = passCuts && _Jet->passedTightJetID(i);
               } else {
                 passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+		passCuts = passCuts && _Jet->passedTightJetID(i);
               }
           } else {
             passCuts = passCuts && _Jet->passedTightJetID(i);
@@ -3838,8 +3866,10 @@ void Analyzer::getGoodRecoBJets(CUTS ePos, const PartStats& stats, const int sys
         if(stats.bfind("ApplyPileupJetID") && lvec.Pt() <= 50.0){ // Only apply this cut to low pt jets
           if(!stats.bfind("FailPUJetID")){
             passCuts = passCuts && _Jet->getPileupJetID(i, stats.dmap.at("PUJetIDCut"));
+	    passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
           } else {
             passCuts = passCuts && (_Jet->getPileupJetID(i,0) == 0);
+	    passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
           }
         } else {
           passCuts = passCuts && _Jet->passedTightLepVetoJetID(i);
