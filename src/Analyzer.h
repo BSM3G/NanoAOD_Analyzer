@@ -171,7 +171,7 @@ public:
   inline bool passCutRangeAbs(std::string, double, const PartStats&);
   bool passCutRangeAbs(double, const std::pair<double, double>&);
 
-  double calculateLeptonMetMt(const TLorentzVector&);
+  double calculateLeptonMetMt(const TLorentzVector&, const TLorentzVector&);
   double diParticleMass(const TLorentzVector&, const TLorentzVector&, std::string);
   bool passDiParticleApprox(const TLorentzVector&, const TLorentzVector&, std::string);
   bool isZdecay(const TLorentzVector&, const Lepton&);
