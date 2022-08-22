@@ -3336,12 +3336,13 @@ void Analyzer::getGoodRecoLeptons(const Lepton& lep, const CUTS ePos, const CUTS
       ////electron cuts
       else if(lep.type == PType::Electron){
         if(cut == "DoDiscrByCBID"){
-          std::bitset<8> idvariable(_Electron->cutBased[i]);
-          if(ival(ePos) - ival(CUTS::eRElec2)){ //test if it is electron1
-            passCuts = passCuts && (_Electron->cbIDele1&idvariable).count();
-          }else{
-            passCuts = passCuts && (_Electron->cbIDele2&idvariable).count();
-          }
+          //std::bitset<8> idvariable(_Electron->cutBased[i]);
+	  int idvariable(_Electron->cutBased[i]);
+	  if(ival(ePos) - ival(CUTS::eRElec2)){ //test if it is electron1
+            passCuts = passCuts && (idvariable >= _Electron->cbIDele1);
+	   }else{
+	    passCuts = passCuts && (idvariable >= _Electron->cbIDele2);
+	   }
         }
         else if(cut == "DoDiscrBymvaID"){
           if(stats.bfind("DiscrBymvaWP80")) passCuts = passCuts && _Electron->mvaFall17V2Iso_WP80[i];
